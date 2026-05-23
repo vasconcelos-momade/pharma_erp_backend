@@ -1,0 +1,391 @@
+/// <reference lib="dom" />
+import { SearchProdutosUseCase } from "../../application/use-cases/search-produtos.use-case";
+import { SearchServicosUseCase } from "../../application/use-cases/search-servicos.use-case";
+import { ValidarDispensacaoUseCase } from "../../application/use-cases/validar-dispensacao.use-case";
+import { FinalizarVendaUseCase } from "../../application/use-cases/finalizar-venda.use-case";
+import { AnularFaturaUseCase } from "../../application/use-cases/anular-fatura.use-case";
+import { AbrirSessaoCaixaUseCase } from "../../application/use-cases/abrir-sessao-caixa.use-case";
+import { FecharSessaoCaixaUseCase } from "../../application/use-cases/fechar-sessao-caixa.use-case";
+import { CreateDraftSaleUseCase } from "../../application/use-cases/create-draft-sale.use-case";
+import { GetDraftCartUseCase } from "../../application/use-cases/get-draft-cart.use-case";
+import { AddDraftCartItemUseCase } from "../../application/use-cases/add-draft-cart-item.use-case";
+import { IncrementDraftCartItemUseCase } from "../../application/use-cases/increment-draft-cart-item.use-case";
+import { DecrementDraftCartItemUseCase } from "../../application/use-cases/decrement-draft-cart-item.use-case";
+import { RemoveDraftCartItemUseCase } from "../../application/use-cases/remove-draft-cart-item.use-case";
+import { LiquidarConvenioUseCase } from "../../application/use-cases/liquidar-convenio.use-case";
+import { RelatorioDiferencaCaixaUseCase } from "../../application/use-cases/relatorio-diferenca-caixa.use-case";
+import { ListTaxRulesUseCase } from "../../application/use-cases/list-tax-rules.use-case";
+import { GetCurrentCaixaSessaoUseCase } from "../../application/use-cases/get-current-caixa-sessao.use-case";
+import { ListAvailableCaixasUseCase } from "../../application/use-cases/list-available-caixas.use-case";
+import { z } from "zod";
+import {
+  getValidationErrorMessage,
+  parseJsonBody,
+  parseSearchParams,
+} from "../../../../../shared/http/request-validation";
+
+const validarDispensacaoSchema = z.object({
+  produtoId: z.string().trim().min(1),
+  quantidade: z.coerce.number().positive(),
+});
+
+const receitaSchema = z.object({
+  numero: z.string().trim().min(1).optional(),
+  medicoNome: z.string().trim().min(1).optional(),
+  prescritor: z.string().trim().min(1).optional(),
+  unidadeSanitaria: z.string().trim().min(1).optional(),
+});
+
+const pacienteSchema = z.object({
+  nome: z.string().trim().min(1),
+  idade: z.coerce.number().int().positive(),
+  nid: z.string().trim().min(1),
+});
+
+const finalizarVendaSchema = z.object({
+  clienteId: z.string().trim().min(1).optional(),
+  terminalId: z.string().trim().min(1),
+  idempotencyKey: z.string().trim().min(1).optional(),
+  validatorUserId: z.string().trim().min(1).optional(),
+  metodoPagamento: z.enum(["DINHEIRO", "CARTAO", "TRANSFERENCIA", "CARTEIRA_MOVEL", "EMOLA", "MPESA"]),
+  paciente: pacienteSchema.optional(),
+  receita: receitaSchema.optional(),
+  items: z.array(z.object({
+    tipo: z.enum(["produto", "servico"]),
+    produtoId: z.string().trim().min(1).optional(),
+    servicoId: z.string().trim().min(1).optional(),
+    quantidade: z.coerce.number().positive(),
+    precoUnit: z.coerce.number().nonnegative().optional(),
+    receita: receitaSchema.optional(),
+  })).min(1),
+});
+
+const anularFaturaSchema = z.object({
+  motivo: z.string().trim().min(1),
+  observacoes: z.string().trim().min(1).optional(),
+});
+
+const abrirSessaoSchema = z.object({
+  caixaId: z.string().trim().min(1),
+  valorAbertura: z.coerce.number().nonnegative(),
+});
+
+const fecharSessaoSchema = z.object({
+  sessaoId: z.string().trim().min(1),
+  valorContado: z.coerce.number().nonnegative(),
+  observacoes: z.string().trim().min(1).optional(),
+});
+
+const createDraftSaleSchema = z.object({
+  clienteId: z.string().trim().min(1).optional(),
+  terminalId: z.string().trim().min(1).optional(),
+  idempotencyKey: z.string().trim().min(1),
+  items: z.array(z.object({
+    produtoId: z.string().trim().min(1),
+    loteId: z.string().trim().min(1).optional(),
+    quantidade: z.coerce.number().positive(),
+    precoUnit: z.coerce.number().nonnegative().optional(),
+  })).min(1),
+});
+
+const draftCartContextSchema = z.object({
+  idempotencyKey: z.string().trim().min(1),
+  clienteId: z.string().trim().min(1).optional(),
+  terminalId: z.string().trim().min(1).optional(),
+});
+
+const draftCartItemSchema = z
+  .object({
+    idempotencyKey: z.string().trim().min(1),
+    produtoId: z.string().trim().min(1).optional(),
+    servicoId: z.string().trim().min(1).optional(),
+    loteId: z.string().trim().min(1).optional(),
+    quantidade: z.coerce.number().positive().optional(),
+    precoUnit: z.coerce.number().nonnegative().optional(),
+    clienteId: z.string().trim().min(1).optional(),
+    terminalId: z.string().trim().min(1).optional(),
+  })
+  .refine((data) => Boolean(data.produtoId) !== Boolean(data.servicoId), {
+    message: "Informe produtoId ou servicoId (apenas um).",
+  });
+
+const draftCartQuerySchema = z.object({
+  idempotencyKey: z.string().trim().min(1),
+});
+
+const draftCartItemIdParamSchema = z.object({
+  itemId: z.string().regex(/^\d+$/, "itemId inválido"),
+});
+
+const liquidarConvenioSchema = z.object({
+  empresaId: z.string().trim().min(1),
+  caixaId: z.string().trim().min(1),
+  valorPagamento: z.coerce.number().positive(),
+  metodoPagamento: z.enum(["TRANSFERENCIA", "DINHEIRO", "CARTAO"]),
+  referencia: z.string().trim().min(1).optional(),
+});
+
+const searchProdutosQuerySchema = z.object({
+  q: z.string().trim().min(1).optional(),
+  barcode: z.string().trim().min(1).optional(),
+  page: z.coerce.number().int().positive().optional(),
+  pageSize: z.coerce.number().int().positive().max(100).optional(),
+});
+
+const searchServicosQuerySchema = z.object({
+  q: z.string().trim().min(1).optional(),
+});
+
+const relatorioDiferencaQuerySchema = z.object({
+  sessaoId: z.string().trim().min(1),
+});
+
+export class POSController {
+  private searchProdutosUseCase = new SearchProdutosUseCase();
+  private searchServicosUseCase = new SearchServicosUseCase();
+  private validarDispensacaoUseCase = new ValidarDispensacaoUseCase();
+  private finalizarVendaUseCase = new FinalizarVendaUseCase();
+  private anularFaturaUseCase = new AnularFaturaUseCase();
+  private abrirSessaoUseCase = new AbrirSessaoCaixaUseCase();
+  private fecharSessaoUseCase = new FecharSessaoCaixaUseCase();
+  private createDraftSaleUseCase = new CreateDraftSaleUseCase();
+  private getDraftCartUseCase = new GetDraftCartUseCase();
+  private addDraftCartItemUseCase = new AddDraftCartItemUseCase();
+  private incrementDraftCartItemUseCase = new IncrementDraftCartItemUseCase();
+  private decrementDraftCartItemUseCase = new DecrementDraftCartItemUseCase();
+  private removeDraftCartItemUseCase = new RemoveDraftCartItemUseCase();
+  private liquidarConvenioUseCase = new LiquidarConvenioUseCase();
+  private relatorioDiferencaCaixaUseCase = new RelatorioDiferencaCaixaUseCase();
+  private listTaxRulesUseCase = new ListTaxRulesUseCase();
+  private getCurrentCaixaSessaoUseCase = new GetCurrentCaixaSessaoUseCase();
+  private listAvailableCaixasUseCase = new ListAvailableCaixasUseCase();
+
+  async searchProdutos(req: Request) {
+    const url = new URL(req.url);
+    const { q, barcode, page = 1, pageSize = 20 } = parseSearchParams(
+      url,
+      searchProdutosQuerySchema,
+    );
+
+    const result = await this.searchProdutosUseCase.execute({
+      query: q,
+      barcode,
+      page,
+      pageSize,
+    });
+    return Response.json(this.serialize(result));
+  }
+
+  async searchServicos(req: Request) {
+    const url = new URL(req.url);
+    const { q } = parseSearchParams(url, searchServicosQuerySchema);
+    
+    const result = await this.searchServicosUseCase.execute(q);
+    return Response.json(this.serialize(result));
+  }
+
+  async validarDispensacao(req: Request) {
+    try {
+      const body = await parseJsonBody(req, validarDispensacaoSchema);
+      const result = await this.validarDispensacaoUseCase.execute(body);
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+    }
+  }
+
+  async finalizarVenda(req: Request, userId: string) {
+    try {
+      const body = await parseJsonBody(req, finalizarVendaSchema);
+      const result = await this.finalizarVendaUseCase.execute({
+        ...body,
+        userId
+      });
+      return Response.json(this.serialize(result), { status: 201 });
+    } catch (error: any) {
+      console.error("Erro ao finalizar venda:", error);
+      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+    }
+  }
+
+  async anularFatura(req: Request, userId: string, faturaId: string) {
+    try {
+      const body = await parseJsonBody(req, anularFaturaSchema);
+      const result = await this.anularFaturaUseCase.execute({
+        faturaId,
+        userId,
+        motivo: body.motivo,
+        observacoes: body.observacoes
+      });
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      console.error("Erro ao anular fatura:", error);
+      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+    }
+  }
+
+  async abrirSessao(req: Request, userId: string) {
+    try {
+      const body = await parseJsonBody(req, abrirSessaoSchema);
+      const result = await this.abrirSessaoUseCase.execute({
+        ...body,
+        userId
+      });
+      return Response.json(this.serialize(result), { status: 201 });
+    } catch (error: any) {
+      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+    }
+  }
+
+  async fecharSessao(req: Request, userId: string) {
+    try {
+      const body = await parseJsonBody(req, fecharSessaoSchema);
+      const result = await this.fecharSessaoUseCase.execute({
+        ...body,
+        userId
+      });
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+    }
+  }
+
+  async getSessaoAtual(userId: string) {
+    try {
+      const result = await this.getCurrentCaixaSessaoUseCase.execute(userId);
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return Response.json({ error: error.message }, { status: 400 });
+    }
+  }
+
+  async listAvailableCaixas() {
+    try {
+      const result = await this.listAvailableCaixasUseCase.execute();
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return Response.json({ error: error.message }, { status: 400 });
+    }
+  }
+
+  async createDraftSale(req: Request, userId: string) {
+    try {
+      const body = await parseJsonBody(req, createDraftSaleSchema);
+      const result = await this.createDraftSaleUseCase.execute({
+        ...body,
+        userId,
+      });
+      return Response.json(this.serialize(result), { status: 201 });
+    } catch (error: any) {
+      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+    }
+  }
+
+  async getDraftCart(req: Request, userId: string) {
+    try {
+      const url = new URL(req.url);
+      const { idempotencyKey } = parseSearchParams(url, draftCartQuerySchema);
+      const result = await this.getDraftCartUseCase.execute({ userId, idempotencyKey });
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+    }
+  }
+
+  async addDraftCartItem(req: Request, userId: string) {
+    try {
+      const body = await parseJsonBody(req, draftCartItemSchema);
+      const { idempotencyKey, produtoId, servicoId, loteId, quantidade, precoUnit, clienteId, terminalId } =
+        body;
+      const item = servicoId
+        ? { servicoId, quantidade: quantidade ?? 1, precoUnit }
+        : { produtoId: produtoId!, loteId, quantidade: quantidade ?? 1, precoUnit };
+      const result = await this.addDraftCartItemUseCase.execute(
+        { userId, idempotencyKey, clienteId, terminalId },
+        item,
+      );
+      return Response.json(this.serialize(result), { status: 201 });
+    } catch (error: any) {
+      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+    }
+  }
+
+  async incrementDraftCartItem(itemId: string, req: Request, userId: string) {
+    try {
+      const body = await parseJsonBody(req, draftCartContextSchema);
+      const result = await this.incrementDraftCartItemUseCase.execute(
+        { userId, idempotencyKey: body.idempotencyKey },
+        itemId,
+      );
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+    }
+  }
+
+  async decrementDraftCartItem(itemId: string, req: Request, userId: string) {
+    try {
+      const body = await parseJsonBody(req, draftCartContextSchema);
+      const result = await this.decrementDraftCartItemUseCase.execute(
+        { userId, idempotencyKey: body.idempotencyKey },
+        itemId,
+      );
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+    }
+  }
+
+  async removeDraftCartItem(itemId: string, req: Request, userId: string) {
+    try {
+      const body = await parseJsonBody(req, draftCartContextSchema);
+      const result = await this.removeDraftCartItemUseCase.execute(
+        { userId, idempotencyKey: body.idempotencyKey },
+        itemId,
+      );
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+    }
+  }
+
+  async liquidarConvenio(req: Request, userId: string) {
+    try {
+      const body = await parseJsonBody(req, liquidarConvenioSchema);
+      const result = await this.liquidarConvenioUseCase.execute({
+        ...body,
+        userId
+      });
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+    }
+  }
+
+  async getRelatorioDiferenca(req: Request) {
+    try {
+      const url = new URL(req.url);
+      const { sessaoId } = parseSearchParams(url, relatorioDiferencaQuerySchema);
+      
+      const result = await this.relatorioDiferencaCaixaUseCase.execute(sessaoId);
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return Response.json({ error: error.message }, { status: 400 });
+    }
+  }
+
+  async listTaxRules() {
+    try {
+      const result = await this.listTaxRulesUseCase.execute();
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return Response.json({ error: error.message }, { status: 500 });
+    }
+  }
+
+  private serialize(data: any) {
+    return JSON.parse(JSON.stringify(data, (_key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    ));
+  }
+}

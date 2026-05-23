@@ -1,0 +1,15 @@
+{
+  "name": "skalway-pharm-backend-nf",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "bun --watch src/main.ts",
+    "start": "bun src/main.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "5.22.0"
+  },
+  "devDependencies": {
+    "bun-types": "latest",
+    "prisma": "5.22.0"
+  }
+}

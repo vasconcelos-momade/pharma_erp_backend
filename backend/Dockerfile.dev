@@ -1,0 +1,17 @@
+FROM oven/bun:latest
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+
+RUN bun install
+
+COPY . .
+
+COPY docker-entrypoint.dev.sh /usr/local/bin/docker-entrypoint.dev.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.dev.sh
+
+EXPOSE 3300
+
+ENTRYPOINT ["docker-entrypoint.dev.sh"]
+CMD ["bun", "run", "dev"]

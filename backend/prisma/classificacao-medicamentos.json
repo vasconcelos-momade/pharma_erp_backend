@@ -1,0 +1,134 @@
+{
+  "narcoticos": {
+    "categorias": ["controlado", "narcotico"],
+    "substancias": ["MORFINA", "PETIDINA", "FENTANIL"],
+    "nomesComerciais": [],
+    "sinonimos": {}
+  },
+  "psicotropicosLiii": {
+    "categorias": ["controlado", "psicotropico"],
+    "substancias": ["FLUNITRAZEPAM"],
+    "nomesComerciais": [],
+    "sinonimos": {}
+  },
+  "psicotropicosLiv": {
+    "categorias": ["controlado", "psicotropico"],
+    "substancias": [
+      "ALPRAZOLAM",
+      "BROMAZEPAM",
+      "CLORDIAZEPOXIDO",
+      "CLONAZEPAM",
+      "DIAZEPAM",
+      "MIDAZOLAM",
+      "MEXAZOLAM"
+    ],
+    "nomesComerciais": [],
+    "sinonimos": {}
+  },
+  "controladosEspeciais": {
+    "categorias": ["controlado especial"],
+    "substancias": ["FENOBARBITAL", "CARBAMAZEPINA"],
+    "nomesComerciais": ["BIALMINAL"],
+    "sinonimos": {}
+  },
+  "receitaSimples": {
+    "categorias": ["receita simples"],
+    "substancias": [
+      "AMOXICILINA",
+      "CEFIXIMA",
+      "NORFLOXACINA",
+      "METFORMINA",
+      "GLIBENCLAMIDA",
+      "TETRACICLINA",
+      "CLORANFENICOL",
+      "OMEPRAZOL",
+      "HIDROQUINONA",
+      "ARTESUNATO",
+      "AMODIAQUINA",
+      "MEDROXIPROGESTERONA",
+      "INSULINA GLARGINA",
+      "FENILPROPANOLAMINA",
+      "TRIANCINOLONA",
+      "BECLOMETASONA",
+      "ERGOTAMINA",
+      "OXITOCINA"
+    ],
+    "nomesComerciais": [],
+    "sinonimos": {}
+  },
+  "otc": {
+    "categorias": [
+      "dor e febre",
+      "gripe e tosse",
+      "estomago e intestino",
+      "vitaminas",
+      "pele e feridas",
+      "olhos e cuidados leves",
+      "primeiros socorros"
+    ],
+    "substancias": [
+      "PARACETAMOL",
+      "IBUPROFENO",
+      "ACIDO ACETILSALICILICO",
+      "DEXTROMETORFANO",
+      "SAIS DE REIDRATACAO ORAL",
+      "HIDROXIDO DE ALUMINIO",
+      "HIDROXIDO DE MAGNESIO",
+      "SIMETICONA",
+      "VITAMINA C",
+      "COMPLEXO B",
+      "VITAMINA D",
+      "MULTIVITAMINICOS",
+      "MULTIVITAMINICO",
+      "CLOTRIMAZOL",
+      "MICONAZOL",
+      "POVIDONA-IODO",
+      "POVIDONA IODO",
+      "ALCOOL 70",
+      "SORO FISIOLOGICO",
+      "LAGRIMAS ARTIFICIAIS"
+    ],
+    "nomesComerciais": [
+      "ASPIRINA",
+      "XAROPE EXPECTORANTE",
+      "XAROPE PARA TOSSE SECA",
+      "DEXTROMETORFANO",
+      "DESCONGESTIONANTE NASAL",
+      "PASTILHA PARA GARGANTA",
+      "PASTILHAS PARA GARGANTA",
+      "SAIS DE REIDRATACAO ORAL",
+      "ANTIACIDO",
+      "SIMETICONA",
+      "VITAMINA C",
+      "COMPLEXO B",
+      "VITAMINA D",
+      "MULTIVITAMINICO",
+      "MULTIVITAMINICOS",
+      "CLOTRIMAZOL",
+      "MICONAZOL",
+      "POVIDONA-IODO",
+      "POVIDONA IODO",
+      "ALCOOL 70",
+      "POMADA ANTISSEPTICA",
+      "POMADAS ANTISSEPTICAS",
+      "SORO FISIOLOGICO",
+      "LAGRIMAS ARTIFICIAIS",
+      "CREME PARA PICADA DE INSETO",
+      "CREMES PARA PICADAS DE INSETOS",
+      "PENSO",
+      "PENSOS",
+      "GAZE"
+    ],
+    "sinonimos": {
+      "PARACETAMOL": ["ACETAMINOFENO"],
+      "IBUPROFENO": ["IBUPROFEN"],
+      "ACIDO ACETILSALICILICO": ["ASPIRINA", "ASA"],
+      "SAIS DE REIDRATACAO ORAL": ["SRO"],
+      "HIDROXIDO DE ALUMINIO": ["ANTIACIDO"],
+      "HIDROXIDO DE MAGNESIO": ["ANTIACIDO"],
+      "ALCOOL 70": ["ALCOOL 70%", "ALCOOL ETILICO 70"],
+      "SORO FISIOLOGICO": ["SOLUCAO FISIOLOGICA"],
+      "LAGRIMAS ARTIFICIAIS": ["COLIRIO LUBRIFICANTE"]
+    }
+  }
+}

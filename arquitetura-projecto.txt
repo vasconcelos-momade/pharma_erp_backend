@@ -1,0 +1,192 @@
+                INTERNET
+                    │
+                    ▼
+         ┌──────────────────┐
+         │   CLOUD SERVER   │
+         │ PostgreSQL/MySQL │
+         └────────┬─────────┘
+                  │
+          Sync Engine
+                  │
+┌─────────────────┴─────────────────┐
+│                                   │
+▼                                   ▼
+
+┌──────────────────┐      ┌──────────────────┐
+│ SERVIDOR LOCAL   │      │ MOBILE REMOTO    │
+│ MariaDB/MySQL    │      │ usa CLOUD API    │
+└────────┬─────────┘      └──────────────────┘
+         │
+         │ LAN
+         │
+ ┌───────┴────────┐
+ │                │
+ ▼                ▼
+
+PDV 1         Mobile/Tablet
+Flutter       Flutter
+
+
+
+
+
+
+
+Como funciona
+Dentro da farmácia
+
+O mobile usa:
+
+IP local do servidor
+
+Exemplo:
+
+192.168.1.10
+
+Tudo extremamente rápido.
+
+Fora da farmácia
+
+O mobile usa:
+
+Cloud API
+
+Exemplo:
+
+api.pharmaerp.com
+Então NÃO precisas SQLite no mobile?
+Exatamente.
+
+Se o mobile:
+
+SEMPRE depende de rede
+LAN ou internet
+
+então podes usar:
+
+API First Architecture
+
+sem banco local pesado.
+
+Melhor arquitetura para ti
+Desktop + Mobile
+
+Todos conectam em:
+
+MySQL Local
+
+quando estão na farmácia.
+
+Cloud
+
+Sincroniza depois.
+
+Fluxo ideal
+Dentro da farmácia
+Flutter App
+     ↓
+Local API Server
+     ↓
+MySQL Local
+Sync
+Local MySQL
+     ↓
+Sync Service
+     ↓
+Cloud DB
+Estrutura correta então
+pharma_erp/
+│
+├── apps/
+│   ├── desktop/
+│   ├── mobile/
+│
+├── backend/
+│   ├── api/
+│   ├── sync/
+│   ├── auth/
+│
+├── local_server/
+│   ├── mysql/
+│   ├── sync_agent/
+│
+├── cloud/
+│   ├── postgres/
+│   ├── analytics/
+│
+├── shared/
+O que o mobile precisa
+Detectar automaticamente
+1. Está na LAN?
+
+Usa:
+
+http://192.168.x.x:3000
+2. Não está?
+
+Usa:
+
+https://api.pharmaerp.com
+Isso é MUITO enterprise
+
+Chama-se:
+
+Smart Endpoint Resolution
+Exemplo Flutter
+if (isLocalNetworkAvailable) {
+   baseUrl = localServer;
+} else {
+   baseUrl = cloudServer;
+}
+Melhor ainda
+
+Tu podes criar:
+
+connection_manager.dart
+Estrutura
+core/network/
+│
+├── connection_manager.dart
+├── endpoint_resolver.dart
+├── lan_detector.dart
+├── cloud_fallback.dart
+Vantagem enorme
+LAN
+ultra rápido
+funciona sem internet
+impressão rápida
+estoque instantâneo
+Cloud
+acesso remoto
+relatórios
+multi-filial
+backup
+Arquitetura ideal do backend
+Local Server
+
+Eu faria:
+
+Bun + Elysia
+
+localmente.
+
+Rodando em:
+mini PC
+servidor local
+Ubuntu
+Docker
+Ele controla:
+API local
+MySQL local
+Sync
+impressão
+autenticação LAN
+Cloud Server
+
+Outro backend separado.
+
+Melhor modelo enterprise
+Local API
+LAN ultra rápida
+Cloud API
+internet

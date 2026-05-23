@@ -1,0 +1,862 @@
+generator client {
+  provider   = "prisma-client-js"
+  output     = "./generated/central"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// CENTRAL — CORE BASE (SaaS multi-tenant / offline-first)
+// =============================================================================
+//
+// CENTRAL: identidade, tenants, filiais, devices, sync queue, billing, audit.
+// LOCAL (schema tenant): vendas, stock, caixa, produtos, clientes, receitas.
+//
+// Sync: entidades LOCAIS entram via SyncLog; CENTRAL governa conta e filiais.
+// Concorrência: version + optimistic-lock.ts (UPDATE WHERE version = n).
+//
+// Soft delete: todo modelo operacional tem deletedAt + @@index([deletedAt]).
+// Append-only (BillingSnapshot, AuditLog, LoginAttempt, InvoiceFiscalCounter) sem soft delete.
+//
+// Unicidade de negócio: sempre por tenant (@@unique([tenantId, ...])), nunca global.
+//
+// Isolamento multi-tenant: queries com tenantId são reforçadas via Prisma extension
+// (ver infrastructure/prisma/central-tenant-scope.ts) + centralTenantContext.
+// =============================================================================
+
+//
+// 1. CORE — IDENTIDADE SAAS
+//
+
+model User {
+  id   BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  uuid String @unique @default(uuid())
+
+  name     String
+  email    String  @unique @db.VarChar(191)
+  password String
+  role     Role    @default(usuario)
+  active   Boolean @default(true)
+
+  lastLoginAt      DateTime? @db.DateTime(0)
+  failedLoginCount Int       @default(0)
+  lockedUntil      DateTime? @db.DateTime(0)
+
+  version Int @default(0)
+
+  createdAt DateTime  @default(now()) @db.DateTime(0)
+  updatedAt DateTime  @updatedAt @db.DateTime(0)
+  deletedAt DateTime? @db.DateTime(0)
+
+  tenantsOwned         Tenant[]         @relation("TenantOwner")
+  userTenants          UserTenant[]
+  permissions          UserPermission[]
+  loginAttempts        LoginAttempt[]
+  paymentsConfirmed    Payment[]        @relation("PaymentConfirmedBy")
+  paymentsCreated      Payment[]        @relation("PaymentCreatedBy")
+  paymentsUpdated      Payment[]        @relation("PaymentUpdatedBy")
+  tenantsCreated       Tenant[]         @relation("TenantCreatedBy")
+  tenantsUpdated       Tenant[]         @relation("TenantUpdatedBy")
+  branchesCreated      Branch[]         @relation("BranchCreatedBy")
+  branchesUpdated      Branch[]         @relation("BranchUpdatedBy")
+  subscriptionsCreated Subscription[]   @relation("SubscriptionCreatedBy")
+  subscriptionsUpdated Subscription[]   @relation("SubscriptionUpdatedBy")
+  auditLogs            AuditLog[]
+  sessions             UserSession[]
+
+  @@index([role])
+  @@index([lockedUntil])
+  @@index([active])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model UserTenant {
+  id       BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  userId   BigInt @db.UnsignedBigInt
+  tenantId BigInt @db.UnsignedBigInt
+
+  role   TenantUserRole
+  active Boolean        @default(true)
+
+  version Int @default(0)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+  @@index([deletedAt])
+  @@map("user_tenants")
+}
+
+//
+// 2. CORE — TENANT SAAS
+//
+
+model Tenant {
+  id   BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  uuid String @unique @default(uuid())
+
+  ownerId BigInt @map("userId") @db.UnsignedBigInt
+
+  name        String  @unique @map("nomeTenant")
+  companyName String  @map("nomeEmpresa")
+  nuit        String?
+
+  status  TenantStatus @default(ativo)
+  country String       @default("MZ") @db.VarChar(2)
+
+  version Int @default(0)
+
+  createdBy BigInt? @db.UnsignedBigInt
+  updatedBy BigInt? @db.UnsignedBigInt
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  owner         User  @relation("TenantOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  createdByUser User? @relation("TenantCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  updatedByUser User? @relation("TenantUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
+
+  branches              Branch[]
+  subscriptions         Subscription[]
+  billingSnapshots      BillingSnapshot[]
+  wallet                TenantWallet?
+  walletTransactions    WalletTransaction[]
+  payments              Payment[]
+  invoices              Invoice[]
+  invoiceFiscalCounters InvoiceFiscalCounter[]
+  settings              TenantSetting[]
+  userTenants           UserTenant[]
+  devices               Device[]
+  syncLogs              SyncLog[]
+  syncSessions          SyncSession[]
+  auditLogs             AuditLog[]
+  jobQueues             JobQueue[]
+
+  @@index([status])
+  @@index([country])
+  @@index([ownerId])
+  @@index([deletedAt])
+  @@map("tenants")
+}
+
+model TenantSetting {
+  id       BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  tenantId BigInt @db.UnsignedBigInt
+
+  key           String @map("chave")
+  value         Json   @map("valor")
+  schemaVersion Int    @default(1)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, key])
+  @@index([deletedAt])
+  @@map("tenant_settings")
+}
+
+//
+// 3. CORE — MULTI-FILIAL / SYNC
+//
+
+model Branch {
+  id   BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  uuid String @unique @default(uuid())
+
+  tenantId BigInt @db.UnsignedBigInt
+
+  code String @map("codigo")
+  name String @map("nome")
+
+  isHeadOffice Boolean @default(false)
+  active       Boolean @default(true) @map("ativo")
+
+  syncEnabled    Boolean @default(true)
+  offlineEnabled Boolean @default(true)
+
+  connectionStatus BranchConnectionStatus @default(ONLINE)
+
+  lastSyncAt  DateTime?
+  syncVersion Int?      @map("lastVersionSync")
+
+  dbHost               String
+  dbPort               Int     @default(3306)
+  dbName               String
+  dbUsername           String
+  dbPasswordCipherText String
+  dbPasswordIv         String
+  dbPasswordTag        String?
+  dbSslEnabled         Boolean @default(false)
+
+  version Int @default(0)
+
+  createdBy BigInt? @db.UnsignedBigInt
+  updatedBy BigInt? @db.UnsignedBigInt
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  tenant        Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdByUser User?  @relation("BranchCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  updatedByUser User?  @relation("BranchUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
+
+  devices      Device[]
+  syncLogs     SyncLog[]
+  syncSessions SyncSession[]
+  auditLogs    AuditLog[]
+
+  @@unique([tenantId, code])
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([active])
+  @@index([deletedAt])
+  @@map("branches")
+}
+
+//
+// 4. CORE — DEVICE (PDV offline-first)
+//
+
+model Device {
+  id   BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  uuid String @unique @default(uuid())
+
+  tenantId BigInt @db.UnsignedBigInt
+  branchId BigInt @db.UnsignedBigInt
+
+  name String @map("nome")
+  code String @map("codigo")
+
+  lastHeartbeatAt DateTime?
+  apiKeyHash      String?   @db.VarChar(255)
+
+  active Boolean @default(true) @map("ativo")
+
+  version Int @default(0)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch       Branch        @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  syncLogs     SyncLog[]
+  syncSessions SyncSession[]
+  userSessions UserSession[]
+
+  @@unique([tenantId, branchId, code])
+  @@index([tenantId, branchId])
+  @@index([apiKeyHash])
+  @@index([deletedAt])
+  @@map("devices")
+}
+
+//
+// 5. CORE — SYNC ENGINE
+//
+
+model SyncLog {
+  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+
+  tenantId BigInt  @db.UnsignedBigInt
+  branchId BigInt  @db.UnsignedBigInt
+  deviceId BigInt? @db.UnsignedBigInt
+
+  entity   String @map("entityName")
+  entityId String
+
+  operation     SyncOperation
+  payload       Json?
+  payloadHash   String?       @db.VarChar(64)
+  schemaVersion Int           @default(1)
+
+  status SyncStatus @default(PENDING)
+
+  retries     Int       @default(0)
+  nextRetryAt DateTime?
+
+  error    String? @map("errorMessage") @db.Text
+  checksum String? @db.VarChar(64)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  syncedAt  DateTime?
+  deletedAt DateTime?
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  device Device? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, branchId, entity, entityId, operation, schemaVersion])
+  @@index([status])
+  @@index([tenantId, branchId])
+  @@index([tenantId, status, createdAt])
+  @@index([tenantId, entity, entityId])
+  @@index([tenantId, payloadHash])
+  @@index([branchId, status, createdAt])
+  @@index([deviceId, status])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@map("sync_logs")
+}
+
+model SyncSession {
+  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+
+  tenantId BigInt  @db.UnsignedBigInt
+  branchId BigInt  @db.UnsignedBigInt
+  deviceId BigInt? @db.UnsignedBigInt
+
+  status SyncSessionStatus @default(RUNNING)
+
+  startedAt      DateTime  @default(now())
+  endedAt        DateTime?
+  bytesSent      BigInt    @default(0) @db.UnsignedBigInt
+  bytesReceived  BigInt    @default(0) @db.UnsignedBigInt
+  recordsPushed  Int       @default(0)
+  recordsPulled  Int       @default(0)
+  conflictsCount Int       @default(0)
+  errorMessage   String?   @db.Text
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  device Device? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, branchId, startedAt])
+  @@index([deviceId, startedAt])
+  @@index([status, startedAt])
+  @@index([deletedAt])
+  @@map("sync_sessions")
+}
+
+//
+// 6. CORE — BILLING
+//
+
+model Plan {
+  id               Int     @id @default(autoincrement())
+  name             String
+  slug             String  @unique
+  monthlyPrice     Decimal @db.Decimal(10, 2)
+  includedBranches Int     @default(1)
+  extraBranchPrice Decimal @db.Decimal(10, 2)
+  isEnterprise     Boolean @default(false)
+  active           Boolean @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  subscriptions Subscription[]
+
+  @@index([deletedAt])
+  @@map("plans")
+}
+
+model Subscription {
+  id       BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  tenantId BigInt @db.UnsignedBigInt
+  planId   Int
+
+  /// Cache denormalizado; fonte de verdade em runtime: COUNT(branches WHERE active=true).
+  branchesUsed Int @default(1)
+
+  status        SubscriptionStatus @default(trial)
+  startDate     DateTime
+  endDate       DateTime?
+  trialEndsAt   DateTime?
+  lastBillingAt DateTime?
+  nextBillingAt DateTime?
+
+  version Int @default(0)
+
+  createdBy BigInt? @db.UnsignedBigInt
+  updatedBy BigInt? @db.UnsignedBigInt
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  tenant        Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  plan          Plan   @relation(fields: [planId], references: [id], onDelete: Restrict)
+  createdByUser User?  @relation("SubscriptionCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  updatedByUser User?  @relation("SubscriptionUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
+
+  billingSnapshots BillingSnapshot[]
+  invoices         Invoice[]
+
+  @@index([tenantId, status])
+  @@index([deletedAt])
+  @@map("subscriptions")
+}
+
+model InvoiceFiscalCounter {
+  tenantId     BigInt @db.UnsignedBigInt
+  fiscalYear   Int
+  lastSequence Int    @default(0)
+
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@id([tenantId, fiscalYear])
+  @@map("invoice_fiscal_counters")
+}
+
+model Invoice {
+  id     BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  uuid   String @unique @default(uuid())
+  number String @db.VarChar(32)
+
+  tenantId          BigInt  @db.UnsignedBigInt
+  fiscalYear        Int
+  sequence          Int
+  subscriptionId    BigInt  @db.UnsignedBigInt
+  billingSnapshotId BigInt? @unique @db.UnsignedBigInt
+
+  amount          Decimal       @db.Decimal(10, 2)
+  paidAmount      Decimal       @default(0) @db.Decimal(10, 2)
+  remainingAmount Decimal       @db.Decimal(10, 2)
+  status          InvoiceStatus @default(pendente)
+  dueDate         DateTime
+  paidAt          DateTime?
+
+  periodStart DateTime?
+  periodEnd   DateTime?
+
+  branchesUsed  Int?
+  extraBranches Int?
+
+  description String? @db.Text
+
+  version Int @default(0)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  subscription       Subscription        @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
+  billingSnapshot    BillingSnapshot?    @relation(fields: [billingSnapshotId], references: [id], onDelete: SetNull)
+  payments           Payment[]
+  walletTransactions WalletTransaction[]
+
+  @@unique([tenantId, number])
+  @@unique([tenantId, fiscalYear, sequence])
+  @@unique([tenantId, billingSnapshotId])
+  @@index([status, dueDate])
+  @@index([tenantId, status, dueDate])
+  @@index([tenantId, dueDate, status])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, fiscalYear, sequence])
+  @@index([subscriptionId, dueDate])
+  @@index([deletedAt])
+  @@map("invoices")
+}
+
+model BillingSnapshot {
+  id             BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  tenantId       BigInt @db.UnsignedBigInt
+  subscriptionId BigInt @db.UnsignedBigInt
+
+  periodStart DateTime
+  periodEnd   DateTime
+
+  planMonthlyPrice  Decimal @db.Decimal(10, 2)
+  includedBranches  Int
+  extraBranchesUsed Int
+  extraBranchPrice  Decimal @db.Decimal(10, 2)
+  totalBranchesUsed Int
+
+  subtotal Decimal @db.Decimal(10, 2)
+  total    Decimal @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  invoice      Invoice?
+
+  @@unique([subscriptionId, periodStart, periodEnd])
+  @@index([tenantId, createdAt])
+  @@index([subscriptionId, createdAt])
+  @@map("billing_snapshots")
+}
+
+model TenantWallet {
+  id       BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  tenantId BigInt  @unique @db.UnsignedBigInt
+  balance  Decimal @default(0) @db.Decimal(10, 2)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([deletedAt])
+  @@map("tenant_wallets")
+}
+
+model Payment {
+  id          BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  tenantId    BigInt        @db.UnsignedBigInt
+  invoiceId   BigInt?       @db.UnsignedBigInt
+  amount      Decimal       @db.Decimal(10, 2)
+  method      PaymentMethod
+  status      PaymentStatus @default(pendente)
+  reference   String        @db.VarChar(191)
+  proofUrl    String?       @db.Text
+  coversFrom  DateTime?
+  coversTo    DateTime?
+  confirmedAt DateTime?
+  confirmedBy BigInt?       @db.UnsignedBigInt
+  createdBy   BigInt?       @db.UnsignedBigInt
+  updatedBy   BigInt?       @db.UnsignedBigInt
+  notes       String?       @db.Text
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  tenant             Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice            Invoice?            @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  confirmedByUser    User?               @relation("PaymentConfirmedBy", fields: [confirmedBy], references: [id], onDelete: SetNull)
+  createdByUser      User?               @relation("PaymentCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  updatedByUser      User?               @relation("PaymentUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
+  walletTransactions WalletTransaction[]
+
+  @@unique([tenantId, reference])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, status, createdAt])
+  @@index([tenantId, confirmedAt])
+  @@index([tenantId, invoiceId, status])
+  @@index([invoiceId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("payments")
+}
+
+model PaymentWebhook {
+  id              BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  provider        String
+  eventType       String
+  providerEventId String? @unique @db.VarChar(191)
+  reference       String? @db.VarChar(191)
+  payload         Json
+  processed       Boolean @default(false)
+
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  @@index([provider, processed])
+  @@index([reference])
+  @@index([deletedAt])
+  @@map("payment_webhooks")
+}
+
+model JobQueue {
+  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+
+  tenantId       BigInt? @db.UnsignedBigInt
+  type           String  @db.VarChar(128)
+  payload        Json
+  idempotencyKey String? @db.VarChar(128)
+
+  status JobStatus @default(PENDING)
+
+  priority    Int       @default(0)
+  retries     Int       @default(0)
+  maxRetries  Int       @default(5)
+  runAt       DateTime?
+  processedAt DateTime?
+  lockedAt    DateTime?
+  lockedBy    String?   @db.VarChar(64)
+  lastError   String?   @db.Text
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([status, runAt])
+  @@index([status, priority, runAt])
+  @@index([tenantId, status])
+  @@index([tenantId, status, runAt])
+  @@index([type, status])
+  @@index([lockedAt])
+  @@index([deletedAt])
+  @@map("job_queue")
+}
+
+model WalletTransaction {
+  id           BigInt                @id @default(autoincrement()) @db.UnsignedBigInt
+  tenantId     BigInt                @db.UnsignedBigInt
+  invoiceId    BigInt?               @db.UnsignedBigInt
+  paymentId    BigInt?               @db.UnsignedBigInt
+  type         WalletTransactionType
+  amount       Decimal               @db.Decimal(10, 2)
+  balanceAfter Decimal               @db.Decimal(10, 2)
+  description  String?               @db.Text
+
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([invoiceId])
+  @@index([paymentId])
+  @@index([deletedAt])
+  @@map("wallet_transactions")
+}
+
+//
+// 7. CORE — AUDITORIA (append-only)
+//
+
+model AuditLog {
+  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+
+  tenantId BigInt? @db.UnsignedBigInt
+  userId   BigInt? @db.UnsignedBigInt
+  branchId BigInt? @db.UnsignedBigInt
+
+  action   String
+  entity   String
+  entityId String?
+
+  data      Json?
+  oldData   Json?
+  newData   Json?
+  requestId String? @db.VarChar(64)
+  userAgent String? @db.Text
+  method    String? @db.VarChar(16)
+  path      String? @db.VarChar(255)
+
+  ip String? @db.VarChar(45)
+
+  createdAt DateTime @default(now())
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  branch Branch? @relation(fields: [branchId], references: [id], onDelete: SetNull)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([userId, createdAt])
+  @@index([requestId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model UserSession {
+  id               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  userId           BigInt    @db.UnsignedBigInt
+  deviceId         BigInt?   @db.UnsignedBigInt
+  tokenHash        String    @db.VarChar(255)
+  refreshTokenHash String?   @db.VarChar(255)
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  revokedReason    String?   @db.VarChar(255)
+  lastActivityAt   DateTime  @default(now())
+  ip               String?   @db.VarChar(45)
+  userAgent        String?   @db.Text
+
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device Device? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  @@index([userId, expiresAt])
+  @@index([deviceId])
+  @@index([tokenHash])
+  @@index([expiresAt])
+  @@index([lastActivityAt])
+  @@index([deletedAt])
+  @@map("user_sessions")
+}
+
+//
+// AUTH / RBAC (mínimo operacional)
+//
+
+model LoginAttempt {
+  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+
+  email     String  @db.VarChar(191)
+  ip        String? @db.VarChar(45)
+  userAgent String? @db.Text
+  success   Boolean @default(false)
+  userId    BigInt? @db.UnsignedBigInt
+
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([email, createdAt])
+  @@index([ip, createdAt])
+  @@map("login_attempts")
+}
+
+model Permission {
+  id   Int    @id @default(autoincrement())
+  code String @unique @db.VarChar(128)
+  name String @db.VarChar(191)
+
+  rolePermissions RolePermission[]
+  userPermissions UserPermission[]
+
+  deletedAt DateTime?
+
+  @@index([deletedAt])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  permissionId Int
+  role         Role
+
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([permissionId, role])
+  @@map("role_permissions")
+}
+
+model UserPermission {
+  id           BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
+  userId       BigInt  @db.UnsignedBigInt
+  permissionId Int
+  tenantId     BigInt? @db.UnsignedBigInt
+  allowed      Boolean @default(true)
+
+  deletedAt DateTime?
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionId, tenantId])
+  @@index([deletedAt])
+  @@map("user_permissions")
+}
+
+//
+// ENUMS
+//
+
+enum Role {
+  superadmin
+  admin
+  usuario
+}
+
+enum TenantStatus {
+  trial
+  ativo
+  pendente
+  grace
+  suspenso
+}
+
+enum TenantUserRole {
+  ADMIN
+  GERENTE
+  CAIXA
+  FARMACEUTICO
+  DIRETOR_TECNICO
+}
+
+enum BranchConnectionStatus {
+  ONLINE
+  OFFLINE
+  DEGRADED
+}
+
+enum SyncOperation {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+enum SyncStatus {
+  PENDING
+  PROCESSING
+  SYNCED
+  FAILED
+}
+
+enum SyncSessionStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+  PARTIAL
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum SubscriptionStatus {
+  trial
+  ativo
+  cancelado
+  expirado
+}
+
+enum InvoiceStatus {
+  pendente
+  parcial
+  pago
+  vencido
+  cancelado
+}
+
+enum WalletTransactionType {
+  CREDIT
+  DEBIT
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  MPESA
+  EMOLA
+  CARD
+  OTHER
+}
+
+enum PaymentStatus {
+  pendente
+  confirmado
+  falhado
+  cancelado
+}
