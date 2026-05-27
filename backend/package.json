@@ -1,0 +1,42 @@
+{
+  "name": "skalway-pharm-backend",
+  "version": "1.0.0",
+  "prisma": {
+    "seed": "bun prisma/seed.ts"
+  },
+  "scripts": {
+    "prisma:deploy:central": "bash scripts/ensure-central-database-url.sh && bunx prisma db push --schema=src/infrastructure/prisma/central/schema.prisma --accept-data-loss --skip-generate",
+    "prisma:migrate:central": "bunx prisma migrate deploy --schema=src/infrastructure/prisma/central/schema.prisma",
+    "prisma:migrate:central:data": "bun scripts/migrate-central-enterprise-data.ts",
+    "prisma:migrate:central:enterprise": "bash scripts/migrate-central-enterprise.sh",
+    "prisma:generate:central": "bunx prisma generate --schema=src/infrastructure/prisma/central/schema.prisma",
+    "prisma:generate:tenant": "bunx prisma generate --schema=src/infrastructure/prisma/tenant/schema.prisma",
+    "prisma:generate": "bun run prisma:generate:central && bun run prisma:generate:tenant",
+    "prisma:deploy:tenant": "bash scripts/ensure-tenant-database-url.sh && bunx prisma db push --schema=src/infrastructure/prisma/tenant/schema.prisma --accept-data-loss --skip-generate",
+    "billing:generate:monthly": "bun scripts/generate-monthly-billing.ts",
+    "billing:process:lifecycle": "bun scripts/process-subscription-lifecycle.ts",
+    "dev": "bun run prisma:deploy:central && bun --watch src/main.ts",
+    "start": "bun src/main.ts",
+    "worker": "bun src/infrastructure/queue/worker.ts",
+    "db:reset:central-tenants": "echo 'Run this script from the project root: bash scripts/reset-central-and-tenants.sh'"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.821.0",
+    "@aws-sdk/lib-storage": "^3.821.0",
+    "@aws-sdk/s3-request-presigner": "^3.821.0",
+    "@prisma/client": "5.22.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^8.0.7",
+    "puppeteer": "^24.10.0",
+    "qrcode": "^1.5.4",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/bun": "latest",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/nodemailer": "^8.0.0",
+    "prisma": "5.22.0"
+  }
+}

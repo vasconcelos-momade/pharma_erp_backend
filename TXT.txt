@@ -1,0 +1,344 @@
+pharma_erp_flutter/
+│
+├── lib/
+│
+├── main.dart
+│
+├── app/                                                👈 APP ROOT
+│   ├── app.dart
+│   ├── bootstrap.dart
+│   ├── app_initializer.dart
+│   ├── app_observer.dart
+│   │
+│   ├── router/
+│   │   ├── app_router.dart
+│   │   ├── routes.dart
+│   │   ├── route_names.dart
+│   │   │
+│   │   ├── guards/
+│   │   │   ├── auth_guard.dart
+│   │   │   ├── permission_guard.dart
+│   │   │   ├── tenant_guard.dart
+│   │
+│   ├── providers/                                    👈 GLOBAL PROVIDERS
+│   │   ├── auth_provider.dart
+│   │   ├── session_provider.dart
+│   │   ├── theme_provider.dart
+│   │   ├── connectivity_provider.dart
+│   │   ├── endpoint_provider.dart
+│   │   ├── websocket_provider.dart
+│   │
+│   ├── startup/
+│   │   ├── startup_service.dart
+│   │   ├── startup_tasks.dart
+│
+├── core/                                              👈 GLOBAL FOUNDATION
+│   │
+│   ├── config/
+│   │   ├── env.dart
+│   │   ├── app_config.dart
+│   │   ├── feature_flags.dart
+│   │
+│   ├── theme/
+│   │   ├── app_theme.dart
+│   │   ├── app_colors.dart
+│   │   ├── typography.dart
+│   │   ├── spacing.dart
+│   │   ├── dimensions.dart
+│   │
+│   ├── network/
+│   │   │
+│   │   ├── dio/
+│   │   │   ├── dio_client.dart
+│   │   │   ├── dio_factory.dart
+│   │   │   │
+│   │   │   ├── interceptors/
+│   │   │   │   ├── auth_interceptor.dart
+│   │   │   │   ├── tenant_interceptor.dart
+│   │   │   │   ├── logging_interceptor.dart
+│   │   │   │   ├── retry_interceptor.dart
+│   │   │   │   ├── connectivity_interceptor.dart
+│   │   │
+│   │   ├── connectivity/
+│   │   │   ├── network_checker.dart
+│   │   │   ├── connection_manager.dart
+│   │   │   ├── endpoint_resolver.dart
+│   │   │   ├── connection_status.dart
+│   │   │   ├── network_monitor.dart
+│   │
+│   ├── realtime/                                     👈 REALTIME SOCKETS
+│   │   ├── websocket_service.dart
+│   │   ├── socket_events.dart
+│   │   ├── socket_channels.dart
+│   │   ├── socket_dispatcher.dart
+│   │
+│   ├── sync/                                         👈 HYBRID SYNC ENGINE
+│   │   ├── sync_engine.dart
+│   │   ├── sync_dispatcher.dart
+│   │   ├── sync_queue.dart
+│   │   ├── sync_worker.dart
+│   │   ├── sync_scheduler.dart
+│   │   ├── retry_policy.dart
+│   │   ├── sync_logger.dart
+│   │   ├── sync_status.dart
+│   │   ├── conflict_resolver.dart
+│   │   ├── pending_operation.dart
+│   │
+│   ├── storage/                                      👈 LOCAL STORAGE
+│   │   ├── hive/
+│   │   │   ├── hive_initializer.dart
+│   │   │   ├── hive_boxes.dart
+│   │   │
+│   │   ├── cache/
+│   │   │   ├── cache_manager.dart
+│   │   │   ├── memory_cache.dart
+│   │   │   ├── disk_cache.dart
+│   │   │   ├── cache_policy.dart
+│   │   │
+│   │   ├── queue/
+│   │   │   ├── offline_queue.dart
+│   │   │   ├── queue_item.dart
+│   │   │
+│   │   ├── session/
+│   │   │   ├── session_storage.dart
+│   │
+│   ├── security/
+│   │   ├── encryption_service.dart
+│   │   ├── secure_storage.dart
+│   │   ├── permission_manager.dart
+│   │   ├── biometric_service.dart
+│   │
+│   ├── errors/
+│   │   ├── exceptions.dart
+│   │   ├── failures.dart
+│   │   ├── api_failures.dart
+│   │   ├── error_handler.dart
+│   │
+│   ├── logging/
+│   │   ├── logger_service.dart
+│   │   ├── crash_logger.dart
+│   │   ├── network_logger.dart
+│   │   ├── sync_logger.dart
+│   │
+│   ├── contracts/
+│   │   ├── api_response.dart
+│   │   ├── pagination_response.dart
+│   │   ├── base_request.dart
+│   │
+│   ├── constants/
+│   │   ├── app_constants.dart
+│   │   ├── api_constants.dart
+│   │   ├── storage_constants.dart
+│   │
+│   ├── utils/
+│   │   ├── validators/
+│   │   ├── formatters/
+│   │   ├── extensions/
+│   │   ├── helpers/
+│   │
+│   ├── mixins/
+│   │
+│   ├── enums/
+│   │
+│   ├── base/
+│   │   ├── base_entity.dart
+│   │   ├── sync_entity.dart
+│   │   ├── base_repository.dart
+│   │   ├── base_datasource.dart
+│
+├── modules/                                         👈 BUSINESS MODULES
+│
+│   ├── auth/
+│   │   │
+│   │   ├── data/
+│   │   │   ├── datasources/
+│   │   │   │   ├── auth_remote_datasource.dart
+│   │   │   │   ├── auth_local_datasource.dart
+│   │   │   │
+│   │   │   ├── repositories/
+│   │   │   │   ├── auth_repository_impl.dart
+│   │   │   │
+│   │   │   ├── models/
+│   │   │
+│   │   ├── domain/
+│   │   │   ├── entities/
+│   │   │   ├── repositories/
+│   │   │   ├── usecases/
+│   │   │
+│   │   ├── presentation/
+│   │   │   ├── pages/
+│   │   │   ├── widgets/
+│   │   │   ├── dialogs/
+│   │   │   ├── providers/
+│   │   │   ├── controllers/
+│   │   │
+│   │   ├── services/
+│   │   │   ├── auth_session_service.dart
+│   │   │
+│   │   ├── routes/
+│   │   ├── auth_module.dart
+│
+│   ├── dashboard/
+│   │   ├── executive/
+│   │   ├── finance/
+│   │   ├── stock/
+│   │   ├── pharmacy/
+│
+│   ├── pharmacy/
+│   │   │
+│   │   ├── products/
+│   │   │   │
+│   │   │   ├── data/
+│   │   │   ├── domain/
+│   │   │   │
+│   │   │   ├── presentation/
+│   │   │   │   ├── pages/
+│   │   │   │   ├── widgets/
+│   │   │   │   ├── dialogs/
+│   │   │   │   ├── providers/
+│   │   │   │   ├── controllers/
+│   │   │   │
+│   │   │   ├── services/
+│   │   │   │   ├── product_search_service.dart
+│   │   │   │
+│   │   │   ├── engine/
+│   │   │   │   ├── price_engine.dart
+│   │   │   │   ├── barcode_engine.dart
+│   │   │
+│   │   ├── prescriptions/
+│   │   │
+│   │   ├── psychotropics/
+│   │   │   ├── logs/
+│   │   │   ├── reports/
+│   │   │
+│   │   ├── lots/
+│   │   │   ├── engine/
+│   │   │   │   ├── fefo_engine.dart
+│   │   │   │   ├── expiry_engine.dart
+│   │   │   │   ├── lot_allocator.dart
+│   │   │
+│   │   ├── sanitary/
+│   │   ├── incineration/
+│
+│   ├── sales/
+│   │   │
+│   │   ├── pdv/
+│   │   │   │
+│   │   │   ├── data/
+│   │   │   ├── domain/
+│   │   │   │
+│   │   │   ├── presentation/
+│   │   │   │   ├── pages/
+│   │   │   │   ├── widgets/
+│   │   │   │   ├── dialogs/
+│   │   │   │   ├── providers/
+│   │   │   │   ├── controllers/
+│   │   │   │
+│   │   │   ├── engine/
+│   │   │   │   ├── cart_engine.dart
+│   │   │   │   ├── pricing_engine.dart
+│   │   │   │   ├── discount_engine.dart
+│   │   │   │   ├── payment_engine.dart
+│   │   │   │   ├── receipt_engine.dart
+│   │   │   │   ├── stock_validation_engine.dart
+│   │   │   │   ├── tax_engine.dart
+│   │   │   │
+│   │   │   ├── services/
+│   │   │   │   ├── pdv_session_service.dart
+│   │   │
+│   │   ├── customers/
+│   │   ├── invoices/
+│
+│   ├── stock/
+│   │   ├── inventory/
+│   │   ├── movements/
+│   │   ├── transfers/
+│   │   ├── adjustments/
+│   │
+│   ├── finance/
+│   │   ├── cashflow/
+│   │   ├── expenses/
+│   │   ├── reports/
+│   │   ├── treasury/
+│   │
+│   ├── audit/
+│   │   ├── activity_logs/
+│   │   ├── entity_logs/
+│   │   ├── timeline/
+│   │   ├── psychotropic_logs/
+│   │
+│   ├── users/
+│   │
+│   ├── settings/
+│
+├── platform/                                      👈 DEVICE FEATURES
+│   │
+│   ├── printing/
+│   │   ├── thermal/
+│   │   │   ├── thermal_printer_service.dart
+│   │   │   ├── printer_manager.dart
+│   │   │   ├── escpos_generator.dart
+│   │   │   ├── printer_discovery.dart
+│   │   │   ├── printer_connection.dart
+│   │
+│   ├── barcode/
+│   │   ├── barcode_scanner.dart
+│   │   ├── barcode_listener.dart
+│   │
+│   ├── camera/
+│   │
+│   ├── bluetooth/
+│   │
+│   ├── notifications/
+│   │
+│   ├── biometrics/
+│
+├── shared/                                        👈 REUSABLE UI
+│   │
+│   ├── widgets/
+│   │   ├── buttons/
+│   │   ├── forms/
+│   │   ├── dialogs/
+│   │   ├── tables/
+│   │   ├── cards/
+│   │   ├── loaders/
+│   │   ├── inputs/
+│   │   ├── dropdowns/
+│   │   ├── modals/
+│   │
+│   ├── layouts/
+│   │   ├── app_layout.dart
+│   │   ├── auth_layout.dart
+│   │   ├── dashboard_layout.dart
+│   │   ├── pos_layout.dart
+│   │   ├── tablet_layout.dart
+│   │
+│   ├── responsive/
+│   │   ├── breakpoints.dart
+│   │   ├── responsive_builder.dart
+│   │
+│   ├── navigation/
+│   │
+│   ├── animations/
+│
+├── generated/
+│
+├── l10n/
+│
+├── assets/
+│   ├── images/
+│   ├── icons/
+│   ├── fonts/
+│   ├── translations/
+│
+├── test/
+│
+├── integration_test/
+│
+├── pubspec.yaml
+│
+├── analysis_options.yaml
+│
+├── .env
+│
+├── README.md

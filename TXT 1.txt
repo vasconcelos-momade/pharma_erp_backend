@@ -1,0 +1,55 @@
+A confirmação bateu: o schema tenant usa DATABASE_URL_TENANT , então para rodar o seeder preciso te passar a sequência incluindo essa variável apontando para o banco do tenant certo.Sim. Para rodar o seeder de forma correta , a sequência é esta.
+
+O Que Falta Antes Do Seed
+
+- Atualizar o schema tenant no banco.
+- Regenerar o client Prisma.
+- Garantir que DATABASE_URL_TENANT aponta para a base do tenant certo.
+- Só depois rodar seed-medicamentos.ts .
+Ordem Correta
+
+- 1. Subir/reiniciar o backend para regenerar os clients Prisma nos volumes Docker.
+- 2. Executar db push do schema tenant com DATABASE_URL_TENANT .
+- 3. Regenerar o client tenant.
+- 4. Rodar o seeder de medicamentos.
+Comandos Partindo da raiz pharma_erp_backend :
+
+```
+docker compose -f docker-compose.dev.yml 
+restart backend backend_worker
+```
+Depois, para o tenant certo, usa a URL dele em DATABASE_URL_TENANT :
+
+```
+docker exec -e DATABASE_URL_TENANT="mysql://
+USER:PASSWORD@HOST:3306/NOME_DA_BASE" 
+skalway_pharm_backend \
+  bun run prisma:deploy:tenant
+```
+```
+docker exec -e DATABASE_URL_TENANT="mysql://
+USER:PASSWORD@HOST:3306/NOME_DA_BASE" 
+skalway_pharm_backend \
+  bun run prisma:generate:tenant
+```
+```
+docker exec -e DATABASE_URL_TENANT="mysql://
+USER:PASSWORD@HOST:3306/NOME_DA_BASE" 
+skalway_pharm_backend \
+  bun prisma/seed-medicamentos.ts
+```
+Importante
+
+- O schema tenant usa DATABASE_URL_TENANT em schema.prisma .
+- Se essa variável apontar para a base errada, o db push e o seed vão afetar o tenant errado.
+- Como o bun não está disponível no host, o caminho mais seguro aqui é mesmo via docker exec .
+Se Quiseres Conferir Antes Podes validar rapidamente a URL do tenant que vais usar e depois executar os 3 comandos acima.
+
+Resumo
+
+- Código: pronto
+- Schema: pronto
+- Banco: falta aplicar
+- Prisma client: falta regenerar
+- Seed: só depois disso
+Se quiser, eu posso agora te ajudar a montar o comando final já com a DATABASE_URL_TENANT correta, se me disseres qual é a base/tenant alvo

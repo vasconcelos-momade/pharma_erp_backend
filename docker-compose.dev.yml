@@ -1,0 +1,174 @@
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: skalway_pharm_backend
+    restart: always
+    env_file:
+      - ./.env
+    environment:
+      TZ: Africa/Maputo
+      PRISMA_CLIENT_ENGINE_TYPE: binary
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL_TENANT: ${DATABASE_URL_TENANT}
+      TENANT_DB_HOST: ${TENANT_DB_HOST}
+      TENANT_DB_PORT: ${TENANT_DB_PORT}
+      TENANT_DB_USERNAME: ${TENANT_DB_USERNAME}
+      TENANT_DB_PASSWORD: ${TENANT_DB_PASSWORD}
+      NF_SERVICE_URL: "http://backend_nf:3400"
+      REDIS_URL: redis://redis:6379
+      PORT: ${BACKEND_PORT:-3300}
+    ports:
+      - "${BACKEND_PORT:-3300}:3300"
+    command: ["bun", "run", "dev"]
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+      - skalway_pharm_prisma_central_generated:/usr/src/app/src/infrastructure/prisma/central/generated
+      - skalway_pharm_prisma_tenant_generated:/usr/src/app/src/infrastructure/prisma/tenant/generated
+    depends_on:
+      mysql_central:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - skalway_pharm_net
+
+  backend_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: skalway_pharm_backend_worker
+    restart: always
+    env_file:
+      - ./.env
+    environment:
+      TZ: Africa/Maputo
+      PRISMA_CLIENT_ENGINE_TYPE: binary
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: redis://redis:6379
+    command: ["bun", "run", "worker"]
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+      - skalway_pharm_prisma_central_generated:/usr/src/app/src/infrastructure/prisma/central/generated
+      - skalway_pharm_prisma_tenant_generated:/usr/src/app/src/infrastructure/prisma/tenant/generated
+    depends_on:
+      mysql_central:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      backend:
+        condition: service_started
+    networks:
+      - skalway_pharm_net
+
+  backend_nf:
+    build:
+      context: ./backend-nf
+      dockerfile: Dockerfile.dev
+    container_name: skalway_pharm_backend_nf
+    restart: always
+    env_file:
+      - ./.env
+    environment:
+      TZ: Africa/Maputo
+      NF_DATABASE_URL: ${NF_DATABASE_URL}
+      PORT: ${NF_PORT:-3400}
+      NF_DB_HOST: ${NF_DB_HOST}
+      NF_DB_PORT: ${NF_DB_PORT}
+      NF_DB_USERNAME: ${NF_DB_USERNAME}
+      NF_DB_PASSWORD: ${NF_DB_PASSWORD}
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "${NF_PORT:-3400}:3400"
+    command: ["bun", "run", "dev"]
+    volumes:
+      - ./backend-nf:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      mysql_central:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - skalway_pharm_net
+
+  nginx:
+    image: nginx:alpine
+    container_name: skalway_pharm_nginx
+    restart: always
+    ports:
+      - "${NGINX_PORT:-8280}:80"
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./backend/http/uploads:/usr/share/nginx/html/uploads:ro
+    depends_on:
+      - backend
+      - backend_nf
+    networks:
+      - skalway_pharm_net
+
+  mysql_central:
+    image: mysql:8.0
+    container_name: skalway_pharm_mysql
+    restart: always
+    env_file:
+      - ./.env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-skalway_central}
+      MYSQL_USER: ${MYSQL_USER:-admin}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-password}
+      TZ: Africa/Maputo
+    command: --default-time-zone="Africa/Maputo"
+    ports:
+      - "${MYSQL_EXPOSED_PORT:-3312}:3306"
+    volumes:
+      - skalway_pharm_mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - skalway_pharm_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: skalway_pharm_redis
+    restart: always
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    volumes:
+      - skalway_pharm_redis_data:/data
+    networks:
+      - skalway_pharm_net
+
+  adminer:
+    image: phpmyadmin/phpmyadmin
+    container_name: skalway_pharm_phpmyadmin
+    restart: always
+    env_file:
+      - ./.env
+    environment:
+      PMA_HOST: mysql_central
+      PMA_USER: ${MYSQL_USER:-admin}
+      PMA_PASSWORD: ${MYSQL_PASSWORD:-password}
+      TZ: Africa/Maputo
+    ports:
+      - "${PHPMYADMIN_PORT:-8686}:80"
+    networks:
+      - skalway_pharm_net
+
+networks:
+  skalway_pharm_net:
+
+volumes:
+  skalway_pharm_mysql_data:
+  skalway_pharm_redis_data:
+  skalway_pharm_prisma_central_generated:
+  skalway_pharm_prisma_tenant_generated:
