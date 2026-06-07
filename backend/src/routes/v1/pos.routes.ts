@@ -39,6 +39,25 @@ function withTenantPos(
 }
 
 export function registerPosRoutes(router: Router, prefix: string): void {
+  withTenantPos(router, "get", `${prefix}/tenant/pos/faturas`, async (_userId, context) =>
+    posController.listFaturas(context.req),
+  );
+  withTenantPos(router, "get", `${prefix}/tenant/pos/faturas/:saleId`, async (_userId, context) =>
+    posController.getFaturaDetalhe(
+      parseRouteParams(context.params, saleIdParamSchema).saleId,
+    ),
+  );
+  withTenantPos(router, "get", `${prefix}/tenant/pos/faturas/:saleId/pdf`, async (_userId, context) =>
+    posController.downloadFaturaPdf(
+      parseRouteParams(context.params, saleIdParamSchema).saleId,
+    ),
+  );
+  withTenantPos(router, "get", `${prefix}/tenant/pos/faturas/:saleId/print`, async (_userId, context) =>
+    posController.getFaturaPrintArtifact(
+      parseRouteParams(context.params, saleIdParamSchema).saleId,
+    ),
+  );
+
   withTenantPos(router, "get", `${prefix}/tenant/pos/products/search`, async (_userId, context) =>
     posController.searchProdutos(context.req),
   );

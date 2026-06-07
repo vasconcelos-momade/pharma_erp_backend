@@ -26,6 +26,19 @@ export type DraftCartMutationContext = {
   terminalId?: string;
 };
 
+export type DraftCartPaymentPreview = {
+  total: number;
+  valorRecebido: number | null;
+  troco: number;
+  cobreTotal: boolean | null;
+};
+
+export type DraftCartCheckoutHints = {
+  requiresPrescription: boolean;
+  taxLabel: string;
+  paymentPreview: DraftCartPaymentPreview;
+};
+
 export type DraftCartItemView = {
   id: string;
   tipo: "produto" | "servico";
@@ -39,12 +52,16 @@ export type DraftCartItemView = {
   valorIva: number;
   total: number;
   ivaPercentual: number;
+  ivaLabel: string;
   taxRule: {
     tipo: string;
     taxa: number;
     codigo: string;
   } | null;
   requiresPrescription: boolean;
+  tipoDispensacao: string | null;
+  requiresDoubleCheck: boolean;
+  requiresPsychotropicBook: boolean;
   estoqueAtual: number | null;
   estoqueDisponivel: number | null;
   tipoServicoClinico: string | null;
@@ -60,4 +77,5 @@ export type DraftCartView = {
   ivaTotal: number;
   total: number;
   items: DraftCartItemView[];
+  checkout: DraftCartCheckoutHints;
 };

@@ -320,14 +320,16 @@ model Compra {
 }
 
 model CompraItem {
-  id         BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
-  compraId   BigInt  @db.UnsignedBigInt
-  produtoId  BigInt  @db.UnsignedBigInt
-  quantidade Decimal @db.Decimal(10, 2)
-  preco      Decimal @db.Decimal(10, 2)
-  total      Decimal @db.Decimal(10, 2)
-  compra     Compra  @relation(fields: [compraId], references: [id])
-  produto    Produto @relation(fields: [produtoId], references: [id])
+  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  compraId     BigInt    @db.UnsignedBigInt
+  produtoId    BigInt    @db.UnsignedBigInt
+  numeroLote   String?   @db.VarChar(100)
+  dataValidade DateTime?
+  quantidade   Decimal   @db.Decimal(10, 2)
+  preco        Decimal   @db.Decimal(10, 2)
+  total        Decimal   @db.Decimal(10, 2)
+  compra       Compra    @relation(fields: [compraId], references: [id])
+  produto      Produto   @relation(fields: [produtoId], references: [id])
 
   @@map("compras_itens")
 }
@@ -482,6 +484,8 @@ model Fatura {
   desconto           Decimal             @default(0) @db.Decimal(14, 2)
   ivaTotal           Decimal             @db.Decimal(14, 2)
   total              Decimal             @db.Decimal(14, 2)
+  valorRecebido      Decimal?            @db.Decimal(14, 2)
+  troco              Decimal             @default(0) @db.Decimal(14, 2)
   tipoOperacao       TipoOperacaoFiscal  @default(TRIBUTADA)
   tipoPagamento      TipoPagamentoFatura @default(DINHEIRO)
   moeda              String              @default("MZN")

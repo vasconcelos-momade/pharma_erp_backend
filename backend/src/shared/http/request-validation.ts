@@ -1,6 +1,6 @@
 import { ZodError } from "zod";
 
-export async function parseJsonBody<T>(
+export async function parseJsonBody<T = any>(
   req: Request,
   schema: { parse(data: unknown): T },
 ): Promise<T> {
@@ -8,14 +8,18 @@ export async function parseJsonBody<T>(
   return schema.parse(payload);
 }
 
-export function parseSearchParams<T>(
+export function parseSearchParams<T = any>(
   url: URL,
   schema: { parse(data: unknown): T },
 ): T {
-  return schema.parse(Object.fromEntries(url.searchParams.entries()));
+  const params: Record<string, string> = {};
+  url.searchParams.forEach((value, key) => {
+    params[key] = value;
+  });
+  return schema.parse(params);
 }
 
-export function parseRouteParams<T>(
+export function parseRouteParams<T = any>(
   params: Record<string, string>,
   schema: { parse(data: unknown): T },
 ): T {

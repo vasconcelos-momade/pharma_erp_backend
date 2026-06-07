@@ -17,12 +17,16 @@ import { RelatorioDiferencaCaixaUseCase } from "../../application/use-cases/rela
 import { ListTaxRulesUseCase } from "../../application/use-cases/list-tax-rules.use-case";
 import { GetCurrentCaixaSessaoUseCase } from "../../application/use-cases/get-current-caixa-sessao.use-case";
 import { ListAvailableCaixasUseCase } from "../../application/use-cases/list-available-caixas.use-case";
+import { ListFaturasUseCase } from "../../application/use-cases/list-faturas.use-case";
+import { GetFaturaDetalheUseCase } from "../../application/use-cases/get-fatura-detalhe.use-case";
+import { FaturaDocumentService } from "../../application/services/fatura-document.service";
 import { z } from "zod";
 import {
   getValidationErrorMessage,
   parseJsonBody,
   parseSearchParams,
 } from "../../../../../shared/http/request-validation";
+import { success } from "../../../../../shared/http/api-response";
 
 const validarDispensacaoSchema = z.object({
   produtoId: z.string().trim().min(1),
@@ -42,23 +46,33 @@ const pacienteSchema = z.object({
   nid: z.string().trim().min(1),
 });
 
-const finalizarVendaSchema = z.object({
-  clienteId: z.string().trim().min(1).optional(),
-  terminalId: z.string().trim().min(1),
-  idempotencyKey: z.string().trim().min(1).optional(),
-  validatorUserId: z.string().trim().min(1).optional(),
-  metodoPagamento: z.enum(["DINHEIRO", "CARTAO", "TRANSFERENCIA", "CARTEIRA_MOVEL", "EMOLA", "MPESA"]),
-  paciente: pacienteSchema.optional(),
-  receita: receitaSchema.optional(),
-  items: z.array(z.object({
-    tipo: z.enum(["produto", "servico"]),
-    produtoId: z.string().trim().min(1).optional(),
-    servicoId: z.string().trim().min(1).optional(),
-    quantidade: z.coerce.number().positive(),
-    precoUnit: z.coerce.number().nonnegative().optional(),
+const finalizarVendaSchema = z
+  .object({
+    clienteId: z.string().trim().min(1).optional(),
+    terminalId: z.string().trim().min(1),
+    idempotencyKey: z.string().trim().min(1).optional(),
+    validatorUserId: z.string().trim().min(1).optional(),
+    metodoPagamento: z.enum(["DINHEIRO", "CARTAO", "TRANSFERENCIA", "CARTEIRA_MOVEL", "EMOLA", "MPESA"]),
+    valorRecebido: z.coerce.number().nonnegative().optional(),
+    paciente: pacienteSchema.optional(),
     receita: receitaSchema.optional(),
-  })).min(1),
-});
+    items: z
+      .array(
+        z.object({
+          tipo: z.enum(["produto", "servico"]),
+          produtoId: z.string().trim().min(1).optional(),
+          servicoId: z.string().trim().min(1).optional(),
+          quantidade: z.coerce.number().positive(),
+          precoUnit: z.coerce.number().nonnegative().optional(),
+          receita: receitaSchema.optional(),
+        }),
+      )
+      .optional(),
+  })
+  .refine(
+    (data) => (data.items?.length ?? 0) > 0 || Boolean(data.idempotencyKey),
+    { message: "Informe idempotencyKey do carrinho ou a lista de items." },
+  );
 
 const anularFaturaSchema = z.object({
   motivo: z.string().trim().min(1),
@@ -105,12 +119,13 @@ const draftCartItemSchema = z
     clienteId: z.string().trim().min(1).optional(),
     terminalId: z.string().trim().min(1).optional(),
   })
-  .refine((data) => Boolean(data.produtoId) !== Boolean(data.servicoId), {
+  .refine((data: any) => Boolean(data.produtoId) !== Boolean(data.servicoId), {
     message: "Informe produtoId ou servicoId (apenas um).",
   });
 
 const draftCartQuerySchema = z.object({
   idempotencyKey: z.string().trim().min(1),
+  valorRecebido: z.coerce.number().nonnegative().optional(),
 });
 
 const draftCartItemIdParamSchema = z.object({
@@ -140,6 +155,18 @@ const relatorioDiferencaQuerySchema = z.object({
   sessaoId: z.string().trim().min(1),
 });
 
+const listFaturasQuerySchema = z.object({
+  page: z.coerce.number().int().positive().optional(),
+  pageSize: z.coerce.number().int().positive().max(100).optional(),
+  search: z.string().trim().min(1).optional(),
+  clienteId: z.string().regex(/^\d+$/).optional(),
+  status: z.string().trim().min(1).optional(),
+  dateFrom: z.string().trim().min(1).optional(),
+  dateTo: z.string().trim().min(1).optional(),
+  terminalId: z.string().regex(/^\d+$/).optional(),
+  userId: z.string().regex(/^\d+$/).optional(),
+});
+
 export class POSController {
   private searchProdutosUseCase = new SearchProdutosUseCase();
   private searchServicosUseCase = new SearchServicosUseCase();
@@ -159,6 +186,8 @@ export class POSController {
   private listTaxRulesUseCase = new ListTaxRulesUseCase();
   private getCurrentCaixaSessaoUseCase = new GetCurrentCaixaSessaoUseCase();
   private listAvailableCaixasUseCase = new ListAvailableCaixasUseCase();
+  private listFaturasUseCase = new ListFaturasUseCase();
+  private getFaturaDetalheUseCase = new GetFaturaDetalheUseCase();
 
   async searchProdutos(req: Request) {
     const url = new URL(req.url);
@@ -284,8 +313,12 @@ export class POSController {
   async getDraftCart(req: Request, userId: string) {
     try {
       const url = new URL(req.url);
-      const { idempotencyKey } = parseSearchParams(url, draftCartQuerySchema);
-      const result = await this.getDraftCartUseCase.execute({ userId, idempotencyKey });
+      const { idempotencyKey, valorRecebido } = parseSearchParams(url, draftCartQuerySchema);
+      const result = await this.getDraftCartUseCase.execute({
+        userId,
+        idempotencyKey,
+        valorRecebido,
+      });
       return Response.json(this.serialize(result));
     } catch (error: any) {
       return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
@@ -381,6 +414,47 @@ export class POSController {
     } catch (error: any) {
       return Response.json({ error: error.message }, { status: 500 });
     }
+  }
+
+  async listFaturas(req: Request) {
+    try {
+      const url = new URL(req.url);
+      const query = parseSearchParams(url, listFaturasQuerySchema);
+      const result = await this.listFaturasUseCase.execute(query);
+      return success(this.serialize(result.items), 200, {
+        page: result.page,
+        pageSize: result.pageSize,
+        hasMore: result.hasMore,
+        summary: result.summary,
+      });
+    } catch (error: any) {
+      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+    }
+  }
+
+  async getFaturaDetalhe(faturaId: string) {
+    const result = await this.getFaturaDetalheUseCase.execute(faturaId);
+    return success(this.serialize(result));
+  }
+
+  async downloadFaturaPdf(faturaId: string) {
+    const fatura = await this.getFaturaDetalheUseCase.execute(faturaId);
+    const { bytes, fileName, contentType } = FaturaDocumentService.buildPdf(fatura as any);
+    const body = new Blob([bytes as any], { type: contentType });
+
+    return new Response(body, {
+      headers: {
+        "Content-Type": contentType,
+        "Content-Disposition": `attachment; filename="${fileName}"`,
+      },
+    });
+  }
+
+  async getFaturaPrintArtifact(faturaId: string) {
+    const fatura = await this.getFaturaDetalheUseCase.execute(faturaId);
+    const result = FaturaDocumentService.buildPrintArtifact(fatura as any);
+
+    return Response.json(this.serialize(result));
   }
 
   private serialize(data: any) {

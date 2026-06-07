@@ -14,6 +14,7 @@ export interface FinalizarVendaDTO {
   idempotencyKey?: string;
   validatorUserId?: string;
   metodoPagamento: "DINHEIRO" | "CARTAO" | "TRANSFERENCIA" | "CARTEIRA_MOVEL" | "EMOLA" | "MPESA";
+  valorRecebido?: number;
   paciente?: {
     nome: string;
     idade: number;
@@ -25,7 +26,7 @@ export interface FinalizarVendaDTO {
     prescritor?: string;
     unidadeSanitaria?: string;
   };
-  items: {
+  items?: {
     tipo: "produto" | "servico";
     produtoId?: string;
     servicoId?: string;
@@ -61,6 +62,8 @@ export class FinalizarVendaUseCase {
               subtotal: true,
               ivaTotal: true,
               total: true,
+              valorRecebido: true,
+              troco: true,
               estado: true,
             },
           });
@@ -73,12 +76,40 @@ export class FinalizarVendaUseCase {
               subtotal: Number(existingFatura.subtotal),
               ivaTotal: Number(existingFatura.ivaTotal),
               total: Number(existingFatura.total),
+              valorRecebido:
+                existingFatura.valorRecebido == null
+                  ? null
+                  : Number(existingFatura.valorRecebido),
+              troco: Number(existingFatura.troco ?? 0),
+              items: [],
               isDuplicate: true,
               cartReset: true,
               nextCartIdempotencyKey,
             };
           }
         }
+
+        const checkoutItems =
+          data.items && data.items.length > 0
+            ? data.items
+            : data.idempotencyKey
+              ? await draftCartService.resolveCheckoutItemsFromDraft(
+                  tx,
+                  data.idempotencyKey,
+                  data.userId,
+                )
+              : [];
+
+        if (checkoutItems.length === 0) {
+          throw new Error(
+            "Informe idempotencyKey do carrinho ou a lista de items para finalizar.",
+          );
+        }
+
+        const checkoutData: FinalizarVendaDTO = {
+          ...data,
+          items: checkoutItems,
+        };
 
         // 1. Validar Terminal e Caixa com LOCK (Pessimistic Locking)
         const terminals: any[] = await tx.$queryRaw`SELECT * FROM terminais WHERE id = ${BigInt(data.terminalId)} FOR UPDATE`;
@@ -97,9 +128,14 @@ export class FinalizarVendaUseCase {
           throw new Error("Você não possui uma sessão de caixa aberta. Por favor, abra o caixa antes de vender.");
         }
 
-        const produtosDoCarrinho = data.items
-          .filter((item) => item.tipo === "produto" && item.produtoId)
-          .map((item) => BigInt(item.produtoId!));
+        const produtosDoCarrinho = checkoutItems
+          .filter(
+            (item: NonNullable<FinalizarVendaDTO["items"]>[number]) =>
+              item.tipo === "produto" && item.produtoId,
+          )
+          .map((item: NonNullable<FinalizarVendaDTO["items"]>[number]) =>
+            BigInt(item.produtoId!),
+          );
 
         const produtosComReceitaObrigatoria = produtosDoCarrinho.length
           ? await tx.produto.findMany({
@@ -113,8 +149,8 @@ export class FinalizarVendaUseCase {
 
         const requerPacienteReceita = produtosComReceitaObrigatoria.length > 0;
         const clienteId = requerPacienteReceita
-          ? await this.resolvePrescriptionClienteId(tx, data)
-          : await draftCartService.resolveClienteId(tx, data.clienteId);
+          ? await this.resolvePrescriptionClienteId(tx, checkoutData)
+          : await draftCartService.resolveClienteId(tx, checkoutData.clienteId);
 
         let totalGeral = 0;
         const faturaItems = [];
@@ -122,8 +158,10 @@ export class FinalizarVendaUseCase {
 
         // --- GESTÃO DE RECEITA ÚNICA POR VENDA ---
         // Identificamos se há dados de receita no payload (assumimos uma receita por venda física no POS)
-        const receitaVenda = this.resolveReceitaPayload(data);
-        const itemComReceita = data.items.find(i => i.receita);
+        const receitaVenda = this.resolveReceitaPayload(checkoutData);
+        const itemComReceita = checkoutItems.find(
+          (i: NonNullable<FinalizarVendaDTO["items"]>[number]) => i.receita,
+        );
         let receitaFisicaId: bigint | null = null;
         let receitaMetadata: any = null;
 
@@ -160,7 +198,7 @@ export class FinalizarVendaUseCase {
         const complianceEngine = new ComplianceEngineService();
 
         const faturaItemsFiscais: any[] = [];
-        for (const item of data.items) {
+        for (const item of checkoutItems) {
           if (item.tipo === "produto") {
             const produtoId = BigInt(item.produtoId!);
             await tx.$executeRaw`SELECT id FROM produtos WHERE id = ${produtoId} FOR UPDATE`;
@@ -396,6 +434,27 @@ export class FinalizarVendaUseCase {
         // Calcular total da fatura usando utilitário
         const totalsFatura = FiscalCalculatorUtil.calcularFaturaTotal(faturaItemsFiscais);
 
+        let troco = 0;
+        if (data.metodoPagamento === "DINHEIRO") {
+          if (data.valorRecebido == null || !Number.isFinite(data.valorRecebido)) {
+            throw new Error("Informe o valor recebido para pagamento em dinheiro.");
+          }
+          if (data.valorRecebido < totalsFatura.total) {
+            throw new Error("O valor recebido deve cobrir o total da venda.");
+          }
+          troco = FiscalCalculatorUtil.calcularTroco(data.valorRecebido, totalsFatura.total);
+        }
+
+        const responseItems = faturaItems.map((item) => ({
+          tipo: item.servicoId ? "servico" : "produto",
+          produtoId: item.produtoId ? item.produtoId.toString() : null,
+          servicoId: item.servicoId ? item.servicoId.toString() : null,
+          descricao: item.descricao,
+          quantidade: Number(item.quantidade),
+          precoUnit: Number(item.precoUnit),
+          total: Number(item.total),
+        }));
+
         // Simulação de QR Code (Em produção seria uma URL assinada pela AGT/Autoridade Fiscal)
         const mockQrCode = `https://skalway-pharm.ao/verify/fatura?n=${faturaNumero}&t=${totalsFatura.total.toFixed(2)}&d=${new Date().toISOString()}`;
 
@@ -413,6 +472,9 @@ export class FinalizarVendaUseCase {
             subtotal: totalsFatura.subtotal,
             ivaTotal: totalsFatura.ivaTotal,
             total: totalsFatura.total,
+            valorRecebido:
+              data.valorRecebido == null ? null : Number(data.valorRecebido),
+            troco,
             tipoOperacao,
             tipoPagamento: data.metodoPagamento as any,
             estado: "PAGA",
@@ -596,6 +658,10 @@ export class FinalizarVendaUseCase {
           subtotal: Number(fatura.subtotal),
           ivaTotal: Number(fatura.ivaTotal),
           total: Number(fatura.total),
+          valorRecebido:
+            fatura.valorRecebido == null ? null : Number(fatura.valorRecebido),
+          troco: Number(fatura.troco),
+          items: responseItems,
           cartReset: true,
           nextCartIdempotencyKey,
         };
@@ -609,7 +675,7 @@ export class FinalizarVendaUseCase {
   }
 
   private resolveReceitaPayload(data: FinalizarVendaDTO) {
-    const itemComReceita = data.items.find((item) => item.receita);
+    const itemComReceita = data.items?.find((item) => item.receita);
     const numero =
       data.receita?.numero?.trim() ||
       itemComReceita?.receita?.numero?.trim() ||

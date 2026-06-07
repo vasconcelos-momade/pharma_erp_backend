@@ -2,8 +2,12 @@ import { getPrisma } from "../../../../../infrastructure/prisma/tenant-prisma.fa
 import { draftCartService } from "../services/draft-cart.service";
 import type { DraftCartMutationContext, DraftCartView } from "../services/draft-cart.types";
 
+type GetDraftCartParams = DraftCartMutationContext & {
+  valorRecebido?: number | null;
+};
+
 export class GetDraftCartUseCase {
-  async execute(ctx: DraftCartMutationContext): Promise<DraftCartView> {
+  async execute(ctx: GetDraftCartParams): Promise<DraftCartView> {
     const prisma = getPrisma();
     await draftCartService.assertCaixaAberta(prisma, ctx.userId);
 
@@ -13,19 +17,9 @@ export class GetDraftCartUseCase {
     });
 
     if (!fatura || fatura.estado !== "RASCUNHO") {
-      return {
-        id: "",
-        numero: "",
-        estado: "RASCUNHO",
-        idempotencyKey: ctx.idempotencyKey,
-        subtotal: 0,
-        desconto: 0,
-        ivaTotal: 0,
-        total: 0,
-        items: [],
-      };
+      return draftCartService.emptyCartView(ctx.idempotencyKey, ctx.valorRecebido);
     }
 
-    return draftCartService.buildCartView(prisma, fatura.id);
+    return draftCartService.buildCartView(prisma, fatura.id, ctx.valorRecebido);
   }
 }

@@ -4,6 +4,16 @@ import {
   getQuantidadeTotal,
 } from "../../domain/produto-stock.service";
 
+function getUtcDayRange(value: string): { start: Date; end: Date } {
+  const start = new Date(value);
+  start.setUTCHours(0, 0, 0, 0);
+
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+
+  return { start, end };
+}
+
 export interface ReceivePurchaseDTO {
   fornecedorId: string;
   userId: string;
@@ -35,6 +45,9 @@ export class ReceivePurchaseUseCase {
 
       for (const item of data.items) {
         const produtoId = BigInt(item.produtoId);
+        const { start: dataValidadeInicio, end: dataValidadeFim } = getUtcDayRange(
+          item.dataValidade,
+        );
         const produto = await tx.produto.findUnique({
           where: { id: produtoId },
         });
@@ -56,19 +69,44 @@ export class ReceivePurchaseUseCase {
           },
         });
 
-        const lote = await tx.lote.create({
-          data: {
+        const precoVendaLote = item.precoVenda || produto.precoVenda;
+        const loteExistente = await tx.lote.findFirst({
+          where: {
             produtoId: produto.id,
-            fornecedorId: BigInt(data.fornecedorId),
             numeroLote: item.numeroLote,
-            dataValidade: new Date(item.dataValidade),
-            quantidadeInicial: item.quantidade,
-            quantidadeAtual: item.quantidade,
-            precoCompra: item.precoCompra,
-            precoVenda: item.precoVenda || produto.precoVenda,
-            status: "ATIVO",
+            dataValidade: {
+              gte: dataValidadeInicio,
+              lt: dataValidadeFim,
+            },
+            deletedAt: null,
           },
         });
+
+        const lote = loteExistente
+          ? await tx.lote.update({
+              where: { id: loteExistente.id },
+              data: {
+                quantidadeInicial: { increment: item.quantidade },
+                quantidadeAtual: { increment: item.quantidade },
+                fornecedorId: loteExistente.fornecedorId ?? BigInt(data.fornecedorId),
+                precoCompra: item.precoCompra,
+                precoVenda: precoVendaLote,
+                ativo: true,
+              },
+            })
+          : await tx.lote.create({
+              data: {
+                produtoId: produto.id,
+                fornecedorId: BigInt(data.fornecedorId),
+                numeroLote: item.numeroLote,
+                dataValidade: dataValidadeInicio,
+                quantidadeInicial: item.quantidade,
+                quantidadeAtual: item.quantidade,
+                precoCompra: item.precoCompra,
+                precoVenda: precoVendaLote,
+                ativo: true,
+              },
+            });
 
         if (item.precoVenda) {
           await tx.produto.update({

@@ -3,6 +3,7 @@ import {
   type TaxRuleSnapshot,
 } from "../../../../../shared/utils/fiscal-calculator.util";
 import type {
+  DraftCartCheckoutHints,
   DraftCartItemInput,
   DraftCartItemView,
   DraftCartMutationContext,
@@ -600,7 +601,49 @@ export class DraftCartService {
     return item;
   }
 
-  async buildCartView(tx: any, faturaId: bigint): Promise<DraftCartView> {
+  buildItemIvaLabel(ivaPercentual: number): string {
+    const rate = Math.round(Number(ivaPercentual) || 0);
+    return rate > 0 ? `IVA (${rate}%)` : "IVA (isento)";
+  }
+
+  buildCheckoutHints(
+    subtotal: number,
+    ivaTotal: number,
+    total: number,
+    items: DraftCartItemView[],
+    valorRecebido?: number | null,
+  ): DraftCartCheckoutHints {
+    return {
+      requiresPrescription: items.some((item) => item.requiresPrescription),
+      taxLabel: FiscalCalculatorUtil.buildTaxLabel(subtotal, ivaTotal, items),
+      paymentPreview: FiscalCalculatorUtil.buildPaymentPreview(total, valorRecebido),
+    };
+  }
+
+  emptyCartView(
+    idempotencyKey: string,
+    valorRecebido?: number | null,
+  ): DraftCartView {
+    const checkout = this.buildCheckoutHints(0, 0, 0, [], valorRecebido);
+    return {
+      id: "",
+      numero: "",
+      estado: "RASCUNHO",
+      idempotencyKey,
+      subtotal: 0,
+      desconto: 0,
+      ivaTotal: 0,
+      total: 0,
+      items: [],
+      checkout,
+    };
+  }
+
+  async buildCartView(
+    tx: any,
+    faturaId: bigint,
+    valorRecebido?: number | null,
+  ): Promise<DraftCartView> {
     const fatura = await tx.fatura.findUnique({
       where: { id: faturaId },
       include: {
@@ -628,6 +671,7 @@ export class DraftCartService {
           },
         });
 
+        const ivaPercentual = Number(row.iva);
         items.push({
           id: row.id.toString(),
           tipo: "servico",
@@ -640,7 +684,8 @@ export class DraftCartService {
           baseCalculo: Number(row.baseCalculo),
           valorIva: Number(row.valorIva),
           total: Number(row.total),
-          ivaPercentual: Number(row.iva),
+          ivaPercentual,
+          ivaLabel: this.buildItemIvaLabel(ivaPercentual),
           taxRule: servico?.taxRule
             ? {
                 tipo: servico.taxRule.tipo,
@@ -649,6 +694,9 @@ export class DraftCartService {
               }
             : null,
           requiresPrescription: false,
+          tipoDispensacao: null,
+          requiresDoubleCheck: false,
+          requiresPsychotropicBook: false,
           estoqueAtual: null,
           estoqueDisponivel: null,
           tipoServicoClinico: servico?.tipoServicoClinico ?? null,
@@ -676,6 +724,7 @@ export class DraftCartService {
 
       const disponivel = produto ? await this.getDisponivel(tx, { id: produtoRow!.id }) : 0;
 
+      const ivaPercentual = Number(row.iva);
       items.push({
         id: row.id.toString(),
         tipo: "produto",
@@ -688,7 +737,8 @@ export class DraftCartService {
         baseCalculo: Number(row.baseCalculo),
         valorIva: Number(row.valorIva),
         total: Number(row.total),
-        ivaPercentual: Number(row.iva),
+        ivaPercentual,
+        ivaLabel: this.buildItemIvaLabel(ivaPercentual),
         taxRule: produto?.taxRule
           ? {
               tipo: produto.taxRule.tipo,
@@ -697,23 +747,66 @@ export class DraftCartService {
             }
           : null,
         requiresPrescription: produto?.requiresPrescription ?? false,
+        tipoDispensacao: produto?.tipoDispensacao ?? null,
+        requiresDoubleCheck: produto?.requiresDoubleCheck ?? false,
+        requiresPsychotropicBook: produto?.requiresPsychotropicBook ?? false,
         estoqueAtual: disponivel,
         estoqueDisponivel: disponivel,
         tipoServicoClinico: null,
       });
     }
 
+    const subtotal = Number(fatura.subtotal);
+    const ivaTotal = Number(fatura.ivaTotal);
+    const total = Number(fatura.total);
+
     return {
       id: fatura.id.toString(),
       numero: fatura.numero,
       estado: fatura.estado,
       idempotencyKey: fatura.idempotencyKey,
-      subtotal: Number(fatura.subtotal),
+      subtotal,
       desconto: Number(fatura.desconto),
-      ivaTotal: Number(fatura.ivaTotal),
-      total: Number(fatura.total),
+      ivaTotal,
+      total,
       items,
+      checkout: this.buildCheckoutHints(subtotal, ivaTotal, total, items, valorRecebido),
     };
+  }
+
+  async resolveCheckoutItemsFromDraft(
+    tx: any,
+    idempotencyKey: string,
+    userId: string,
+  ) {
+    await this.assertCaixaAberta(tx, userId);
+
+    const draftFatura = await tx.fatura.findFirst({
+      where: {
+        idempotencyKey,
+        estado: "RASCUNHO",
+        userId: BigInt(userId),
+      },
+      include: {
+        items: {
+          orderBy: { id: "asc" },
+        },
+      },
+    });
+
+    if (!draftFatura || draftFatura.items.length === 0) {
+      throw new Error(
+        "Carrinho vazio ou não encontrado. Adicione itens antes de finalizar.",
+      );
+    }
+
+    return draftFatura.items.map((row: any) => ({
+      tipo: row.servicoId ? ("servico" as const) : ("produto" as const),
+      produtoId: row.produtoId ? row.produtoId.toString() : undefined,
+      servicoId: row.servicoId ? row.servicoId.toString() : undefined,
+      quantidade: Number(row.quantidade),
+      precoUnit: Number(row.precoUnit),
+    }));
   }
 }
 

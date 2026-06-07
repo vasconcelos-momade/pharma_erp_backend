@@ -129,6 +129,20 @@ export async function normalizeResponse(response: Response): Promise<Response> {
     return response;
   }
 
+  const contentType = response.headers.get("content-type") ?? "";
+  const contentDisposition = response.headers.get("content-disposition") ?? "";
+  const isBinaryResponse =
+    contentDisposition.toLowerCase().includes("attachment") ||
+    contentType.startsWith("application/pdf") ||
+    contentType.startsWith("application/octet-stream") ||
+    contentType.startsWith("image/") ||
+    contentType.startsWith("audio/") ||
+    contentType.startsWith("video/");
+
+  if (isBinaryResponse) {
+    return response;
+  }
+
   if (response.status === 204) {
     const headers = toJsonHeaders(response.headers);
     return new Response(null, { status: 204, headers });
@@ -136,7 +150,6 @@ export async function normalizeResponse(response: Response): Promise<Response> {
 
   const cloned = response.clone();
   const bodyText = await cloned.text();
-  const contentType = response.headers.get("content-type") ?? "";
   const fallbackMessage = response.statusText || "Request failed";
 
   let parsedBody: unknown = bodyText;

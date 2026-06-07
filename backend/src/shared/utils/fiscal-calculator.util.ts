@@ -86,4 +86,56 @@ export class FiscalCalculatorUtil {
       total,
     };
   }
+
+  static buildTaxLabel(
+    subtotal: number,
+    ivaTotal: number,
+    items: Array<{ ivaPercentual: number }>,
+  ): string {
+    if (ivaTotal <= 0) {
+      return "IVA (isento)";
+    }
+    const rates = [
+      ...new Set(
+        items
+          .map((item) => Math.round(Number(item.ivaPercentual) || 0))
+          .filter((rate) => rate > 0),
+      ),
+    ];
+    if (rates.length === 1) {
+      return `IVA (${rates[0]}%)`;
+    }
+    if (rates.length > 1) {
+      return "IVA (misto)";
+    }
+    if (subtotal <= 0) {
+      return "IVA";
+    }
+    const pct = Math.round((ivaTotal / subtotal) * 100);
+    return `IVA (${pct}%)`;
+  }
+
+  static calcularTroco(valorRecebido: number, total: number): number {
+    if (!Number.isFinite(valorRecebido) || valorRecebido <= total) {
+      return 0;
+    }
+    return Number((valorRecebido - total).toFixed(2));
+  }
+
+  static buildPaymentPreview(total: number, valorRecebido?: number | null) {
+    if (valorRecebido == null || !Number.isFinite(valorRecebido)) {
+      return {
+        total,
+        valorRecebido: null,
+        troco: 0,
+        cobreTotal: null,
+      };
+    }
+    return {
+      total,
+      valorRecebido,
+      troco: this.calcularTroco(valorRecebido, total),
+      cobreTotal: valorRecebido >= total,
+    };
+  }
 }

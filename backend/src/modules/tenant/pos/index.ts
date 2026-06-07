@@ -7,3 +7,5 @@ export * from "./application/use-cases/anular-fatura.use-case";
 export * from "./application/use-cases/abrir-sessao-caixa.use-case";
 export * from "./application/use-cases/fechar-sessao-caixa.use-case";
 export * from "./application/use-cases/list-tax-rules.use-case";
+export * from "./application/use-cases/list-faturas.use-case";
+export * from "./application/use-cases/get-fatura-detalhe.use-case";
