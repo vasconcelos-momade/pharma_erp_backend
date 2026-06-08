@@ -18,6 +18,17 @@ export class RemovePurchaseItemUseCase {
       throw new Error(`A compra ${compraId} não pode ser alterada no status ${compra.status}`);
     }
 
+    const item = await prisma.compraItem.findFirst({
+      where: {
+        id: itemPk,
+        compraId: compraPk,
+      },
+    });
+
+    if (!item) {
+      throw new Error(`Item ${itemId} não encontrado na compra ${compraId}`);
+    }
+
     await prisma.compraItem.delete({
       where: { id: itemPk },
     });

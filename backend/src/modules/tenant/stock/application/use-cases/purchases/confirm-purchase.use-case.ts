@@ -10,7 +10,7 @@ function getUtcDayRange(value: string): { start: Date; end: Date } {
 }
 
 export class ConfirmPurchaseUseCase {
-  async execute(compraId: string, userId: string, confirmData?: any) {
+  async execute(compraId: string, userId: string, _confirmData?: unknown) {
     const prisma = getPrisma();
 
     return await prisma.$transaction(async (tx: any) => {
@@ -24,23 +24,15 @@ export class ConfirmPurchaseUseCase {
         throw new Error(`A compra já está no status ${compra.status}`);
       }
 
-      // Se confirmData tiver a lista de itens com número do lote e validade (enviado pelo frontend)
-      // usaremos ele para as inserções de Lote. O frontend deve enviar essa info no momento da confirmação
-      // ou no momento de adicionar o item. Como o backend no add-purchase-item não guardou lote (pois não há coluna na db),
-      // precisamos receber isso do frontend no confirmData, ou se ele salvar como Json...
-      // Vamos assumir que confirmData tem os lotes associados a cada item
-      const itensFrontend = confirmData?.items || [];
-
       for (const item of compra.itens) {
-        const frontItem = itensFrontend.find((i: any) => i.produtoId === item.produtoId.toString());
-        const numeroLote = frontItem?.numeroLote || `LOTE-${compra.id}-${item.id}`;
-        const dataValidade = frontItem?.dataValidade || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(); // 1 ano padrão se não vier
-        const precoVenda = frontItem?.precoVenda;
-
         const produto = await tx.produto.findUnique({ where: { id: item.produtoId } });
+        const numeroLote = item.numeroLote || `LOTE-${compra.id}-${item.id}`;
+        const dataValidade = item.dataValidade
+          ? item.dataValidade.toISOString()
+          : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
         const { start: dataValidadeInicio, end: dataValidadeFim } = getUtcDayRange(dataValidade);
 
-        const precoVendaLote = precoVenda || produto.precoVenda;
+        const precoVendaLote = item.precoVenda ?? produto.precoVenda;
         const loteExistente = await tx.lote.findFirst({
           where: {
             produtoId: produto.id,
@@ -57,7 +49,7 @@ export class ConfirmPurchaseUseCase {
                 quantidadeInicial: { increment: item.quantidade },
                 quantidadeAtual: { increment: item.quantidade },
                 fornecedorId: loteExistente.fornecedorId ?? compra.fornecedorId,
-                precoCompra: item.preco,
+                precoCompra: item.precoCompra,
                 precoVenda: precoVendaLote,
                 ativo: true,
               },
@@ -70,16 +62,16 @@ export class ConfirmPurchaseUseCase {
                 dataValidade: dataValidadeInicio,
                 quantidadeInicial: item.quantidade,
                 quantidadeAtual: item.quantidade,
-                precoCompra: item.preco,
+                precoCompra: item.precoCompra,
                 precoVenda: precoVendaLote,
                 ativo: true,
               },
             });
 
-        if (precoVenda) {
+        if (item.precoVenda != null) {
           await tx.produto.update({
             where: { id: produto.id },
-            data: { precoVenda },
+            data: { precoVenda: item.precoVenda },
           });
         }
 
@@ -105,7 +97,9 @@ export class ConfirmPurchaseUseCase {
             fornecedorId: compra.fornecedorId,
             precoAnterior: produto.precoVenda,
             precoNovo: precoVendaLote,
-            variacao: precoVenda ? Number(precoVenda) - Number(produto.precoVenda) : 0,
+            variacao: item.precoVenda != null
+              ? Number(item.precoVenda) - Number(produto.precoVenda)
+              : 0,
           },
         });
       }
@@ -118,6 +112,7 @@ export class ConfirmPurchaseUseCase {
       return {
         message: "Compra confirmada com sucesso",
         compraId: compra.id.toString(),
+        numeroDocumento: compra.numeroDocumento,
         total: Number(compra.total),
       };
     });

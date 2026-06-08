@@ -22,6 +22,7 @@ export class GetPurchaseDetailUseCase {
 
     return {
       id: compra.id.toString(),
+      numeroDocumento: compra.numeroDocumento,
       fornecedorId: compra.fornecedorId.toString(),
       fornecedorNome: compra.fornecedor.nome,
       status: compra.status,
@@ -35,8 +36,10 @@ export class GetPurchaseDetailUseCase {
         numeroLote: item.numeroLote || "",
         dataValidade: item.dataValidade ? item.dataValidade.toISOString() : "",
         quantidade: Number(item.quantidade),
-        precoCompra: Number(item.preco),
-        precoVenda: Number(item.produto.precoVenda),
+        precoCompra: Number(item.precoCompra),
+        precoVenda: item.precoVenda != null
+          ? Number(item.precoVenda)
+          : Number(item.produto.precoVenda),
         subtotal: Number(item.total),
       })),
     };

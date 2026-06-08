@@ -1,7 +1,8 @@
 import { getPrisma } from "../../../../../../infrastructure/prisma/tenant-prisma.factory";
+import type { AddPurchaseItemDTO } from "../../dto/purchases.dto";
 
 export class AddPurchaseItemUseCase {
-  async execute(compraId: string, data: { produtoId: string; quantidade: number; precoCompra: number; precoVenda?: number; numeroLote: string; dataValidade: string }) {
+  async execute(compraId: string, data: AddPurchaseItemDTO) {
     const prisma = getPrisma();
 
     const compra = await prisma.compra.findUnique({
@@ -34,14 +35,15 @@ export class AddPurchaseItemUseCase {
       },
     });
 
-    const item = await prisma.compraItem.create({
+    await prisma.compraItem.create({
       data: {
         compraId: compra.id,
         produtoId: produto.id,
         numeroLote: data.numeroLote,
         dataValidade: new Date(data.dataValidade),
         quantidade: data.quantidade,
-        preco: data.precoCompra,
+        precoCompra: data.precoCompra,
+        precoVenda: data.precoVenda ?? null,
         total: subtotal,
       },
     });

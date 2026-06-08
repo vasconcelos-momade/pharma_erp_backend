@@ -182,6 +182,7 @@ exports.Prisma.ClienteScalarFieldEnum = {
   dataNascimento: 'dataNascimento',
   sexo: 'sexo',
   nuit: 'nuit',
+  endereco: 'endereco',
   empresaId: 'empresaId',
   limiteCredito: 'limiteCredito',
   saldoAtual: 'saldoAtual',
@@ -221,11 +222,6 @@ exports.Prisma.ProdutoScalarFieldEnum = {
   apresentacao: 'apresentacao',
   ativo: 'ativo',
   barcode: 'barcode',
-  classificacaoAnarme: 'classificacaoAnarme',
-  tipoDispensacao: 'tipoDispensacao',
-  requiresPrescription: 'requiresPrescription',
-  requiresDoubleCheck: 'requiresDoubleCheck',
-  requiresPsychotropicBook: 'requiresPsychotropicBook',
   precoVenda: 'precoVenda',
   estoqueAtual: 'estoqueAtual',
   estoqueMinimo: 'estoqueMinimo',
@@ -234,6 +230,32 @@ exports.Prisma.ProdutoScalarFieldEnum = {
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ProdutoRegulacaoScalarFieldEnum = {
+  produtoId: 'produtoId',
+  antimicrobiano: 'antimicrobiano',
+  tipoDispensacao: 'tipoDispensacao',
+  requiresPrescription: 'requiresPrescription',
+  requiresDoubleCheck: 'requiresDoubleCheck',
+  requiresPsychotropicBook: 'requiresPsychotropicBook',
+  requiresManualReview: 'requiresManualReview',
+  riskLevel: 'riskLevel',
+  policyVersion: 'policyVersion',
+  classificadoEm: 'classificadoEm',
+  classificadoPor: 'classificadoPor',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ProdutoClassificacaoEventoScalarFieldEnum = {
+  id: 'id',
+  produtoId: 'produtoId',
+  rule: 'rule',
+  reason: 'reason',
+  matchedTerm: 'matchedTerm',
+  source: 'source',
+  policySnapshot: 'policySnapshot',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.ServicoScalarFieldEnum = {
@@ -279,6 +301,7 @@ exports.Prisma.ProdutoFornecedorScalarFieldEnum = {
 
 exports.Prisma.CompraScalarFieldEnum = {
   id: 'id',
+  numeroDocumento: 'numeroDocumento',
   fornecedorId: 'fornecedorId',
   data: 'data',
   total: 'total',
@@ -292,8 +315,11 @@ exports.Prisma.CompraItemScalarFieldEnum = {
   id: 'id',
   compraId: 'compraId',
   produtoId: 'produtoId',
+  numeroLote: 'numeroLote',
+  dataValidade: 'dataValidade',
   quantidade: 'quantidade',
-  preco: 'preco',
+  precoCompra: 'precoCompra',
+  precoVenda: 'precoVenda',
   total: 'total'
 };
 
@@ -396,6 +422,8 @@ exports.Prisma.FaturaScalarFieldEnum = {
   desconto: 'desconto',
   ivaTotal: 'ivaTotal',
   total: 'total',
+  valorRecebido: 'valorRecebido',
+  troco: 'troco',
   tipoOperacao: 'tipoOperacao',
   tipoPagamento: 'tipoPagamento',
   moeda: 'moeda',
@@ -545,6 +573,29 @@ exports.Prisma.StockBalanceScalarFieldEnum = {
   lastUpdated: 'lastUpdated'
 };
 
+exports.Prisma.InventarioScalarFieldEnum = {
+  id: 'id',
+  codigo: 'codigo',
+  observacao: 'observacao',
+  status: 'status',
+  iniciadoPorId: 'iniciadoPorId',
+  reconciliadoPorId: 'reconciliadoPorId',
+  iniciadoEm: 'iniciadoEm',
+  reconciliadoEm: 'reconciliadoEm',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.InventarioItemScalarFieldEnum = {
+  id: 'id',
+  inventarioId: 'inventarioId',
+  produtoId: 'produtoId',
+  loteId: 'loteId',
+  estoqueSistema: 'estoqueSistema',
+  estoqueContado: 'estoqueContado',
+  divergencia: 'divergencia'
+};
+
 exports.Prisma.CashBalanceScalarFieldEnum = {
   id: 'id',
   caixaId: 'caixaId',
@@ -631,7 +682,6 @@ exports.Prisma.DispensacaoScalarFieldEnum = {
   receitaId: 'receitaId',
   quantidade: 'quantidade',
   tipoDispensacao: 'tipoDispensacao',
-  classificacaoAnarme: 'classificacaoAnarme',
   isControlado: 'isControlado',
   isPsicotropico: 'isPsicotropico',
   necessitaReceita: 'necessitaReceita',
@@ -640,7 +690,6 @@ exports.Prisma.DispensacaoScalarFieldEnum = {
   receitaValida: 'receitaValida',
   validacaoDupla: 'validacaoDupla',
   motivoSaida: 'motivoSaida',
-  numeroDocumento: 'numeroDocumento',
   idempotencyKey: 'idempotencyKey',
   deletedAt: 'deletedAt',
   createdAt: 'createdAt',
@@ -734,6 +783,7 @@ exports.Prisma.ReceitaScalarFieldEnum = {
   clienteId: 'clienteId',
   medicoNome: 'medicoNome',
   numeroReceita: 'numeroReceita',
+  unidadeSanitaria: 'unidadeSanitaria',
   dataReceita: 'dataReceita',
   observacoes: 'observacoes',
   createdAt: 'createdAt'
@@ -856,14 +906,6 @@ exports.StatusConvenio = exports.$Enums.StatusConvenio = {
   AGUARDANDO_RENOVACAO: 'AGUARDANDO_RENOVACAO'
 };
 
-exports.TipoClassificacaoAnarme = exports.$Enums.TipoClassificacaoAnarme = {
-  NORMAL: 'NORMAL',
-  NARCOTICO: 'NARCOTICO',
-  PSICOTROPICO_LIII: 'PSICOTROPICO_LIII',
-  PSICOTROPICO_LIV: 'PSICOTROPICO_LIV',
-  CONTROLADO_ESPECIAL: 'CONTROLADO_ESPECIAL'
-};
-
 exports.TipoDispensacao = exports.$Enums.TipoDispensacao = {
   VENDA_LIVRE: 'VENDA_LIVRE',
   RECEITA_SIMPLES: 'RECEITA_SIMPLES',
@@ -872,6 +914,13 @@ exports.TipoDispensacao = exports.$Enums.TipoDispensacao = {
   RECEITA_RETIDA: 'RECEITA_RETIDA',
   PSICOTROPICO: 'PSICOTROPICO',
   NARCOTICO: 'NARCOTICO'
+};
+
+exports.RiskLevel = exports.$Enums.RiskLevel = {
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH',
+  CRITICAL: 'CRITICAL'
 };
 
 exports.TipoServicoClinico = exports.$Enums.TipoServicoClinico = {
@@ -1032,6 +1081,13 @@ exports.PermissionAction = exports.$Enums.PermissionAction = {
   APPROVE: 'APPROVE'
 };
 
+exports.StatusInventario = exports.$Enums.StatusInventario = {
+  ABERTO: 'ABERTO',
+  EM_CONTAGEM: 'EM_CONTAGEM',
+  RECONCILIADO: 'RECONCILIADO',
+  CANCELADO: 'CANCELADO'
+};
+
 exports.TipoRelatorioSanitario = exports.$Enums.TipoRelatorioSanitario = {
   MAPA_MENSAL_PSICOTROPICOS: 'MAPA_MENSAL_PSICOTROPICOS',
   MAPA_MENSAL_NARCOTICOS: 'MAPA_MENSAL_NARCOTICOS',
@@ -1068,6 +1124,8 @@ exports.Prisma.ModelName = {
   Empresa: 'Empresa',
   ConvenioContrato: 'ConvenioContrato',
   Produto: 'Produto',
+  ProdutoRegulacao: 'ProdutoRegulacao',
+  ProdutoClassificacaoEvento: 'ProdutoClassificacaoEvento',
   Servico: 'Servico',
   Fornecedor: 'Fornecedor',
   ProdutoFornecedor: 'ProdutoFornecedor',
@@ -1091,6 +1149,8 @@ exports.Prisma.ModelName = {
   LivroPsicotropico: 'LivroPsicotropico',
   RolePermission: 'RolePermission',
   StockBalance: 'StockBalance',
+  Inventario: 'Inventario',
+  InventarioItem: 'InventarioItem',
   CashBalance: 'CashBalance',
   AuditLog: 'AuditLog',
   SanitarioReport: 'SanitarioReport',

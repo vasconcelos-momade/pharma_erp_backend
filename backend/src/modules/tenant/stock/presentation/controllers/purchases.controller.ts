@@ -1,3 +1,4 @@
+import { addPurchaseItemSchema, createPendingPurchaseSchema } from "../../application/dto/purchases.dto";
 import { CreatePendingPurchaseUseCase } from "../../application/use-cases/purchases/create-pending-purchase.use-case";
 import { ListPurchasesUseCase } from "../../application/use-cases/purchases/list-purchases.use-case";
 import { GetPurchaseDetailUseCase } from "../../application/use-cases/purchases/get-purchase-detail.use-case";
@@ -5,6 +6,8 @@ import { AddPurchaseItemUseCase } from "../../application/use-cases/purchases/ad
 import { ConfirmPurchaseUseCase } from "../../application/use-cases/purchases/confirm-purchase.use-case";
 import { ListSuppliersUseCase } from "../../application/use-cases/purchases/list-suppliers.use-case";
 import { RemovePurchaseItemUseCase } from "../../application/use-cases/purchases/remove-purchase-item.use-case";
+import { UpdatePurchaseItemUseCase } from "../../application/use-cases/purchases/update-purchase-item.use-case";
+import { getValidationErrorMessage, parseJsonBody } from "../../../../../shared/http/request-validation";
 
 export class PurchasesController {
   private createPendingUseCase = new CreatePendingPurchaseUseCase();
@@ -14,6 +17,7 @@ export class PurchasesController {
   private confirmUseCase = new ConfirmPurchaseUseCase();
   private listSuppliersUseCase = new ListSuppliersUseCase();
   private removeItemUseCase = new RemovePurchaseItemUseCase();
+  private updateItemUseCase = new UpdatePurchaseItemUseCase();
 
   private serialize(data: any) {
     return JSON.parse(JSON.stringify(data, (_key, value) =>
@@ -22,9 +26,13 @@ export class PurchasesController {
   }
 
   async createPendingPurchase(req: Request, userId: string) {
-    const body = await req.json();
-    const data = await this.createPendingUseCase.execute({ fornecedorId: body.fornecedorId, userId });
-    return Response.json(this.serialize(data), { status: 201 });
+    try {
+      const body = await parseJsonBody(req, createPendingPurchaseSchema);
+      const data = await this.createPendingUseCase.execute({ ...body, userId });
+      return Response.json(this.serialize(data), { status: 201 });
+    } catch (error: any) {
+      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+    }
   }
 
   async listPurchases(req: Request) {
@@ -50,21 +58,43 @@ export class PurchasesController {
   }
 
   async addPurchaseItem(req: Request) {
-    const url = new URL(req.url);
-    const parts = url.pathname.split('/');
-    const compraId = parts[parts.length - 2];
-    const body = await req.json();
-    const data = await this.addItemUseCase.execute(compraId, body);
-    return Response.json(this.serialize(data), { status: 201 });
+    try {
+      const url = new URL(req.url);
+      const parts = url.pathname.split('/');
+      const compraId = parts[parts.length - 2];
+      const body = await parseJsonBody(req, addPurchaseItemSchema);
+      const data = await this.addItemUseCase.execute(compraId, body);
+      return Response.json(this.serialize(data), { status: 201 });
+    } catch (error: any) {
+      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+    }
+  }
+
+  async updatePurchaseItem(req: Request) {
+    try {
+      const url = new URL(req.url);
+      const parts = url.pathname.split("/");
+      const compraId = parts[parts.length - 3];
+      const itemId = parts[parts.length - 1];
+      const body = await parseJsonBody(req, addPurchaseItemSchema);
+      const data = await this.updateItemUseCase.execute(compraId, itemId, body);
+      return Response.json(this.serialize(data));
+    } catch (error: any) {
+      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+    }
   }
 
   async removePurchaseItem(req: Request) {
-    const url = new URL(req.url);
-    const parts = url.pathname.split("/");
-    const compraId = parts[parts.length - 3];
-    const itemId = parts[parts.length - 1];
-    const data = await this.removeItemUseCase.execute(compraId, itemId);
-    return Response.json(this.serialize(data));
+    try {
+      const url = new URL(req.url);
+      const parts = url.pathname.split("/");
+      const compraId = parts[parts.length - 3];
+      const itemId = parts[parts.length - 1];
+      const data = await this.removeItemUseCase.execute(compraId, itemId);
+      return Response.json(this.serialize(data));
+    } catch (error: any) {
+      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+    }
   }
 
   async confirmPurchase(req: Request, userId: string) {

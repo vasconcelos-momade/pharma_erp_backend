@@ -1,4 +1,5 @@
 import { StockController } from "../../modules/tenant/stock";
+import { InventoryController } from "../../modules/tenant/stock/presentation/controllers/inventory.controller";
 import { PurchasesController } from "../../modules/tenant/stock/presentation/controllers/purchases.controller";
 import {
   tenantAuthMiddleware,
@@ -10,6 +11,7 @@ import type { Router } from "../../shared/http/router";
 
 const stockController = new StockController();
 const purchasesController = new PurchasesController();
+const inventoryController = new InventoryController();
 
 function registerReceiveRoute(router: Router, path: string): void {
   router.post(
@@ -69,6 +71,14 @@ function registerPurchasesRoutes(router: Router, prefix: string): void {
     async (context) => purchasesController.addPurchaseItem(context.req),
   );
 
+  router.patch(
+    `${prefix}/tenant/compras/:compraId/items/:itemId`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    auditMiddleware,
+    async (context) => purchasesController.updatePurchaseItem(context.req),
+  );
+
   router.delete(
     `${prefix}/tenant/compras/:compraId/items/:itemId`,
     tenantAuthMiddleware(),
@@ -86,6 +96,77 @@ function registerPurchasesRoutes(router: Router, prefix: string): void {
   );
 }
 
+function registerInventoryRoutes(router: Router, prefix: string): void {
+  router.post(
+    `${prefix}/tenant/inventarios`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    auditMiddleware,
+    async (context) =>
+      inventoryController.openInventory(
+        context.req,
+        getTenantAuth(context).userId,
+      ),
+  );
+
+  router.get(
+    `${prefix}/tenant/inventarios`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    async (context) => inventoryController.listInventories(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/inventarios/:inventarioId`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    async (context) => inventoryController.getInventoryDetail(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/inventarios/:inventarioId/itens`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    async (context) => inventoryController.listInventoryItems(context.req),
+  );
+
+  router.post(
+    `${prefix}/tenant/inventarios/:inventarioId/iniciar-contagem`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    auditMiddleware,
+    async (context) => inventoryController.startCounting(context.req),
+  );
+
+  router.patch(
+    `${prefix}/tenant/inventarios/:inventarioId/itens/:itemId`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    auditMiddleware,
+    async (context) => inventoryController.recordCount(context.req),
+  );
+
+  router.post(
+    `${prefix}/tenant/inventarios/:inventarioId/reconciliar`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    auditMiddleware,
+    async (context) =>
+      inventoryController.reconcile(
+        context.req,
+        getTenantAuth(context).userId,
+      ),
+  );
+
+  router.post(
+    `${prefix}/tenant/inventarios/:inventarioId/cancelar`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    auditMiddleware,
+    async (context) => inventoryController.cancel(context.req),
+  );
+}
+
 export function registerStockRoutes(router: Router, prefix: string): void {
   registerReceiveRoute(router, `${prefix}/tenant/stock/receipts`);
   registerReceiveRoute(router, `${prefix}/tenant/stock/receive`);
@@ -94,4 +175,5 @@ export function registerStockRoutes(router: Router, prefix: string): void {
   registerAdjustRoute(router, `${prefix}/tenant/stock/adjust`);
 
   registerPurchasesRoutes(router, prefix);
+  registerInventoryRoutes(router, prefix);
 }

@@ -16,6 +16,7 @@ function getUtcDayRange(value: string): { start: Date; end: Date } {
 
 export interface ReceivePurchaseDTO {
   fornecedorId: string;
+  numeroDocumento: string;
   userId: string;
   items: {
     produtoId: string;
@@ -36,6 +37,7 @@ export class ReceivePurchaseUseCase {
 
       const compra = await tx.compra.create({
         data: {
+          numeroDocumento: data.numeroDocumento.trim(),
           fornecedorId: BigInt(data.fornecedorId),
           data: new Date(),
           total: 0,
@@ -63,8 +65,11 @@ export class ReceivePurchaseUseCase {
           data: {
             compraId: compra.id,
             produtoId: produto.id,
+            numeroLote: item.numeroLote,
+            dataValidade: dataValidadeInicio,
             quantidade: item.quantidade,
-            preco: item.precoCompra,
+            precoCompra: item.precoCompra,
+            precoVenda: item.precoVenda ?? null,
             total: subtotalItem,
           },
         });
@@ -152,6 +157,7 @@ export class ReceivePurchaseUseCase {
       return {
         message: "Compra recebida e stock atualizado com sucesso",
         compraId: compra.id.toString(),
+        numeroDocumento: compra.numeroDocumento,
         total: totalCompra,
       };
     });

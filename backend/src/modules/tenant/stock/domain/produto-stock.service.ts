@@ -31,6 +31,12 @@ export type StockTx = {
       data: Record<string, unknown>;
     }) => Promise<unknown>;
   };
+  lote?: {
+    findMany: (args: {
+      where: Record<string, unknown>;
+      select?: Record<string, boolean>;
+    }) => Promise<Array<{ quantidadeAtual: unknown }>>;
+  };
 };
 
 export async function getQuantidadeDisponivel(
@@ -146,4 +152,54 @@ export async function applyStockReturnDelta(
 
   await reconcileEstoqueAtualCache(tx, produtoId, totalAfter);
   return totalAfter;
+}
+
+/** Sincroniza StockBalance e cache do produto a partir da soma dos lotes activos. */
+export async function syncProductStockFromLotes(
+  tx: StockTx & {
+    lote: {
+      findMany: (args: {
+        where: Record<string, unknown>;
+        select?: Record<string, boolean>;
+      }) => Promise<Array<{ quantidadeAtual: unknown }>>;
+    };
+  },
+  produtoId: bigint,
+): Promise<number> {
+  const lotes = await tx.lote.findMany({
+    where: {
+      produtoId,
+      deletedAt: null,
+      ativo: true,
+    },
+    select: { quantidadeAtual: true },
+  });
+
+  const total = lotes.reduce(
+    (sum, lote) => sum + Number(lote.quantidadeAtual ?? 0),
+    0,
+  );
+
+  const balance = await tx.stockBalance.findUnique({
+    where: { produtoId },
+  });
+  const reservada = Number(balance?.quantidadeReservada ?? 0);
+  const disponivel = Math.max(0, total - reservada);
+
+  await tx.stockBalance.upsert({
+    where: { produtoId },
+    create: {
+      produtoId,
+      quantidadeTotal: total,
+      quantidadeReservada: reservada,
+      quantidadeDisponivel: disponivel,
+    },
+    update: {
+      quantidadeTotal: total,
+      quantidadeDisponivel: disponivel,
+    },
+  });
+
+  await reconcileEstoqueAtualCache(tx, produtoId, total);
+  return total;
 }

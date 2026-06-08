@@ -45,6 +45,8 @@ model User {
   incineracoesResponsavel Incineracao[]            @relation("ResponsavelIncineracao")
   incineracoesAprovadas   Incineracao[]            @relation("AprovadoPorIncineracao")
   movimentosSanitarios    LoteMovimentoSanitario[]
+  inventariosIniciados    Inventario[]             @relation("InventarioCriador")
+  inventariosReconciliados Inventario[]            @relation("InventarioReconciliador")
 
   @@index([centralUserId])
   @@map("users")
@@ -195,6 +197,7 @@ model Produto {
   livroReceitas            LivroReceita[]
   regulacao                ProdutoRegulacao?
   classificacaoEventos     ProdutoClassificacaoEvento[]
+  inventarioItens          InventarioItem[]
   taxRule                  TaxRule?                @relation(fields: [taxRuleId], references: [id])
   createdAt                DateTime                @default(now())
   updatedAt                DateTime                @updatedAt
@@ -301,8 +304,9 @@ model ProdutoFornecedor {
 }
 
 model Compra {
-  id           BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
-  fornecedorId BigInt       @db.UnsignedBigInt
+  id              BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  numeroDocumento String       @db.VarChar(100)
+  fornecedorId    BigInt       @db.UnsignedBigInt
   data         DateTime
   total        Decimal      @db.Decimal(14, 2)
   status       StatusCompra
@@ -326,7 +330,8 @@ model CompraItem {
   numeroLote   String?   @db.VarChar(100)
   dataValidade DateTime?
   quantidade   Decimal   @db.Decimal(10, 2)
-  preco        Decimal   @db.Decimal(10, 2)
+  precoCompra  Decimal   @db.Decimal(10, 2)
+  precoVenda   Decimal?  @db.Decimal(10, 2)
   total        Decimal   @db.Decimal(10, 2)
   compra       Compra    @relation(fields: [compraId], references: [id])
   produto      Produto   @relation(fields: [produtoId], references: [id])
@@ -364,6 +369,7 @@ model Lote {
   livroReceitas        LivroReceita[]
   movimentosSanitarios LoteMovimentoSanitario[]
   incineracaoItens     IncineracaoItem[]
+  inventarioItens    InventarioItem[]
 
   @@index([produtoId])
   @@index([numeroLote])
@@ -739,6 +745,44 @@ model StockBalance {
   @@map("stock_balances")
 }
 
+model Inventario {
+  id                BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  codigo            String             @unique @db.VarChar(50)
+  observacao        String?            @db.Text
+  status            StatusInventario   @default(ABERTO)
+  iniciadoPorId     BigInt             @db.UnsignedBigInt
+  reconciliadoPorId BigInt?            @db.UnsignedBigInt
+  iniciadoEm        DateTime           @default(now())
+  reconciliadoEm    DateTime?
+  itens             InventarioItem[]
+  iniciadoPor       User               @relation("InventarioCriador", fields: [iniciadoPorId], references: [id])
+  reconciliadoPor   User?              @relation("InventarioReconciliador", fields: [reconciliadoPorId], references: [id])
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([status])
+  @@index([iniciadoEm])
+  @@map("inventarios")
+}
+
+model InventarioItem {
+  id             BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  inventarioId   BigInt     @db.UnsignedBigInt
+  produtoId      BigInt     @db.UnsignedBigInt
+  loteId         BigInt?    @db.UnsignedBigInt
+  estoqueSistema Decimal    @db.Decimal(14, 2)
+  estoqueContado Decimal    @db.Decimal(14, 2)
+  divergencia    Decimal    @db.Decimal(14, 2)
+  inventario     Inventario @relation(fields: [inventarioId], references: [id], onDelete: Cascade)
+  produto        Produto    @relation(fields: [produtoId], references: [id])
+  lote           Lote?      @relation(fields: [loteId], references: [id])
+
+  @@unique([inventarioId, produtoId, loteId])
+  @@index([inventarioId])
+  @@index([produtoId])
+  @@map("inventario_itens")
+}
+
 model CashBalance {
   id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
   caixaId       BigInt   @unique @db.UnsignedBigInt
@@ -1081,6 +1125,13 @@ enum StatusCompra {
   PENDENTE
   RECEBIDA
   CANCELADA
+}
+
+enum StatusInventario {
+  ABERTO
+  EM_CONTAGEM
+  RECONCILIADO
+  CANCELADO
 }
 
 enum TipoAlerta {

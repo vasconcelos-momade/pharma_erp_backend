@@ -32,8 +32,10 @@ FORNECEDOR_ID="1"
 LOTE="LOTE-TESTE-$(date +%s)"
 VALIDADE="2027-12-31"
 
+DOC_NUM="FT-TESTE-$(date +%s)"
 STOCK_ENTRY_DATA='{
   "fornecedorId": "'$FORNECEDOR_ID'",
+  "numeroDocumento": "'$DOC_NUM'",
   "items": [
     {
       "produtoId": "'$PRODUTO_ID'",

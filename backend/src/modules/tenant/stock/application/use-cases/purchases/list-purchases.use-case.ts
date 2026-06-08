@@ -17,6 +17,7 @@ export class ListPurchasesUseCase {
 
     return compras.map((c: any) => ({
       id: c.id.toString(),
+      numeroDocumento: c.numeroDocumento,
       fornecedorId: c.fornecedorId.toString(),
       fornecedorNome: c.fornecedor.nome,
       status: c.status,

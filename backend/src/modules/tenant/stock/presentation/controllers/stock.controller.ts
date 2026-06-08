@@ -5,6 +5,7 @@ import { getValidationErrorMessage, parseJsonBody } from "../../../../../shared/
 
 const receivePurchaseSchema = z.object({
   fornecedorId: z.string().trim().min(1),
+  numeroDocumento: z.string().trim().min(1, "Número do documento é obrigatório"),
   items: z.array(z.object({
     produtoId: z.string().trim().min(1),
     numeroLote: z.string().trim().min(1),

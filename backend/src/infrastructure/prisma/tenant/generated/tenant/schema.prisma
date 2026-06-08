@@ -9,42 +9,44 @@ datasource db {
 }
 
 model User {
-  id                      BigInt                   @id @default(autoincrement()) @db.UnsignedBigInt
-  name                    String
-  email                   String?                  @unique
-  role                    TenantUserRole           @default(GERENTE)
-  active                  Boolean                  @default(true)
-  centralUserId           BigInt?                  @db.UnsignedBigInt
-  version                 Int                      @default(0)
-  deletedAt               DateTime?
-  createdAt               DateTime                 @default(now())
-  updatedAt               DateTime                 @updatedAt
-  caixaMovimentos         CaixaMovimento[]
-  estoqueMovimentos       EstoqueMovimento[]
-  faturas                 Fatura[]
-  dispensacoes            Dispensacao[]
-  livroPsicotropicos      LivroPsicotropico[]
-  livroReceitas           LivroReceita[]
-  auditLogs               AuditLog[]
-  userPermissions         UserPermission[]
-  faturaAnulacoes         FaturaAnulacao[]
-  faturasCanceladas       Fatura[]                 @relation("CancelledBy")
-  sessoesFechadas         CaixaSessao[]            @relation("FechadoPor")
-  paymentRefunds          PaymentRefund[]
-  businessEvents          BusinessEvent[]
-  caixaSessoes            CaixaSessao[]
-  stockReversals          StockReversal[]
-  contasReceber           ContaReceber[]
-  contasReceberPagamentos ContaReceberPagamento[]
-  contasPagar             ContaPagar[]
-  authorizedFaturas       Fatura[]                 @relation("AuthorizedBy")
-  authorizedContasReceber ContaReceber[]           @relation("AuthorizedBy")
-  financialMovements      FinancialMovement[]
-  faturaItemCancelamentos FaturaItemCancelamento[]
-  validacoesDispensacao   Dispensacao[]            @relation("ValidadoPor")
-  incineracoesResponsavel Incineracao[]            @relation("ResponsavelIncineracao")
-  incineracoesAprovadas   Incineracao[]            @relation("AprovadoPorIncineracao")
-  movimentosSanitarios    LoteMovimentoSanitario[]
+  id                       BigInt                   @id @default(autoincrement()) @db.UnsignedBigInt
+  name                     String
+  email                    String?                  @unique
+  role                     TenantUserRole           @default(GERENTE)
+  active                   Boolean                  @default(true)
+  centralUserId            BigInt?                  @db.UnsignedBigInt
+  version                  Int                      @default(0)
+  deletedAt                DateTime?
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
+  caixaMovimentos          CaixaMovimento[]
+  estoqueMovimentos        EstoqueMovimento[]
+  faturas                  Fatura[]
+  dispensacoes             Dispensacao[]
+  livroPsicotropicos       LivroPsicotropico[]
+  livroReceitas            LivroReceita[]
+  auditLogs                AuditLog[]
+  userPermissions          UserPermission[]
+  faturaAnulacoes          FaturaAnulacao[]
+  faturasCanceladas        Fatura[]                 @relation("CancelledBy")
+  sessoesFechadas          CaixaSessao[]            @relation("FechadoPor")
+  paymentRefunds           PaymentRefund[]
+  businessEvents           BusinessEvent[]
+  caixaSessoes             CaixaSessao[]
+  stockReversals           StockReversal[]
+  contasReceber            ContaReceber[]
+  contasReceberPagamentos  ContaReceberPagamento[]
+  contasPagar              ContaPagar[]
+  authorizedFaturas        Fatura[]                 @relation("AuthorizedBy")
+  authorizedContasReceber  ContaReceber[]           @relation("AuthorizedBy")
+  financialMovements       FinancialMovement[]
+  faturaItemCancelamentos  FaturaItemCancelamento[]
+  validacoesDispensacao    Dispensacao[]            @relation("ValidadoPor")
+  incineracoesResponsavel  Incineracao[]            @relation("ResponsavelIncineracao")
+  incineracoesAprovadas    Incineracao[]            @relation("AprovadoPorIncineracao")
+  movimentosSanitarios     LoteMovimentoSanitario[]
+  inventariosIniciados     Inventario[]             @relation("InventarioCriador")
+  inventariosReconciliados Inventario[]             @relation("InventarioReconciliador")
 
   @@index([centralUserId])
   @@map("users")
@@ -117,6 +119,7 @@ model Cliente {
   dataNascimento DateTime?
   sexo           String?
   nuit           String?
+  endereco       String?
   empresaId      BigInt?        @db.UnsignedBigInt
   empresa        Empresa?       @relation(fields: [empresaId], references: [id])
   limiteCredito  Decimal?       @db.Decimal(14, 2)
@@ -164,50 +167,81 @@ model ConvenioContrato {
 }
 
 model Produto {
-  id                       BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
-  nome                     String                  @db.VarChar(191)
-  substanciaActiva         String?                 @db.Text
-  dosagem                  String?                 @db.Text
-  forma                    String?                 @db.Text
-  apresentacao             String?                 @db.Text
-  ativo                    Boolean                 @default(true)
-  barcode                  String?                 @unique @db.VarChar(100)
-  classificacaoAnarme      TipoClassificacaoAnarme @default(NORMAL)
-  tipoDispensacao          TipoDispensacao         @default(VENDA_LIVRE)
-  requiresPrescription     Boolean                 @default(false)
-  requiresDoubleCheck      Boolean                 @default(false)
-  requiresPsychotropicBook Boolean                 @default(false)
-  requiresManualReview     Boolean                 @default(false)
-  classificacaoRule        String?                 @db.VarChar(100)
-  classificacaoReason      String?                 @db.Text
-  classificacaoMatchedTerm String?                 @db.VarChar(191)
-  precoVenda               Decimal                 @db.Decimal(14, 2)
-  estoqueAtual             Decimal                 @default(0) @db.Decimal(14, 2) // CACHE: Fonte de verdade é SUM(EstoqueMovimento)
-  estoqueMinimo            Decimal                 @default(0) @db.Decimal(14, 2)
-  taxRuleId                BigInt?                 @db.UnsignedBigInt
-  version                  Int                     @default(0)
-  deletedAt                DateTime?
-  fornecedores             ProdutoFornecedor[]
-  compraItens              CompraItem[]
-  lotes                    Lote[]
-  movimentos               EstoqueMovimento[]
-  reservas                 EstoqueReserva[]
-  historicoPrecos          HistoricoPreco[]
-  alertasEstoque           AlertaEstoque[]
-  livroPsicotropicos       LivroPsicotropico[]
-  stockValuation           StockValuation?
-  stockBalance             StockBalance?
-  dispensacoes             Dispensacao[]
-  faturaItens              FaturaItem[]
-  stockReversals           StockReversal[]
-  livroReceitas            LivroReceita[]
-  taxRule                  TaxRule?                @relation(fields: [taxRuleId], references: [id])
-  createdAt                DateTime                @default(now())
-  updatedAt                DateTime                @updatedAt
+  id                   BigInt                       @id @default(autoincrement()) @db.UnsignedBigInt
+  nome                 String                       @db.VarChar(191)
+  substanciaActiva     String?                      @db.Text
+  dosagem              String?                      @db.Text
+  forma                String?                      @db.Text
+  apresentacao         String?                      @db.Text
+  ativo                Boolean                      @default(true)
+  barcode              String?                      @unique @db.VarChar(100)
+  precoVenda           Decimal                      @db.Decimal(14, 2)
+  estoqueAtual         Decimal                      @default(0) @db.Decimal(14, 2) // CACHE: reconciliado com StockBalance
+  estoqueMinimo        Decimal                      @default(0) @db.Decimal(14, 2)
+  taxRuleId            BigInt?                      @db.UnsignedBigInt
+  version              Int                          @default(0)
+  deletedAt            DateTime?
+  fornecedores         ProdutoFornecedor[]
+  compraItens          CompraItem[]
+  lotes                Lote[]
+  movimentos           EstoqueMovimento[]
+  reservas             EstoqueReserva[]
+  historicoPrecos      HistoricoPreco[]
+  alertasEstoque       AlertaEstoque[]
+  livroPsicotropicos   LivroPsicotropico[]
+  stockValuation       StockValuation?
+  stockBalance         StockBalance?
+  dispensacoes         Dispensacao[]
+  faturaItens          FaturaItem[]
+  stockReversals       StockReversal[]
+  livroReceitas        LivroReceita[]
+  regulacao            ProdutoRegulacao?
+  classificacaoEventos ProdutoClassificacaoEvento[]
+  inventarioItens      InventarioItem[]
+  taxRule              TaxRule?                     @relation(fields: [taxRuleId], references: [id])
+  createdAt            DateTime                     @default(now())
+  updatedAt            DateTime                     @updatedAt
 
   @@index([ativo])
   @@index([taxRuleId])
   @@map("produtos")
+}
+
+/// Política regulatória e de dispensação (fonte de verdade).
+model ProdutoRegulacao {
+  produtoId                BigInt          @id @db.UnsignedBigInt
+  antimicrobiano           Boolean         @default(false)
+  tipoDispensacao          TipoDispensacao @default(VENDA_LIVRE)
+  requiresPrescription     Boolean         @default(false)
+  requiresDoubleCheck      Boolean         @default(false)
+  requiresPsychotropicBook Boolean         @default(false)
+  requiresManualReview     Boolean         @default(false)
+  riskLevel                RiskLevel       @default(LOW)
+  policyVersion            Int             @default(1)
+  classificadoEm           DateTime        @default(now())
+  classificadoPor          String?         @db.VarChar(100)
+  produto                  Produto         @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  updatedAt                DateTime        @updatedAt
+
+  @@index([tipoDispensacao])
+  @@index([requiresManualReview])
+  @@map("produto_regulacao")
+}
+
+/// Histórico append-only de classificação (auditoria / seed / reclassificação).
+model ProdutoClassificacaoEvento {
+  id             BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  produtoId      BigInt   @db.UnsignedBigInt
+  rule           String   @db.VarChar(100)
+  reason         String?  @db.Text
+  matchedTerm    String?  @db.VarChar(191)
+  source         String   @db.VarChar(100)
+  policySnapshot Json?
+  createdAt      DateTime @default(now())
+  produto        Produto  @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+
+  @@index([produtoId, createdAt])
+  @@map("produto_classificacao_eventos")
 }
 
 model Servico {
@@ -270,17 +304,18 @@ model ProdutoFornecedor {
 }
 
 model Compra {
-  id           BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
-  fornecedorId BigInt       @db.UnsignedBigInt
-  data         DateTime
-  total        Decimal      @db.Decimal(14, 2)
-  status       StatusCompra
-  fornecedor   Fornecedor   @relation(fields: [fornecedorId], references: [id])
-  itens        CompraItem[]
-  contasPagar  ContaPagar[]
-  version      Int          @default(0)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id              BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  numeroDocumento String       @db.VarChar(100)
+  fornecedorId    BigInt       @db.UnsignedBigInt
+  data            DateTime
+  total           Decimal      @db.Decimal(14, 2)
+  status          StatusCompra
+  fornecedor      Fornecedor   @relation(fields: [fornecedorId], references: [id])
+  itens           CompraItem[]
+  contasPagar     ContaPagar[]
+  version         Int          @default(0)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   @@index([fornecedorId])
   @@index([status])
@@ -289,14 +324,17 @@ model Compra {
 }
 
 model CompraItem {
-  id         BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
-  compraId   BigInt  @db.UnsignedBigInt
-  produtoId  BigInt  @db.UnsignedBigInt
-  quantidade Decimal @db.Decimal(10, 2)
-  preco      Decimal @db.Decimal(10, 2)
-  total      Decimal @db.Decimal(10, 2)
-  compra     Compra  @relation(fields: [compraId], references: [id])
-  produto    Produto @relation(fields: [produtoId], references: [id])
+  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  compraId     BigInt    @db.UnsignedBigInt
+  produtoId    BigInt    @db.UnsignedBigInt
+  numeroLote   String?   @db.VarChar(100)
+  dataValidade DateTime?
+  quantidade   Decimal   @db.Decimal(10, 2)
+  precoCompra  Decimal   @db.Decimal(10, 2)
+  precoVenda   Decimal?  @db.Decimal(10, 2)
+  total        Decimal   @db.Decimal(10, 2)
+  compra       Compra    @relation(fields: [compraId], references: [id])
+  produto      Produto   @relation(fields: [produtoId], references: [id])
 
   @@map("compras_itens")
 }
@@ -331,6 +369,7 @@ model Lote {
   livroReceitas        LivroReceita[]
   movimentosSanitarios LoteMovimentoSanitario[]
   incineracaoItens     IncineracaoItem[]
+  inventarioItens      InventarioItem[]
 
   @@index([produtoId])
   @@index([numeroLote])
@@ -451,6 +490,8 @@ model Fatura {
   desconto           Decimal             @default(0) @db.Decimal(14, 2)
   ivaTotal           Decimal             @db.Decimal(14, 2)
   total              Decimal             @db.Decimal(14, 2)
+  valorRecebido      Decimal?            @db.Decimal(14, 2)
+  troco              Decimal             @default(0) @db.Decimal(14, 2)
   tipoOperacao       TipoOperacaoFiscal  @default(TRIBUTADA)
   tipoPagamento      TipoPagamentoFatura @default(DINHEIRO)
   moeda              String              @default("MZN")
@@ -704,6 +745,44 @@ model StockBalance {
   @@map("stock_balances")
 }
 
+model Inventario {
+  id                BigInt           @id @default(autoincrement()) @db.UnsignedBigInt
+  codigo            String           @unique @db.VarChar(50)
+  observacao        String?          @db.Text
+  status            StatusInventario @default(ABERTO)
+  iniciadoPorId     BigInt           @db.UnsignedBigInt
+  reconciliadoPorId BigInt?          @db.UnsignedBigInt
+  iniciadoEm        DateTime         @default(now())
+  reconciliadoEm    DateTime?
+  itens             InventarioItem[]
+  iniciadoPor       User             @relation("InventarioCriador", fields: [iniciadoPorId], references: [id])
+  reconciliadoPor   User?            @relation("InventarioReconciliador", fields: [reconciliadoPorId], references: [id])
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([status])
+  @@index([iniciadoEm])
+  @@map("inventarios")
+}
+
+model InventarioItem {
+  id             BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  inventarioId   BigInt     @db.UnsignedBigInt
+  produtoId      BigInt     @db.UnsignedBigInt
+  loteId         BigInt?    @db.UnsignedBigInt
+  estoqueSistema Decimal    @db.Decimal(14, 2)
+  estoqueContado Decimal    @db.Decimal(14, 2)
+  divergencia    Decimal    @db.Decimal(14, 2)
+  inventario     Inventario @relation(fields: [inventarioId], references: [id], onDelete: Cascade)
+  produto        Produto    @relation(fields: [produtoId], references: [id])
+  lote           Lote?      @relation(fields: [loteId], references: [id])
+
+  @@unique([inventarioId, produtoId, loteId])
+  @@index([inventarioId])
+  @@index([produtoId])
+  @@map("inventario_itens")
+}
+
 model CashBalance {
   id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
   caixaId       BigInt   @unique @db.UnsignedBigInt
@@ -803,38 +882,36 @@ model StockValuation {
 }
 
 model Dispensacao {
-  id                    BigInt                  @id @default(autoincrement()) @db.UnsignedBigInt
-  produtoId             BigInt                  @db.UnsignedBigInt
-  loteId                BigInt                  @db.UnsignedBigInt
-  userId                BigInt                  @db.UnsignedBigInt
-  validadoPorId         BigInt?                 @db.UnsignedBigInt
-  faturaItemId          BigInt?                 @unique @db.UnsignedBigInt
-  faturaId              BigInt?                 @db.UnsignedBigInt
-  receitaId             BigInt?                 @db.UnsignedBigInt
-  quantidade            Decimal                 @db.Decimal(14, 2)
+  id                    BigInt             @id @default(autoincrement()) @db.UnsignedBigInt
+  produtoId             BigInt             @db.UnsignedBigInt
+  loteId                BigInt             @db.UnsignedBigInt
+  userId                BigInt             @db.UnsignedBigInt
+  validadoPorId         BigInt?            @db.UnsignedBigInt
+  faturaItemId          BigInt?            @unique @db.UnsignedBigInt
+  faturaId              BigInt?            @db.UnsignedBigInt
+  receitaId             BigInt?            @db.UnsignedBigInt
+  quantidade            Decimal            @db.Decimal(14, 2)
   tipoDispensacao       TipoDispensacao
-  classificacaoAnarme   TipoClassificacaoAnarme @default(NORMAL)
-  isControlado          Boolean                 @default(false)
-  isPsicotropico        Boolean                 @default(false)
+  isControlado          Boolean            @default(false)
+  isPsicotropico        Boolean            @default(false)
   necessitaReceita      Boolean
-  receitaVerificada     Boolean                 @default(false)
-  receitaFisicaPresente Boolean                 @default(false)
-  receitaValida         Boolean                 @default(false)
-  validacaoDupla        Boolean                 @default(false)
+  receitaVerificada     Boolean            @default(false)
+  receitaFisicaPresente Boolean            @default(false)
+  receitaValida         Boolean            @default(false)
+  validacaoDupla        Boolean            @default(false)
   motivoSaida           String?
-  numeroDocumento       String?
-  idempotencyKey        String?                 @unique
+  idempotencyKey        String?            @unique
   deletedAt             DateTime?
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime                @updatedAt
-  version               Int                     @default(0)
-  produto               Produto                 @relation(fields: [produtoId], references: [id])
-  lote                  Lote                    @relation(fields: [loteId], references: [id])
-  user                  User                    @relation(fields: [userId], references: [id])
-  validadoPor           User?                   @relation("ValidadoPor", fields: [validadoPorId], references: [id])
-  faturaItem            FaturaItem?             @relation(fields: [faturaItemId], references: [id])
-  fatura                Fatura?                 @relation(fields: [faturaId], references: [id])
-  receita               Receita?                @relation(fields: [receitaId], references: [id])
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  version               Int                @default(0)
+  produto               Produto            @relation(fields: [produtoId], references: [id])
+  lote                  Lote               @relation(fields: [loteId], references: [id])
+  user                  User               @relation(fields: [userId], references: [id])
+  validadoPor           User?              @relation("ValidadoPor", fields: [validadoPorId], references: [id])
+  faturaItem            FaturaItem?        @relation(fields: [faturaItemId], references: [id])
+  fatura                Fatura?            @relation(fields: [faturaId], references: [id])
+  receita               Receita?           @relation(fields: [receitaId], references: [id])
   movimentoLivro        LivroPsicotropico?
   livroReceita          LivroReceita?
 
@@ -1050,6 +1127,13 @@ enum StatusCompra {
   CANCELADA
 }
 
+enum StatusInventario {
+  ABERTO
+  EM_CONTAGEM
+  RECONCILIADO
+  CANCELADO
+}
+
 enum TipoAlerta {
   ESTOQUE_BAIXO
   PRODUTO_ESGOTADO
@@ -1084,12 +1168,11 @@ enum FinancialMovementType {
   DEBT_PAYMENT
 }
 
-enum TipoClassificacaoAnarme {
-  NORMAL
-  NARCOTICO
-  PSICOTROPICO_LIII
-  PSICOTROPICO_LIV
-  CONTROLADO_ESPECIAL
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
 }
 
 enum TipoRelatorioSanitario {
@@ -1185,13 +1268,14 @@ model FinancialSummary {
 }
 
 model Receita {
-  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
-  clienteId     BigInt   @db.UnsignedBigInt
-  medicoNome    String?
-  numeroReceita String?
-  dataReceita   DateTime
-  observacoes   String?
-  createdAt     DateTime @default(now())
+  id               BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  clienteId        BigInt   @db.UnsignedBigInt
+  medicoNome       String?
+  numeroReceita    String?
+  unidadeSanitaria String?
+  dataReceita      DateTime
+  observacoes      String?
+  createdAt        DateTime @default(now())
 
   cliente       Cliente        @relation(fields: [clienteId], references: [id])
   livroReceitas LivroReceita[]
