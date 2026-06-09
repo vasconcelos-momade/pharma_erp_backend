@@ -371,6 +371,7 @@ model Lote {
   incineracaoItens     IncineracaoItem[]
   inventarioItens    InventarioItem[]
 
+  @@unique([produtoId, numeroLote, dataValidade])
   @@index([produtoId])
   @@index([numeroLote])
   @@index([produtoId, ativo, estadoSanitario, disponibilidade, dataValidade]) // FEFO Otimizado Enterprise

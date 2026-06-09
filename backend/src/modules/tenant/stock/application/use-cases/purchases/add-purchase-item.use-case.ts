@@ -1,4 +1,5 @@
 import { getPrisma } from "../../../../../../infrastructure/prisma/tenant-prisma.factory";
+import { normalizeExpiryDate } from "../../../domain/purchase-receiving.service";
 import type { AddPurchaseItemDTO } from "../../dto/purchases.dto";
 
 export class AddPurchaseItemUseCase {
@@ -40,7 +41,7 @@ export class AddPurchaseItemUseCase {
         compraId: compra.id,
         produtoId: produto.id,
         numeroLote: data.numeroLote,
-        dataValidade: new Date(data.dataValidade),
+        dataValidade: normalizeExpiryDate(data.dataValidade),
         quantidade: data.quantidade,
         precoCompra: data.precoCompra,
         precoVenda: data.precoVenda ?? null,
