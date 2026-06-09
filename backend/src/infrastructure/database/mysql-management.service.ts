@@ -37,11 +37,16 @@ export class MySqlManagementService {
 
     try {
       execSync(
-        `DATABASE_URL_TENANT="${dbUrl}" bun run prisma:deploy:tenant`,
+        `DATABASE_URL_TENANT="${dbUrl}" bun run prisma:migrate:tenant`,
         { stdio: "inherit", env: { ...process.env, DATABASE_URL_TENANT: dbUrl } }
       );
-      
-      console.log(`✅ [Prisma] Schema sincronizado com sucesso em ${dbName}.`);
+
+      execSync(`bun run prisma:generate:tenant`, {
+        stdio: "inherit",
+        env: { ...process.env, DATABASE_URL_TENANT: dbUrl },
+      });
+
+      console.log(`✅ [Prisma] Migrations tenant aplicadas com sucesso em ${dbName}.`);
     } catch (error) {
       console.error(`❌ [Prisma] Erro ao rodar migrations em ${dbName}:`, error);
       throw new Error(`Falha ao aplicar migrations no banco do tenant.`);

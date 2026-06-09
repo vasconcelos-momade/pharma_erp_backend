@@ -522,9 +522,59 @@ Se tiver **Bun instalado no host** e estiver em `backend/`, pode usar os mesmos 
 
 #### Schema tenant (modelo partilhado)
 
-O ficheiro `src/infrastructure/prisma/tenant/schema.prisma` aplica-se a **cada** base `tenant_*` no registo (via `prisma db push --skip-generate` no código). Para regerar o client tenant após alterações ao schema, reinicie o backend (o entrypoint corre `generate` nos volumes `skalway_pharm_prisma_*_generated`).
+O ficheiro `src/infrastructure/prisma/tenant/schema.prisma` aplica-se a **cada** base `tenant_*`. Para **atualizar schema sem apagar dados**, use `prisma migrate deploy` (recomendado). O `db push` fica reservado a ambientes de desenvolvimento rápido ou tenants novos no registo automático.
 
-Aplicar manualmente o schema a **uma** base tenant de teste (substitua `SENHA` e o nome da base; porta `3312` é a do host, dentro do Docker use `mysql_central:3306`):
+**Aplicar migrations num tenant existente (preserva dados)** — substitua `TENANT_DB`:
+
+```bash
+# Na raiz do repositório (recomendado)
+bash backend/scripts/migrate-tenant-deploy.sh TENANT_DB
+
+# Exemplo: tenant demo
+bash backend/scripts/migrate-tenant-deploy.sh tenant_farmacia_1780931448
+
+# Todos os tenants
+bash backend/scripts/migrate-all-tenants.sh
+```
+
+Se a base foi criada com `db push` e ainda **não tem** `_prisma_migrations` (erro P3005), faça baseline uma vez e volte a correr:
+
+```bash
+bash backend/scripts/migrate-tenant-deploy.sh TENANT_DB --baseline-all
+```
+
+Equivalente manual no container:
+
+```bash
+DB_URL="mysql://root:root_password@mysql_central:3306/TENANT_DB"
+
+# 1) Aplicar apenas migrations pendentes (não apaga dados)
+docker exec -e DATABASE_URL_TENANT="$DB_URL" skalway_pharm_backend \
+  sh -c 'bash scripts/ensure-tenant-database-url.sh && bunx prisma migrate deploy --schema=src/infrastructure/prisma/tenant/schema.prisma'
+
+# 2) Se P3005: baseline (só marca como aplicadas, não executa SQL)
+for m in 20260520150850_refactor_integration \
+         20260608160000_add_compra_numero_documento \
+         20260608170000_compra_item_precos \
+         20260608180000_inventario \
+         20260608190000_lote_unique_expiry \
+         20260609123000_transferencias; do
+  docker exec -e DATABASE_URL_TENANT="$DB_URL" skalway_pharm_backend \
+    bunx prisma migrate resolve --applied "$m" --schema=src/infrastructure/prisma/tenant/schema.prisma
+done
+
+# 3) Voltar a correr deploy (só pendentes, ex. transferencias)
+docker exec -e DATABASE_URL_TENANT="$DB_URL" skalway_pharm_backend \
+  bunx prisma migrate deploy --schema=src/infrastructure/prisma/tenant/schema.prisma
+
+# 4) Regenerar client e reiniciar backend
+docker exec skalway_pharm_backend bun run prisma:generate:tenant
+docker restart skalway_pharm_backend
+```
+
+Migrations tenant disponíveis em `backend/src/infrastructure/prisma/tenant/migrations/` (inclui `20260609123000_transferencias`).
+
+**Dev rápido** (pode pedir `--accept-data-loss` em alterações destrutivas — evitar em produção):
 
 ```bash
 docker compose -f docker-compose.dev.yml run --rm --no-deps backend \
@@ -536,7 +586,9 @@ docker compose -f docker-compose.dev.yml run --rm --no-deps backend \
 | Comando | Descrição |
 |---------|-----------|
 | `docker exec skalway_pharm_mysql mysql -uroot -proot_password -e "SHOW DATABASES LIKE 'tenant_%';"` | Listar todos os bancos de dados de tenants. |
-| `docker compose -f docker-compose.dev.yml exec backend sh -c "DATABASE_URL_TENANT='mysql://root:root_password@mysql_central:3306/NOME_DO_BANCO' bunx prisma db push --schema=src/infrastructure/prisma/tenant/schema.prisma --accept-data-loss"` | Sincronizar o schema de um tenant específico (Migration manual). |
+| `bash backend/scripts/migrate-tenant-deploy.sh NOME_DO_BANCO` | **Aplicar migrations tenant sem apagar dados** (`migrate deploy`). |
+| `bash backend/scripts/migrate-tenant-deploy.sh NOME_DO_BANCO --baseline-all` | Baseline para bases antigas (db push) + deploy. |
+| `docker compose -f docker-compose.dev.yml exec backend sh -c "DATABASE_URL_TENANT='mysql://root:root_password@mysql_central:3306/NOME_DO_BANCO' bunx prisma db push --schema=src/infrastructure/prisma/tenant/schema.prisma --accept-data-loss"` | Sincronizar schema via db push (dev; pode ser destrutivo). |
 | `docker compose -f docker-compose.dev.yml exec backend bun tests/functional/sales-flow-test.ts` | Executar testes funcionais de fluxo de venda. |
 | `docker compose -f docker-compose.dev.yml exec backend bun tests/stress/concurrency-test.ts` | Executar teste de estresse e concorrência no POS. |
 

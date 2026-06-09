@@ -13,6 +13,7 @@
     "prisma:generate:tenant": "bunx prisma generate --schema=src/infrastructure/prisma/tenant/schema.prisma",
     "prisma:generate": "bun run prisma:generate:central && bun run prisma:generate:tenant",
     "prisma:deploy:tenant": "bash scripts/ensure-tenant-database-url.sh && bunx prisma db push --schema=src/infrastructure/prisma/tenant/schema.prisma --accept-data-loss --skip-generate",
+    "prisma:migrate:tenant": "bash scripts/ensure-tenant-database-url.sh && bunx prisma migrate deploy --schema=src/infrastructure/prisma/tenant/schema.prisma",
     "billing:generate:monthly": "bun scripts/generate-monthly-billing.ts",
     "billing:process:lifecycle": "bun scripts/process-subscription-lifecycle.ts",
     "dev": "bun run prisma:deploy:central && bun --watch src/main.ts",

@@ -1,6 +1,7 @@
 import { StockController } from "../../modules/tenant/stock";
 import { InventoryController } from "../../modules/tenant/stock/presentation/controllers/inventory.controller";
 import { PurchasesController } from "../../modules/tenant/stock/presentation/controllers/purchases.controller";
+import { TransfersController } from "../../modules/tenant/stock/presentation/controllers/transfers.controller";
 import {
   tenantAuthMiddleware,
   tenantBranchContextMiddleware,
@@ -12,6 +13,7 @@ import type { Router } from "../../shared/http/router";
 const stockController = new StockController();
 const purchasesController = new PurchasesController();
 const inventoryController = new InventoryController();
+const transfersController = new TransfersController();
 
 function registerReceiveRoute(router: Router, path: string): void {
   router.post(
@@ -167,6 +169,89 @@ function registerInventoryRoutes(router: Router, prefix: string): void {
   );
 }
 
+function registerTransferRoutes(router: Router, prefix: string): void {
+  router.post(
+    `${prefix}/tenant/transferencias`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    auditMiddleware,
+    async (context) =>
+      transfersController.createTransfer(
+        context.req,
+        getTenantAuth(context).userId,
+      ),
+  );
+
+  router.get(
+    `${prefix}/tenant/transferencias`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    async (context) => transfersController.listTransfers(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/transferencias/:transferenciaId`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    async (context) => transfersController.getTransferDetail(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/produtos/:produtoId/lotes`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    async (context) => transfersController.listProductLots(context.req),
+  );
+
+  router.post(
+    `${prefix}/tenant/transferencias/:transferenciaId/items`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    auditMiddleware,
+    async (context) => transfersController.addTransferItem(context.req),
+  );
+
+  router.patch(
+    `${prefix}/tenant/transferencias/:transferenciaId/items/:itemId`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    auditMiddleware,
+    async (context) => transfersController.updateTransferItem(context.req),
+  );
+
+  router.delete(
+    `${prefix}/tenant/transferencias/:transferenciaId/items/:itemId`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    auditMiddleware,
+    async (context) => transfersController.removeTransferItem(context.req),
+  );
+
+  router.post(
+    `${prefix}/tenant/transferencias/:transferenciaId/confirmar`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    auditMiddleware,
+    async (context) =>
+      transfersController.confirmTransfer(
+        context.req,
+        getTenantAuth(context).userId,
+      ),
+  );
+
+  router.post(
+    `${prefix}/tenant/transferencias/:transferenciaId/cancelar`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    auditMiddleware,
+    async (context) =>
+      transfersController.cancelTransfer(
+        context.req,
+        getTenantAuth(context).userId,
+      ),
+  );
+}
+
 export function registerStockRoutes(router: Router, prefix: string): void {
   registerReceiveRoute(router, `${prefix}/tenant/stock/receipts`);
   registerReceiveRoute(router, `${prefix}/tenant/stock/receive`);
@@ -176,4 +261,5 @@ export function registerStockRoutes(router: Router, prefix: string): void {
 
   registerPurchasesRoutes(router, prefix);
   registerInventoryRoutes(router, prefix);
+  registerTransferRoutes(router, prefix);
 }
