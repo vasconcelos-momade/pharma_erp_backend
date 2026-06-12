@@ -1,5 +1,5 @@
 /**
- * Auditoria E2E do módulo Transferências.
+ * Auditoria E2E do módulo Requisições (stock).
  * Uso: bun scripts/audit-transfers-e2e.ts
  */
 import { PrismaClient } from "../src/infrastructure/prisma/tenant/generated/tenant";
@@ -77,7 +77,7 @@ async function readStock(produtoId: string, loteId?: string) {
 }
 
 async function main() {
-  console.log("=== Auditoria E2E Transferências ===\n");
+  console.log("=== Auditoria E2E Requisições ===\n");
   const suffix = Date.now();
 
   const login = await fetch(`${BASE_URL}/central/auth/login`, {
@@ -112,7 +112,7 @@ async function main() {
 
   // 1. Create draft
   const doc = `TRF-AUDIT-${suffix}`;
-  const create = await api("POST", "/tenant/transferencias", token, tenantId, branchId, {
+  const create = await api("POST", "/tenant/requisicoes", token, tenantId, branchId, {
     numeroDocumento: doc,
     origem: "Armazém A",
     destino: "Armazém B",
@@ -123,11 +123,11 @@ async function main() {
     fail("criar", `HTTP ${create.status}: ${JSON.stringify(create.json)}`);
     return;
   }
-  const tid = String(create.json?.transferenciaId ?? create.json?.data?.transferenciaId);
+  const tid = String(create.json?.requisicaoId ?? create.json?.data?.requisicaoId);
   ok("criar", `Rascunho ${tid} criado`);
 
   // 2. Validation: origem = destino
-  const badCreate = await api("POST", "/tenant/transferencias", token, tenantId, branchId, {
+  const badCreate = await api("POST", "/tenant/requisicoes", token, tenantId, branchId, {
     numeroDocumento: `TRF-BAD-${suffix}`,
     origem: "X",
     destino: "X",
@@ -136,7 +136,7 @@ async function main() {
   else ok("validacao", "origem=destino → 400");
 
   // 3. Add item with lote
-  const add = await api("POST", `/tenant/transferencias/${tid}/items`, token, tenantId, branchId, {
+  const add = await api("POST", `/tenant/requisicoes/${tid}/items`, token, tenantId, branchId, {
     produtoId,
     loteId,
     quantidade: 2,
@@ -145,18 +145,18 @@ async function main() {
   else ok("add-item", "Item com lote adicionado");
 
   // 4. Re-add same line increments
-  await api("POST", `/tenant/transferencias/${tid}/items`, token, tenantId, branchId, {
+  await api("POST", `/tenant/requisicoes/${tid}/items`, token, tenantId, branchId, {
     produtoId,
     loteId,
     quantidade: 1,
   });
-  const detail = await api("GET", `/tenant/transferencias/${tid}`, token, tenantId, branchId);
+  const detail = await api("GET", `/tenant/requisicoes/${tid}`, token, tenantId, branchId);
   const itemQty = detail.json?.itens?.[0]?.quantidade ?? detail.json?.data?.itens?.[0]?.quantidade;
   if (Number(itemQty) === 3) ok("add-item", "Re-add incrementa quantidade (2+1=3)");
   else fail("add-item", `Quantidade esperada 3, obtida ${itemQty}`);
 
   // 5. List RASCUNHO
-  const listDraft = await api("GET", "/tenant/transferencias?status=RASCUNHO", token, tenantId, branchId);
+  const listDraft = await api("GET", "/tenant/requisicoes?status=RASCUNHO", token, tenantId, branchId);
   const found = (listDraft.json ?? []).some?.((t: any) => String(t.id) === tid) ||
     listDraft.json?.data?.some?.((t: any) => String(t.id) === tid);
   if (listDraft.status === 200 && (found || Array.isArray(listDraft.json))) ok("listar", "GET RASCUNHO OK");
@@ -164,27 +164,27 @@ async function main() {
 
   // 6. Confirm empty should fail
   const emptyDoc = `TRF-EMPTY-${suffix}`;
-  const emptyCreate = await api("POST", "/tenant/transferencias", token, tenantId, branchId, {
+  const emptyCreate = await api("POST", "/tenant/requisicoes", token, tenantId, branchId, {
     numeroDocumento: emptyDoc,
     origem: "A",
     destino: "B",
   });
-  const emptyId = String(emptyCreate.json?.transferenciaId ?? emptyCreate.json?.data?.transferenciaId);
+  const emptyId = String(emptyCreate.json?.requisicaoId ?? emptyCreate.json?.data?.requisicaoId);
   const emptyConfirm = await api(
     "POST",
-    `/tenant/transferencias/${emptyId}/confirmar`,
+    `/tenant/requisicoes/${emptyId}/confirmar`,
     token,
     tenantId,
     branchId,
     {},
   );
   if (emptyConfirm.status !== 400) fail("confirmar", `Vazia devolveu HTTP ${emptyConfirm.status}`);
-  else ok("confirmar", "Transferência sem itens → 400");
+  else ok("confirmar", "Requisição sem itens → 400");
 
   // 7. Confirm main transfer
   const confirm = await api(
     "POST",
-    `/tenant/transferencias/${tid}/confirmar`,
+    `/tenant/requisicoes/${tid}/confirmar`,
     token,
     tenantId,
     branchId,
@@ -193,7 +193,7 @@ async function main() {
   if (confirm.status !== 200) {
     fail("confirmar", `HTTP ${confirm.status}: ${JSON.stringify(confirm.json)}`);
   } else {
-    ok("confirmar", `Transferência ${tid} confirmada`);
+    ok("confirmar", `Requisição ${tid} confirmada`);
   }
 
   // 8. Stock unchanged (documental only)
@@ -226,14 +226,14 @@ async function main() {
   }
 
   // 10. List CONFIRMADA
-  const listDone = await api("GET", "/tenant/transferencias?status=CONFIRMADA", token, tenantId, branchId);
+  const listDone = await api("GET", "/tenant/requisicoes?status=CONFIRMADA", token, tenantId, branchId);
   if (listDone.status === 200) ok("listar", "GET CONFIRMADA OK");
   else fail("listar", `CONFIRMADA HTTP ${listDone.status}`);
 
   // 11. Re-confirm → 400
   const reconfirm = await api(
     "POST",
-    `/tenant/transferencias/${tid}/confirmar`,
+    `/tenant/requisicoes/${tid}/confirmar`,
     token,
     tenantId,
     branchId,
@@ -245,7 +245,7 @@ async function main() {
   // 12. Cancel confirmed → 400
   const cancelConfirmed = await api(
     "POST",
-    `/tenant/transferencias/${tid}/cancelar`,
+    `/tenant/requisicoes/${tid}/cancelar`,
     token,
     tenantId,
     branchId,
@@ -256,20 +256,20 @@ async function main() {
 
   // 13. Cancel draft flow
   const cancelDoc = `TRF-CANCEL-${suffix}`;
-  const cancelCreate = await api("POST", "/tenant/transferencias", token, tenantId, branchId, {
+  const cancelCreate = await api("POST", "/tenant/requisicoes", token, tenantId, branchId, {
     numeroDocumento: cancelDoc,
     origem: "C",
     destino: "D",
   });
-  const cancelId = String(cancelCreate.json?.transferenciaId ?? cancelCreate.json?.data?.transferenciaId);
-  await api("POST", `/tenant/transferencias/${cancelId}/items`, token, tenantId, branchId, {
+  const cancelId = String(cancelCreate.json?.requisicaoId ?? cancelCreate.json?.data?.requisicaoId);
+  await api("POST", `/tenant/requisicoes/${cancelId}/items`, token, tenantId, branchId, {
     produtoId,
     loteId,
     quantidade: 1,
   });
   const cancelRes = await api(
     "POST",
-    `/tenant/transferencias/${cancelId}/cancelar`,
+    `/tenant/requisicoes/${cancelId}/cancelar`,
     token,
     tenantId,
     branchId,
@@ -281,7 +281,7 @@ async function main() {
   // 14. Add item to cancelled → 400
   const addCancelled = await api(
     "POST",
-    `/tenant/transferencias/${cancelId}/items`,
+    `/tenant/requisicoes/${cancelId}/items`,
     token,
     tenantId,
     branchId,
@@ -292,21 +292,21 @@ async function main() {
 
   // 15. Insufficient stock
   const bigDoc = `TRF-BIG-${suffix}`;
-  const bigCreate = await api("POST", "/tenant/transferencias", token, tenantId, branchId, {
+  const bigCreate = await api("POST", "/tenant/requisicoes", token, tenantId, branchId, {
     numeroDocumento: bigDoc,
     origem: "E",
     destino: "F",
   });
-  const bigId = String(bigCreate.json?.transferenciaId ?? bigCreate.json?.data?.transferenciaId);
+  const bigId = String(bigCreate.json?.requisicaoId ?? bigCreate.json?.data?.requisicaoId);
   const hugeQty = Number(lote.quantidadeAtual) + 99999;
-  await api("POST", `/tenant/transferencias/${bigId}/items`, token, tenantId, branchId, {
+  await api("POST", `/tenant/requisicoes/${bigId}/items`, token, tenantId, branchId, {
     produtoId,
     loteId,
     quantidade: hugeQty,
   });
   const bigConfirm = await api(
     "POST",
-    `/tenant/transferencias/${bigId}/confirmar`,
+    `/tenant/requisicoes/${bigId}/confirmar`,
     token,
     tenantId,
     branchId,
@@ -316,7 +316,7 @@ async function main() {
   else ok("stock", "Stock insuficiente na confirmação → 400");
 
   // 16. Detail DTO shape
-  const det = await api("GET", `/tenant/transferencias/${tid}`, token, tenantId, branchId);
+  const det = await api("GET", `/tenant/requisicoes/${tid}`, token, tenantId, branchId);
   const d = det.json?.data ?? det.json;
   for (const k of ["id", "numeroDocumento", "origem", "destino", "tipo", "status", "itens"]) {
     if (!(k in (d ?? {}))) fail("dto", `Detail falta campo '${k}'`);

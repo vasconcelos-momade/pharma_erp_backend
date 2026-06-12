@@ -19,7 +19,6 @@ export class ListProductLotsUseCase {
         produtoId: produto.id,
         deletedAt: null,
         ativo: true,
-        quantidadeAtual: { gt: 0 },
       },
       select: {
         id: true,

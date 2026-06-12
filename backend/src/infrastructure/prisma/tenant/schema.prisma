@@ -47,8 +47,8 @@ model User {
   movimentosSanitarios    LoteMovimentoSanitario[]
   inventariosIniciados    Inventario[]             @relation("InventarioCriador")
   inventariosReconciliados Inventario[]            @relation("InventarioReconciliador")
-  transferenciasCriadas    Transferencia[] @relation("TransferenciaCriadaPor")
-  transferenciasConfirmadas Transferencia[] @relation("TransferenciaConfirmadaPor")
+  requisicoesCriadas        Requisicao[] @relation("RequisicaoCriadaPor")
+  requisicoesConfirmadas    Requisicao[] @relation("RequisicaoConfirmadaPor")
 
   @@index([centralUserId])
   @@map("users")
@@ -200,7 +200,7 @@ model Produto {
   regulacao                ProdutoRegulacao?
   classificacaoEventos     ProdutoClassificacaoEvento[]
   inventarioItens          InventarioItem[]
-  transferenciaItens       TransferenciaItem[]
+  requisicaoItens         RequisicaoItem[]
   taxRule                  TaxRule?                @relation(fields: [taxRuleId], references: [id])
   createdAt                DateTime                @default(now())
   updatedAt                DateTime                @updatedAt
@@ -287,6 +287,7 @@ model Fornecedor {
   lotes           Lote[]
   contasPagar     ContaPagar[]
   historicoPrecos HistoricoPreco[]
+  requisicoes     Requisicao[]
 
   @@map("fornecedores")
 }
@@ -373,7 +374,7 @@ model Lote {
   movimentosSanitarios LoteMovimentoSanitario[]
   incineracaoItens     IncineracaoItem[]
   inventarioItens    InventarioItem[]
-  transferenciaItens   TransferenciaItem[]
+  requisicaoItens      RequisicaoItem[]
 
   @@unique([produtoId, numeroLote, dataValidade])
   @@index([produtoId])
@@ -788,42 +789,52 @@ model InventarioItem {
   @@map("inventario_itens")
 }
 
-model Transferencia {
+model Requisicao {
   id              BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
   numeroDocumento String              @unique @db.VarChar(100)
-  origem          String              @db.VarChar(100)
-  destino         String              @db.VarChar(100)
-  tipo            TipoTransferencia   @default(SAIDA)
-  status          StatusTransferencia @default(RASCUNHO)
+  origem          String?             @db.VarChar(100)
+  destino         String?             @db.VarChar(100)
+  tipo            TipoRequisicao      @default(SAIDA)
+  status          StatusRequisicao    @default(PENDENTE)
   observacao      String?             @db.Text
+  fornecedorId    BigInt?             @db.UnsignedBigInt
+  total           Decimal?            @db.Decimal(14, 2)
   userId          BigInt              @db.UnsignedBigInt
   confirmedAt     DateTime?
   confirmedById   BigInt?             @db.UnsignedBigInt
-  user            User                @relation("TransferenciaCriadaPor", fields: [userId], references: [id])
-  confirmedBy     User?               @relation("TransferenciaConfirmadaPor", fields: [confirmedById], references: [id])
-  itens           TransferenciaItem[]
+  user            User                @relation("RequisicaoCriadaPor", fields: [userId], references: [id])
+  confirmedBy     User?               @relation("RequisicaoConfirmadaPor", fields: [confirmedById], references: [id])
+  fornecedor      Fornecedor?         @relation(fields: [fornecedorId], references: [id])
+  itens           RequisicaoItem[]
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 
   @@index([origem])
   @@index([destino])
   @@index([status])
+  @@index([tipo])
+  @@index([fornecedorId])
   @@index([createdAt])
   @@map("transferencias")
 }
 
-model TransferenciaItem {
-  id              BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
-  transferenciaId BigInt        @db.UnsignedBigInt
-  produtoId       BigInt        @db.UnsignedBigInt
-  loteId          BigInt?       @db.UnsignedBigInt
-  quantidade      Decimal       @db.Decimal(14, 2)
-  transferencia   Transferencia @relation(fields: [transferenciaId], references: [id], onDelete: Cascade)
-  produto         Produto       @relation(fields: [produtoId], references: [id])
-  lote            Lote?         @relation(fields: [loteId], references: [id])
+model RequisicaoItem {
+  id                   BigInt     @id @default(autoincrement()) @db.UnsignedBigInt
+  requisicaoId         BigInt     @db.UnsignedBigInt
+  produtoId            BigInt     @db.UnsignedBigInt
+  loteId               BigInt?    @db.UnsignedBigInt
+  quantidadeSolicitada Decimal    @db.Decimal(14, 2)
+  numeroLote           String?    @db.VarChar(100)
+  dataValidade         DateTime?
+  precoCompra          Decimal?   @db.Decimal(10, 2)
+  precoVenda           Decimal?   @db.Decimal(10, 2)
+  subtotal             Decimal?   @db.Decimal(14, 2)
+  requisicao           Requisicao @relation(fields: [requisicaoId], references: [id], onDelete: Cascade)
+  produto              Produto    @relation(fields: [produtoId], references: [id])
+  lote                 Lote?      @relation(fields: [loteId], references: [id])
 
-  @@unique([transferenciaId, produtoId, loteId])
-  @@index([transferenciaId])
+  @@unique([requisicaoId, produtoId, loteId])
+  @@index([requisicaoId])
   @@index([produtoId])
   @@map("transferencia_itens")
 }
@@ -1179,14 +1190,17 @@ enum StatusInventario {
   CANCELADO
 }
 
-enum TipoTransferencia {
-  SAIDA
+enum TipoRequisicao {
+  COMPRA
   ENTRADA
+  SAIDA
 }
 
-enum StatusTransferencia {
-  RASCUNHO
-  CONFIRMADA
+enum StatusRequisicao {
+  PENDENTE
+  APROVADA
+  REJEITADA
+  CONCLUIDA
   CANCELADA
 }
 

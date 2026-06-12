@@ -1,14 +1,14 @@
 import { getPrisma } from "../../../../infrastructure/prisma/tenant-prisma.factory";
 import { ForbiddenApiError } from "../../../../shared/http/api-error";
 
-const TRANSFER_MANAGER_ROLES = new Set([
+const REQUISITION_MANAGER_ROLES = new Set([
   "ADMIN",
   "GERENTE",
   "DIRETOR_TECNICO",
   "FARMACEUTICO",
 ]);
 
-export async function assertTransferManagerRole(userId: string): Promise<void> {
+export async function assertRequisitionManagerRole(userId: string): Promise<void> {
   const prisma = getPrisma() as any;
   const user = await prisma.user.findUnique({
     where: { id: BigInt(userId) },
@@ -19,9 +19,11 @@ export async function assertTransferManagerRole(userId: string): Promise<void> {
     throw new ForbiddenApiError("Utilizador inactivo");
   }
 
-  if (!TRANSFER_MANAGER_ROLES.has(user.role)) {
+  if (!REQUISITION_MANAGER_ROLES.has(user.role)) {
     throw new ForbiddenApiError(
-      "Apenas gestores ou farmacêuticos podem confirmar ou cancelar transferências",
+      "Apenas gestores ou farmaceuticos podem aprovar, rejeitar ou cancelar requisicoes",
     );
   }
 }
+
+export const assertTransferManagerRole = assertRequisitionManagerRole;
