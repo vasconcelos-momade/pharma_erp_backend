@@ -52,4 +52,22 @@ export class MySqlManagementService {
       throw new Error(`Falha ao aplicar migrations no banco do tenant.`);
     }
   }
+
+  static runRolePermissionsSeed(dbName: string) {
+    console.log(`🔐 [Seed] Aplicando role_permissions no banco: ${dbName}`);
+
+    const rootPassword = process.env.MYSQL_ROOT_PASSWORD;
+    const dbUrl = `mysql://root:${rootPassword}@mysql_central:3306/${dbName}`;
+
+    try {
+      execSync(`bun prisma/seed-role-permissions.ts`, {
+        stdio: "inherit",
+        env: { ...process.env, DATABASE_URL_TENANT: dbUrl },
+      });
+      console.log(`✅ [Seed] role_permissions aplicadas em ${dbName}.`);
+    } catch (error) {
+      console.error(`❌ [Seed] Erro ao semear role_permissions em ${dbName}:`, error);
+      throw new Error(`Falha ao semear permissoes no banco do tenant.`);
+    }
+  }
 }

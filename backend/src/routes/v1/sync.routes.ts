@@ -4,6 +4,7 @@ import {
   getTenantAuth,
   tenantAuthMiddleware,
   tenantBranchContextMiddleware,
+  requirePermission,
 } from "../../shared/http/auth-middlewares";
 import { auditMiddleware, createRateLimitMiddleware } from "../../shared/http/middlewares";
 import { parseJsonBody } from "../../shared/http/request-validation";
@@ -69,11 +70,17 @@ async function pullSync(context: RouteContext): Promise<Response> {
   return Response.json(result);
 }
 
-function registerSyncPath(router: Router, path: string, handler: typeof pushSync | typeof pullSync): void {
+function registerSyncPath(
+  router: Router,
+  path: string,
+  permission: readonly ["CONFIGURACOES", "UPDATE"] | readonly ["CONFIGURACOES", "VIEW"],
+  handler: typeof pushSync | typeof pullSync,
+): void {
   router.post(
     path,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission(permission[0], permission[1]),
     createRateLimitMiddleware({ keyPrefix: `sync:${path}`, windowMs: 60_000, max: 120 }),
     auditMiddleware,
     handler,
@@ -81,8 +88,8 @@ function registerSyncPath(router: Router, path: string, handler: typeof pushSync
 }
 
 export function registerSyncRoutes(router: Router, prefix: string): void {
-  registerSyncPath(router, `${prefix}/sync/push`, pushSync);
-  registerSyncPath(router, `${prefix}/sync/pull`, pullSync);
-  registerSyncPath(router, `${prefix}/central/sync/push`, pushSync);
-  registerSyncPath(router, `${prefix}/central/sync/pull`, pullSync);
+  registerSyncPath(router, `${prefix}/sync/push`, ["CONFIGURACOES", "UPDATE"], pushSync);
+  registerSyncPath(router, `${prefix}/sync/pull`, ["CONFIGURACOES", "VIEW"], pullSync);
+  registerSyncPath(router, `${prefix}/central/sync/push`, ["CONFIGURACOES", "UPDATE"], pushSync);
+  registerSyncPath(router, `${prefix}/central/sync/pull`, ["CONFIGURACOES", "VIEW"], pullSync);
 }

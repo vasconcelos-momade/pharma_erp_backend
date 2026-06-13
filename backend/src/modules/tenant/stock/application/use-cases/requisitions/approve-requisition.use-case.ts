@@ -4,6 +4,7 @@ import {
   ValidationApiError,
 } from "../../../../../../shared/http/api-error";
 import { PermissionService } from "../../../../shared/permission.service";
+import { resolveStockDocumentPermissionModule } from "../../../../shared/permission.helpers";
 import { confirmRequisitionStockMovements } from "../../../domain/requisition-confirmation.service";
 import { receivePurchaseItemStock } from "../../../domain/purchase-receiving.service";
 
@@ -23,7 +24,7 @@ export class ApproveRequisitionUseCase {
     const permissionService = new PermissionService(prisma);
     await permissionService.assertPermission(
       userId,
-      requisicaoPreview.tipo === "COMPRA" ? "COMPRAS" : "REQUISICOES",
+      resolveStockDocumentPermissionModule(requisicaoPreview.tipo),
       "APPROVE",
     );
 

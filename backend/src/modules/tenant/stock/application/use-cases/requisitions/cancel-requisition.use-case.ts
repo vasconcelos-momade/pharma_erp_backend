@@ -4,12 +4,11 @@ import {
   ValidationApiError,
 } from "../../../../../../shared/http/api-error";
 import { PermissionService } from "../../../../shared/permission.service";
+import { resolveStockDocumentPermissionModule } from "../../../../shared/permission.helpers";
 
 export class CancelRequisitionUseCase {
   async execute(requisicaoId: string, userId: string) {
     const prisma = getPrisma() as any;
-    const permissionService = new PermissionService(prisma);
-    await permissionService.assertPermission(userId, "REQUISICOES", "CANCEL");
 
     const requisicao = await prisma.requisicao.findUnique({
       where: { id: BigInt(requisicaoId) },
@@ -18,6 +17,13 @@ export class CancelRequisitionUseCase {
     if (!requisicao) {
       throw new NotFoundApiError(`Requisicao ${requisicaoId} nao encontrada`);
     }
+
+    const permissionService = new PermissionService(prisma);
+    await permissionService.assertPermission(
+      userId,
+      resolveStockDocumentPermissionModule(requisicao.tipo),
+      "CANCEL",
+    );
 
     if (requisicao.status === "CANCELADA") {
       return {

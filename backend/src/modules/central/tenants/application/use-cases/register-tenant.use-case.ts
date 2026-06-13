@@ -135,6 +135,7 @@ export class RegisterTenantUseCase {
 
     // 4. Run Prisma migrations on the new Database
     MySqlManagementService.runMigrations(dbName);
+    MySqlManagementService.runRolePermissionsSeed(dbName);
 
     // 5. Create initial users inside the Tenant Database
     // Auth/password vive na base central; aqui guardamos só o vínculo (centralUserId) quando existir.
