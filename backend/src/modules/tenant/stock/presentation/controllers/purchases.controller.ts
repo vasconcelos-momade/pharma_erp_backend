@@ -7,7 +7,8 @@ import { GetRequisitionDetailUseCase } from "../../application/use-cases/requisi
 import { ListRequisitionsUseCase } from "../../application/use-cases/requisitions/list-requisitions.use-case";
 import { ListSuppliersUseCase } from "../../application/use-cases/purchases/list-suppliers.use-case";
 import { RemoveRequisitionItemUseCase } from "../../application/use-cases/requisitions/remove-requisition-item.use-case";
-import { getValidationErrorMessage, parseJsonBody } from "../../../../../shared/http/request-validation";
+import { parseJsonBody } from "../../../../../shared/http/request-validation";
+import { controllerErrorResponse } from "../../../../../shared/http/controller-error";
 
 /** @deprecated Usar RequisitionsController (/tenant/requisicoes?tipo=COMPRA) */
 export class PurchasesController {
@@ -52,10 +53,7 @@ export class PurchasesController {
         { status: 201 },
       );
     } catch (error: unknown) {
-      return Response.json(
-        { error: getValidationErrorMessage(error) },
-        { status: 400 },
-      );
+      return controllerErrorResponse(error);
     }
   }
 
@@ -120,10 +118,7 @@ export class PurchasesController {
         { status: 201 },
       );
     } catch (error: unknown) {
-      return Response.json(
-        { error: getValidationErrorMessage(error) },
-        { status: 400 },
-      );
+      return controllerErrorResponse(error);
     }
   }
 
@@ -155,10 +150,7 @@ export class PurchasesController {
         }),
       );
     } catch (error: unknown) {
-      return Response.json(
-        { error: getValidationErrorMessage(error) },
-        { status: 400 },
-      );
+      return controllerErrorResponse(error);
     }
   }
 }

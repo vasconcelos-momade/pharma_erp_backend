@@ -4,10 +4,15 @@ import {
   tenantAuthMiddleware,
   tenantBranchContextMiddleware,
   getTenantAuth,
+  requirePermission,
 } from "../../shared/http/auth-middlewares";
 import { auditMiddleware } from "../../shared/http/middlewares";
 import { parseRouteParams } from "../../shared/http/request-validation";
 import type { RouteContext, Router } from "../../shared/http/router";
+import type {
+  TenantPermissionAction,
+  TenantSystemModule,
+} from "../../modules/tenant/shared/permission.constants";
 
 const posController = new POSController();
 const saleIdParamSchema = z.object({
@@ -22,9 +27,14 @@ function withTenantPos(
   router: Router,
   method: "get" | "post",
   path: string,
+  permissions: Array<readonly [TenantSystemModule, TenantPermissionAction]>,
   handler: (userId: string, context: RouteContext) => Promise<Response>,
 ): void {
-  const middlewares = [tenantAuthMiddleware(), tenantBranchContextMiddleware()] as const;
+  const middlewares = [
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    ...permissions.map(([module, action]) => requirePermission(module, action)),
+  ] as const;
 
   if (method === "get") {
     router.get(path, ...middlewares, async (context: RouteContext) =>
@@ -39,61 +49,61 @@ function withTenantPos(
 }
 
 export function registerPosRoutes(router: Router, prefix: string): void {
-  withTenantPos(router, "get", `${prefix}/tenant/pos/faturas`, async (_userId, context) =>
+  withTenantPos(router, "get", `${prefix}/tenant/pos/faturas`, [["POS", "VIEW"]], async (_userId, context) =>
     posController.listFaturas(context.req),
   );
-  withTenantPos(router, "get", `${prefix}/tenant/pos/faturas/:saleId`, async (_userId, context) =>
+  withTenantPos(router, "get", `${prefix}/tenant/pos/faturas/:saleId`, [["POS", "VIEW"]], async (_userId, context) =>
     posController.getFaturaDetalhe(
       parseRouteParams(context.params, saleIdParamSchema).saleId,
     ),
   );
-  withTenantPos(router, "get", `${prefix}/tenant/pos/faturas/:saleId/pdf`, async (_userId, context) =>
+  withTenantPos(router, "get", `${prefix}/tenant/pos/faturas/:saleId/pdf`, [["POS", "EXPORT"]], async (_userId, context) =>
     posController.downloadFaturaPdf(
       parseRouteParams(context.params, saleIdParamSchema).saleId,
     ),
   );
-  withTenantPos(router, "get", `${prefix}/tenant/pos/faturas/:saleId/print`, async (_userId, context) =>
+  withTenantPos(router, "get", `${prefix}/tenant/pos/faturas/:saleId/print`, [["POS", "VIEW"]], async (_userId, context) =>
     posController.getFaturaPrintArtifact(
       parseRouteParams(context.params, saleIdParamSchema).saleId,
     ),
   );
 
-  withTenantPos(router, "get", `${prefix}/tenant/pos/products/search`, async (_userId, context) =>
+  withTenantPos(router, "get", `${prefix}/tenant/pos/products/search`, [["PRODUTOS", "VIEW"]], async (_userId, context) =>
     posController.searchProdutos(context.req),
   );
-  withTenantPos(router, "get", `${prefix}/tenant/pos/produtos/search`, async (_userId, context) =>
+  withTenantPos(router, "get", `${prefix}/tenant/pos/produtos/search`, [["PRODUTOS", "VIEW"]], async (_userId, context) =>
     posController.searchProdutos(context.req),
   );
 
-  withTenantPos(router, "get", `${prefix}/tenant/pos/services/search`, async (_userId, context) =>
+  withTenantPos(router, "get", `${prefix}/tenant/pos/services/search`, [["POS", "VIEW"]], async (_userId, context) =>
     posController.searchServicos(context.req),
   );
-  withTenantPos(router, "get", `${prefix}/tenant/pos/servicos/search`, async (_userId, context) =>
+  withTenantPos(router, "get", `${prefix}/tenant/pos/servicos/search`, [["POS", "VIEW"]], async (_userId, context) =>
     posController.searchServicos(context.req),
   );
 
-  withTenantPos(router, "post", `${prefix}/tenant/pos/dispensation/validate`, async (_userId, context) =>
+  withTenantPos(router, "post", `${prefix}/tenant/pos/dispensation/validate`, [["POS", "APPROVE"]], async (_userId, context) =>
     posController.validarDispensacao(context.req),
   );
-  withTenantPos(router, "post", `${prefix}/tenant/pos/validar-dispensacao`, async (_userId, context) =>
+  withTenantPos(router, "post", `${prefix}/tenant/pos/validar-dispensacao`, [["POS", "APPROVE"]], async (_userId, context) =>
     posController.validarDispensacao(context.req),
   );
 
-  withTenantPos(router, "post", `${prefix}/tenant/pos/checkout`, async (userId, context) =>
+  withTenantPos(router, "post", `${prefix}/tenant/pos/checkout`, [["POS", "CREATE"]], async (userId, context) =>
     posController.finalizarVenda(context.req, userId),
   );
-  withTenantPos(router, "post", `${prefix}/tenant/pos/finalizar`, async (userId, context) =>
+  withTenantPos(router, "post", `${prefix}/tenant/pos/finalizar`, [["POS", "CREATE"]], async (userId, context) =>
     posController.finalizarVenda(context.req, userId),
   );
 
-  withTenantPos(router, "post", `${prefix}/tenant/pos/sales/:saleId/cancel`, async (userId, context: RouteContext) =>
+  withTenantPos(router, "post", `${prefix}/tenant/pos/sales/:saleId/cancel`, [["POS", "CANCEL"]], async (userId, context: RouteContext) =>
     posController.anularFatura(
       context.req,
       userId,
       parseRouteParams(context.params, saleIdParamSchema).saleId,
     ),
   );
-  withTenantPos(router, "post", `${prefix}/tenant/pos/faturas/:saleId/cancel`, async (userId, context: RouteContext) =>
+  withTenantPos(router, "post", `${prefix}/tenant/pos/faturas/:saleId/cancel`, [["POS", "CANCEL"]], async (userId, context: RouteContext) =>
     posController.anularFatura(
       context.req,
       userId,
@@ -101,33 +111,33 @@ export function registerPosRoutes(router: Router, prefix: string): void {
     ),
   );
 
-  withTenantPos(router, "post", `${prefix}/tenant/pos/sessions`, async (userId, context) =>
+  withTenantPos(router, "post", `${prefix}/tenant/pos/sessions`, [["POS", "CREATE"]], async (userId, context) =>
     posController.abrirSessao(context.req, userId),
   );
-  withTenantPos(router, "post", `${prefix}/tenant/pos/sessions/open`, async (userId, context) =>
+  withTenantPos(router, "post", `${prefix}/tenant/pos/sessions/open`, [["POS", "CREATE"]], async (userId, context) =>
     posController.abrirSessao(context.req, userId),
   );
 
-  withTenantPos(router, "post", `${prefix}/tenant/pos/sessions/close`, async (userId, context) =>
+  withTenantPos(router, "post", `${prefix}/tenant/pos/sessions/close`, [["POS", "CLOSE_SHIFT"]], async (userId, context) =>
     posController.fecharSessao(context.req, userId),
   );
 
-  withTenantPos(router, "get", `${prefix}/tenant/pos/sessions/current`, async (userId) =>
+  withTenantPos(router, "get", `${prefix}/tenant/pos/sessions/current`, [["POS", "VIEW"]], async (userId) =>
     posController.getSessaoAtual(userId),
   );
 
-  withTenantPos(router, "get", `${prefix}/tenant/pos/registers/available`, async () =>
+  withTenantPos(router, "get", `${prefix}/tenant/pos/registers/available`, [["POS", "VIEW"]], async () =>
     posController.listAvailableCaixas(),
   );
-  withTenantPos(router, "get", `${prefix}/tenant/pos/caixas/available`, async () =>
+  withTenantPos(router, "get", `${prefix}/tenant/pos/caixas/available`, [["POS", "VIEW"]], async () =>
     posController.listAvailableCaixas(),
   );
 
-  withTenantPos(router, "get", `${prefix}/tenant/pos/sessions/report`, async (_userId, context) =>
+  withTenantPos(router, "get", `${prefix}/tenant/pos/sessions/report`, [["RELATORIOS", "VIEW"]], async (_userId, context) =>
     posController.getRelatorioDiferenca(context.req),
   );
 
-  withTenantPos(router, "post", `${prefix}/tenant/pos/sales/draft`, async (userId, context) =>
+  withTenantPos(router, "post", `${prefix}/tenant/pos/sales/draft`, [["POS", "CREATE"]], async (userId, context) =>
     posController.createDraftSale(context.req, userId),
   );
 
@@ -135,6 +145,7 @@ export function registerPosRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/pos/sales/draft`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("POS", "VIEW"),
     async (context) => posController.getDraftCart(context.req, getTenantAuth(context).userId),
   );
 
@@ -142,6 +153,7 @@ export function registerPosRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/pos/sales/draft/items`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("POS", "UPDATE"),
     auditMiddleware,
     async (context) => posController.addDraftCartItem(context.req, getTenantAuth(context).userId),
   );
@@ -150,6 +162,7 @@ export function registerPosRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/pos/sales/draft/items/:itemId/increment`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("POS", "UPDATE"),
     auditMiddleware,
     async (context) => {
       const { itemId } = parseRouteParams(context.params, draftCartItemIdParamSchema);
@@ -161,6 +174,7 @@ export function registerPosRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/pos/sales/draft/items/:itemId/decrement`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("POS", "UPDATE"),
     auditMiddleware,
     async (context) => {
       const { itemId } = parseRouteParams(context.params, draftCartItemIdParamSchema);
@@ -172,6 +186,7 @@ export function registerPosRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/pos/sales/draft/items/:itemId`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("POS", "DELETE"),
     auditMiddleware,
     async (context) => {
       const { itemId } = parseRouteParams(context.params, draftCartItemIdParamSchema);
@@ -179,14 +194,14 @@ export function registerPosRoutes(router: Router, prefix: string): void {
     },
   );
 
-  withTenantPos(router, "post", `${prefix}/tenant/pos/agreements/liquidations`, async (userId, context) =>
+  withTenantPos(router, "post", `${prefix}/tenant/pos/agreements/liquidations`, [["POS", "CREATE"]], async (userId, context) =>
     posController.liquidarConvenio(context.req, userId),
   );
-  withTenantPos(router, "post", `${prefix}/tenant/pos/convenios/liquidate`, async (userId, context) =>
+  withTenantPos(router, "post", `${prefix}/tenant/pos/convenios/liquidate`, [["POS", "CREATE"]], async (userId, context) =>
     posController.liquidarConvenio(context.req, userId),
   );
 
-  withTenantPos(router, "get", `${prefix}/tenant/pos/tax-rules`, async () =>
+  withTenantPos(router, "get", `${prefix}/tenant/pos/tax-rules`, [["CONFIGURACOES", "VIEW"]], async () =>
     posController.listTaxRules(),
   );
 }

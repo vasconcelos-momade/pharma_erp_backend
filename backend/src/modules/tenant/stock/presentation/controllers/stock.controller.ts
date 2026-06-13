@@ -1,7 +1,8 @@
 import { ReceivePurchaseUseCase } from "../../application/use-cases/receive-purchase.use-case";
 import { AdjustStockUseCase } from "../../application/use-cases/adjust-stock.use-case";
 import { z } from "zod";
-import { getValidationErrorMessage, parseJsonBody } from "../../../../../shared/http/request-validation";
+import { parseJsonBody } from "../../../../../shared/http/request-validation";
+import { controllerErrorResponse } from "../../../../../shared/http/controller-error";
 
 const receivePurchaseSchema = z.object({
   fornecedorId: z.string().trim().min(1),
@@ -35,7 +36,7 @@ export class StockController {
       const result = await this.receivePurchaseUseCase.execute({ ...body, userId });
       return Response.json(this.serialize(result), { status: 201 });
     } catch (error: any) {
-      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 
@@ -51,7 +52,7 @@ export class StockController {
       });
       return Response.json(this.serialize(result));
     } catch (error: any) {
-      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 

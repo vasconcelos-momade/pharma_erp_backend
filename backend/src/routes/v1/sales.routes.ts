@@ -5,6 +5,7 @@ import {
   tenantAuthMiddleware,
   tenantBranchContextMiddleware,
   getTenantAuth,
+  requirePermission,
 } from "../../shared/http/auth-middlewares";
 import { auditMiddleware } from "../../shared/http/middlewares";
 import { parseJsonBody } from "../../shared/http/request-validation";
@@ -34,6 +35,7 @@ export function registerSalesRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/sales`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("POS", "CREATE"),
     auditMiddleware,
     async (context) => {
       const auth = getTenantAuth(context);

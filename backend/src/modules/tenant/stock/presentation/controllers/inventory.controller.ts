@@ -12,10 +12,10 @@ import { ReconcileInventoryUseCase } from "../../application/use-cases/inventory
 import { RecordInventoryCountUseCase } from "../../application/use-cases/inventory/record-inventory-count.use-case";
 import { StartInventoryCountingUseCase } from "../../application/use-cases/inventory/start-inventory-counting.use-case";
 import {
-  getValidationErrorMessage,
   parseJsonBody,
   parseSearchParams,
 } from "../../../../../shared/http/request-validation";
+import { controllerErrorResponse } from "../../../../../shared/http/controller-error";
 
 export class InventoryController {
   private openUseCase = new OpenInventoryUseCase();
@@ -41,10 +41,7 @@ export class InventoryController {
       const data = await this.openUseCase.execute({ ...body, userId });
       return Response.json(this.serialize(data), { status: 201 });
     } catch (error: unknown) {
-      return Response.json(
-        { error: getValidationErrorMessage(error) },
-        { status: 400 },
-      );
+      return controllerErrorResponse(error);
     }
   }
 
@@ -68,10 +65,7 @@ export class InventoryController {
       const data = await this.getDetailUseCase.execute(inventarioId);
       return Response.json(this.serialize(data));
     } catch (error: unknown) {
-      return Response.json(
-        { error: getValidationErrorMessage(error) },
-        { status: 404 },
-      );
+      return controllerErrorResponse(error, 404);
     }
   }
 
@@ -99,10 +93,7 @@ export class InventoryController {
       });
       return Response.json(this.serialize(data));
     } catch (error: unknown) {
-      return Response.json(
-        { error: getValidationErrorMessage(error) },
-        { status: 400 },
-      );
+      return controllerErrorResponse(error);
     }
   }
 
@@ -114,10 +105,7 @@ export class InventoryController {
       const data = await this.startCountingUseCase.execute(inventarioId);
       return Response.json(this.serialize(data));
     } catch (error: unknown) {
-      return Response.json(
-        { error: getValidationErrorMessage(error) },
-        { status: 400 },
-      );
+      return controllerErrorResponse(error);
     }
   }
 
@@ -135,10 +123,7 @@ export class InventoryController {
       );
       return Response.json(this.serialize(data));
     } catch (error: unknown) {
-      return Response.json(
-        { error: getValidationErrorMessage(error) },
-        { status: 400 },
-      );
+      return controllerErrorResponse(error);
     }
   }
 
@@ -150,10 +135,7 @@ export class InventoryController {
       const data = await this.reconcileUseCase.execute(inventarioId, userId);
       return Response.json(this.serialize(data));
     } catch (error: unknown) {
-      return Response.json(
-        { error: getValidationErrorMessage(error) },
-        { status: 400 },
-      );
+      return controllerErrorResponse(error);
     }
   }
 
@@ -165,10 +147,7 @@ export class InventoryController {
       const data = await this.cancelUseCase.execute(inventarioId);
       return Response.json(this.serialize(data));
     } catch (error: unknown) {
-      return Response.json(
-        { error: getValidationErrorMessage(error) },
-        { status: 400 },
-      );
+      return controllerErrorResponse(error);
     }
   }
 }

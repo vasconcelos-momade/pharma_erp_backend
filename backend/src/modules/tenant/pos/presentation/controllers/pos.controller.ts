@@ -22,11 +22,11 @@ import { GetFaturaDetalheUseCase } from "../../application/use-cases/get-fatura-
 import { FaturaDocumentService } from "../../application/services/fatura-document.service";
 import { z } from "zod";
 import {
-  getValidationErrorMessage,
   parseJsonBody,
   parseSearchParams,
 } from "../../../../../shared/http/request-validation";
 import { success } from "../../../../../shared/http/api-response";
+import { controllerErrorResponse } from "../../../../../shared/http/controller-error";
 
 const validarDispensacaoSchema = z.object({
   produtoId: z.string().trim().min(1),
@@ -70,7 +70,7 @@ const finalizarVendaSchema = z
       .optional(),
   })
   .refine(
-    (data) => (data.items?.length ?? 0) > 0 || Boolean(data.idempotencyKey),
+    (data: any) => (data.items?.length ?? 0) > 0 || Boolean(data.idempotencyKey),
     { message: "Informe idempotencyKey do carrinho ou a lista de items." },
   );
 
@@ -219,7 +219,7 @@ export class POSController {
       const result = await this.validarDispensacaoUseCase.execute(body);
       return Response.json(this.serialize(result));
     } catch (error: any) {
-      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 
@@ -233,7 +233,7 @@ export class POSController {
       return Response.json(this.serialize(result), { status: 201 });
     } catch (error: any) {
       console.error("Erro ao finalizar venda:", error);
-      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 
@@ -249,7 +249,7 @@ export class POSController {
       return Response.json(this.serialize(result));
     } catch (error: any) {
       console.error("Erro ao anular fatura:", error);
-      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 
@@ -262,7 +262,7 @@ export class POSController {
       });
       return Response.json(this.serialize(result), { status: 201 });
     } catch (error: any) {
-      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 
@@ -275,7 +275,7 @@ export class POSController {
       });
       return Response.json(this.serialize(result));
     } catch (error: any) {
-      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 
@@ -284,7 +284,7 @@ export class POSController {
       const result = await this.getCurrentCaixaSessaoUseCase.execute(userId);
       return Response.json(this.serialize(result));
     } catch (error: any) {
-      return Response.json({ error: error.message }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 
@@ -293,7 +293,7 @@ export class POSController {
       const result = await this.listAvailableCaixasUseCase.execute();
       return Response.json(this.serialize(result));
     } catch (error: any) {
-      return Response.json({ error: error.message }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 
@@ -306,7 +306,7 @@ export class POSController {
       });
       return Response.json(this.serialize(result), { status: 201 });
     } catch (error: any) {
-      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 
@@ -321,7 +321,7 @@ export class POSController {
       });
       return Response.json(this.serialize(result));
     } catch (error: any) {
-      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 
@@ -339,7 +339,7 @@ export class POSController {
       );
       return Response.json(this.serialize(result), { status: 201 });
     } catch (error: any) {
-      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 
@@ -352,7 +352,7 @@ export class POSController {
       );
       return Response.json(this.serialize(result));
     } catch (error: any) {
-      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 
@@ -365,7 +365,7 @@ export class POSController {
       );
       return Response.json(this.serialize(result));
     } catch (error: any) {
-      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 
@@ -378,7 +378,7 @@ export class POSController {
       );
       return Response.json(this.serialize(result));
     } catch (error: any) {
-      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 
@@ -391,7 +391,7 @@ export class POSController {
       });
       return Response.json(this.serialize(result));
     } catch (error: any) {
-      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 
@@ -403,7 +403,7 @@ export class POSController {
       const result = await this.relatorioDiferencaCaixaUseCase.execute(sessaoId);
       return Response.json(this.serialize(result));
     } catch (error: any) {
-      return Response.json({ error: error.message }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 
@@ -412,7 +412,7 @@ export class POSController {
       const result = await this.listTaxRulesUseCase.execute();
       return Response.json(this.serialize(result));
     } catch (error: any) {
-      return Response.json({ error: error.message }, { status: 500 });
+      return controllerErrorResponse(error, 500);
     }
   }
 
@@ -428,7 +428,7 @@ export class POSController {
         summary: result.summary,
       });
     } catch (error: any) {
-      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 

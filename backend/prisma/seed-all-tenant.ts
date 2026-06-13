@@ -50,7 +50,11 @@ async function main() {
   console.log(`📊 URL do banco: ${dbUrl.replace(/:[^:]*@/, ":***@")}\n`);
 
   try {
-    console.log("1️⃣  Executando seed de regras fiscais...");
+    console.log("1️⃣  Executando seed de permissoes por role...");
+    await runScript("prisma/seed-role-permissions.ts", dbUrl);
+    console.log("✅ Seed de permissoes por role concluido!\n");
+
+    console.log("2️⃣  Executando seed de regras fiscais...");
     const prisma = new PrismaTenantClient({
       datasources: {
         db: {
@@ -99,23 +103,23 @@ async function main() {
       console.log(`   ✅ Tax rule ${rule.codigo} upserted`);
     }
     await prisma.$disconnect();
-    console.log("✅ Seed de regras fiscais concluído!\n");
+    console.log("✅ Seed de regras fiscais concluido!\n");
 
-    console.log("2️⃣  Executando seed de medicamentos...");
+    console.log("3️⃣  Executando seed de medicamentos...");
     await runScript("prisma/seed-medicamentos.ts", dbUrl);
-    console.log("✅ Seed de medicamentos concluído!\n");
+    console.log("✅ Seed de medicamentos concluido!\n");
 
-    console.log("3️⃣  Executando seed de serviços...");
+    console.log("4️⃣  Executando seed de servicos...");
     await runScript("prisma/seed-servicos.ts", dbUrl);
-    console.log("✅ Seed de serviços concluído!\n");
+    console.log("✅ Seed de servicos concluido!\n");
 
-    console.log("4️⃣  Executando seed de terminais...");
+    console.log("5️⃣  Executando seed de terminais...");
     await runScript("prisma/seed-terminais.ts", dbUrl);
-    console.log("✅ Seed de terminais concluído!\n");
+    console.log("✅ Seed de terminais concluido!\n");
 
-    console.log("5️⃣  Executando seed de estoque...");
+    console.log("6️⃣  Executando seed de estoque...");
     await runScript("prisma/seed-estoque.ts", dbUrl);
-    console.log("✅ Seed de estoque concluído!\n");
+    console.log("✅ Seed de estoque concluido!\n");
 
     console.log("🎉 Seed completo para o tenant", dbName, "concluído com sucesso!");
   } catch (error) {

@@ -3,12 +3,13 @@ import {
   NotFoundApiError,
   ValidationApiError,
 } from "../../../../../../shared/http/api-error";
-import { assertRequisitionManagerRole } from "../../../domain/requisition-auth.service";
+import { PermissionService } from "../../../../shared/permission.service";
 
 export class RejectRequisitionUseCase {
   async execute(requisicaoId: string, userId: string) {
-    await assertRequisitionManagerRole(userId);
     const prisma = getPrisma() as any;
+    const permissionService = new PermissionService(prisma);
+    await permissionService.assertPermission(userId, "REQUISICOES", "REJECT");
 
     const requisicao = await prisma.requisicao.findUnique({
       where: { id: BigInt(requisicaoId) },

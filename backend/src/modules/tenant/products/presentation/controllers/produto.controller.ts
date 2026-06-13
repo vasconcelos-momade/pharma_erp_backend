@@ -1,10 +1,10 @@
 import { ProdutoService } from "../../application/services/produto.service";
 import { z } from "zod";
 import {
-  getValidationErrorMessage,
   parseJsonBody,
   parseSearchParams,
 } from "../../../../../shared/http/request-validation";
+import { controllerErrorResponse } from "../../../../../shared/http/controller-error";
 
 const produtoBaseSchema = z.looseObject({
   nome: z.string().trim().min(1),
@@ -17,14 +17,14 @@ const produtoBaseSchema = z.looseObject({
 const createProdutoSchema = produtoBaseSchema;
 
 const updateProdutoSchema = produtoBaseSchema.partial().refine(
-  (data) => Object.keys(data).length > 0,
+  (data: any) => Object.keys(data).length > 0,
   { message: "Informe ao menos um campo para atualizar" },
 );
 
 const listProdutosQuerySchema = z.object({
   requiresManualReview: z
     .enum(["true", "false"])
-    .transform((value) => value === "true")
+    .transform((value: any) => value === "true")
     .optional(),
 });
 
@@ -37,7 +37,7 @@ export class ProdutoController {
       const result = await this.service.create(body, userId);
       return Response.json(this.serialize(result), { status: 201 });
     } catch (error: any) {
-      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 
@@ -49,7 +49,7 @@ export class ProdutoController {
       const result = await this.service.list({ requiresManualReview });
       return Response.json(result.map((p: any) => this.serialize(p)));
     } catch (error: any) {
-      return Response.json({ error: error.message }, { status: 500 });
+      return controllerErrorResponse(error, 500);
     }
   }
 
@@ -58,7 +58,7 @@ export class ProdutoController {
       const result = await this.service.get(BigInt(id));
       return Response.json(this.serialize(result));
     } catch (error: any) {
-      return Response.json({ error: error.message }, { status: 404 });
+      return controllerErrorResponse(error, 404);
     }
   }
 
@@ -68,7 +68,7 @@ export class ProdutoController {
       const result = await this.service.update(BigInt(id), body, userId);
       return Response.json(this.serialize(result));
     } catch (error: any) {
-      return Response.json({ error: getValidationErrorMessage(error) }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 
@@ -77,7 +77,7 @@ export class ProdutoController {
       await this.service.delete(BigInt(id), userId);
       return Response.json({ message: "Produto desativado com sucesso" });
     } catch (error: any) {
-      return Response.json({ error: error.message }, { status: 400 });
+      return controllerErrorResponse(error);
     }
   }
 

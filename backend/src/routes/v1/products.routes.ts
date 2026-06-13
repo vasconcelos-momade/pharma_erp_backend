@@ -4,6 +4,7 @@ import {
   tenantAuthMiddleware,
   tenantBranchContextMiddleware,
   getTenantAuth,
+  requirePermission,
 } from "../../shared/http/auth-middlewares";
 import { auditMiddleware } from "../../shared/http/middlewares";
 import { parseRouteParams } from "../../shared/http/request-validation";
@@ -19,6 +20,7 @@ function registerProductResource(router: Router, path: string): void {
     path,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("PRODUTOS", "VIEW"),
     async (context) => produtoController.list(context.req),
   );
 
@@ -26,6 +28,7 @@ function registerProductResource(router: Router, path: string): void {
     path,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("PRODUTOS", "CREATE"),
     auditMiddleware,
     async (context) => produtoController.create(context.req, getTenantAuth(context).userId),
   );
@@ -36,6 +39,7 @@ function registerProductItemResource(router: Router, path: string): void {
     path,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("PRODUTOS", "VIEW"),
     async (context) => {
       const { productId } = parseRouteParams(context.params, productIdParamSchema);
       return produtoController.get(productId);
@@ -46,6 +50,7 @@ function registerProductItemResource(router: Router, path: string): void {
     path,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("PRODUTOS", "UPDATE"),
     auditMiddleware,
     async (context) => {
       const { productId } = parseRouteParams(context.params, productIdParamSchema);
@@ -57,6 +62,7 @@ function registerProductItemResource(router: Router, path: string): void {
     path,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("PRODUTOS", "DELETE"),
     auditMiddleware,
     async (context) => {
       const { productId } = parseRouteParams(context.params, productIdParamSchema);

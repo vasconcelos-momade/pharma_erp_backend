@@ -3,7 +3,7 @@ import {
   NotFoundApiError,
   ValidationApiError,
 } from "../../../../../../shared/http/api-error";
-import { assertRequisitionManagerRole } from "../../../domain/requisition-auth.service";
+import { PermissionService } from "../../../../shared/permission.service";
 import { confirmRequisitionStockMovements } from "../../../domain/requisition-confirmation.service";
 import { receivePurchaseItemStock } from "../../../domain/purchase-receiving.service";
 
@@ -20,9 +20,12 @@ export class ApproveRequisitionUseCase {
       throw new NotFoundApiError(`Requisicao ${requisicaoId} nao encontrada`);
     }
 
-    if (requisicaoPreview.tipo !== "COMPRA") {
-      await assertRequisitionManagerRole(userId);
-    }
+    const permissionService = new PermissionService(prisma);
+    await permissionService.assertPermission(
+      userId,
+      requisicaoPreview.tipo === "COMPRA" ? "COMPRAS" : "REQUISICOES",
+      "APPROVE",
+    );
 
     return prisma.$transaction(async (tx: any) => {
       const requisicao = await tx.requisicao.findUnique({

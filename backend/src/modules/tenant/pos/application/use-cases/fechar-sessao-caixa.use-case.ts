@@ -1,4 +1,5 @@
 import { getPrisma } from "../../../../../infrastructure/prisma/tenant-prisma.factory";
+import { PermissionService } from "../../../shared/permission.service";
 import { ConsolidarFinanceiroUseCase } from "./consolidar-financeiro.use-case";
 
 export interface FecharSessaoDTO {
@@ -21,12 +22,16 @@ export class FecharSessaoCaixaUseCase {
 
       if (!sessao) throw new Error("Sessão não encontrada");
       if (sessao.status === "FECHADA") throw new Error("Esta sessão já está fechada");
+
+      const permissionService = new PermissionService(tx as any);
+
       if (sessao.userId !== BigInt(data.userId)) {
-        // Permitir que ADMIN/GERENTE feche sessões de outros
-        const supervisor = await tx.user.findUnique({ where: { id: BigInt(data.userId) } });
-        if (!supervisor || !["ADMIN", "GERENTE"].includes(supervisor.role)) {
-          throw new Error("Você não tem permissão para fechar a sessão de outro usuário");
-        }
+        await permissionService.assertPermission(
+          data.userId,
+          "POS",
+          "APPROVE",
+          "Voce nao tem permissao para fechar a sessao de outro utilizador.",
+        );
       }
 
       const valorSistema = Number(sessao.caixa.saldoAtual);

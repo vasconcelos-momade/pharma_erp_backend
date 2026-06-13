@@ -1,5 +1,6 @@
 import { getPrisma } from "../../../../../infrastructure/prisma/tenant-prisma.factory";
 import { ComplianceAuditService } from "../../../../../shared/services/compliance-audit.service";
+import { PermissionService } from "../../../shared/permission.service";
 import { flattenProdutoForApi } from "../../../products/domain/produto-presenter";
 import {
   applyStockReturnDelta,
@@ -35,16 +36,14 @@ export class AnularFaturaUseCase {
         where: { faturaId: fatura.id }
       });
 
-      // 2. Validar Permissões do Usuário com LOCK
-      const users: any[] = await tx.$queryRaw`SELECT * FROM users WHERE id = ${BigInt(data.userId)} FOR UPDATE`;
-      const userAnulando = users[0];
-
-      if (!userAnulando) throw new Error("Usuário não encontrado");
-      
-      const permissoesPermitidas = ["ADMIN", "GERENTE", "DIRETOR_TECNICO"];
-      if (!permissoesPermitidas.includes(userAnulando.role)) {
-        throw new Error("Você não tem permissão para anular faturas. Apenas Administradores ou Gerentes podem realizar esta ação.");
-      }
+      // 2. Validar permissao explicitamente pela matriz de autorizacao.
+      const permissionService = new PermissionService(tx as any);
+      await permissionService.assertPermission(
+        data.userId,
+        "POS",
+        "CANCEL",
+        "Voce nao tem permissao para anular faturas.",
+      );
 
       // 3. Atualizar Estado da Fatura (Cache)
       await tx.fatura.update({

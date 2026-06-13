@@ -12,8 +12,17 @@ import {
   type TenantAuthContext,
 } from "./tenant-auth";
 import { assertWebhookSignature } from "./webhook-auth";
-import { UnauthorizedApiError } from "./api-error";
+import { ForbiddenApiError, UnauthorizedApiError } from "./api-error";
 import type { RouteContext, RouteMiddleware } from "./router";
+import {
+  type TenantPermissionAction,
+  type TenantSystemModule,
+} from "../../modules/tenant/shared/permission.constants";
+import {
+  type PermissionDecision,
+  PermissionService,
+} from "../../modules/tenant/shared/permission.service";
+import { ComplianceAuditService } from "../services/compliance-audit.service";
 
 function requireCentralAuthFromState(context: RouteContext): CentralAuthContext {
   const auth = context.state.centralAuth as CentralAuthContext | undefined;
@@ -43,6 +52,19 @@ export function getOptionalCentralAuth(context: RouteContext): CentralAuthContex
 
 export function getTenantAuth(context: RouteContext): TenantAuthContext {
   return requireTenantAuthFromState(context);
+}
+
+export type TenantRoutePermissionContext = PermissionDecision & {
+  module: TenantSystemModule;
+  action: TenantPermissionAction;
+};
+
+export function getRequiredTenantPermission(
+  context: RouteContext,
+): TenantRoutePermissionContext | null {
+  return (
+    context.state.requiredTenantPermission as TenantRoutePermissionContext | undefined
+  ) ?? null;
 }
 
 export function getRawBody(context: RouteContext): string {
@@ -120,6 +142,102 @@ export function tenantBranchContextMiddleware(): RouteMiddleware {
       }
       return result;
     });
+    if (!response) {
+      throw new Error("A rota autenticada não retornou resposta.");
+    }
+    return response;
+  };
+}
+
+async function writePermissionAuditLog(input: {
+  userId: string;
+  module: TenantSystemModule;
+  action: TenantPermissionAction;
+  allowed: boolean;
+  source: string;
+  requestId: string;
+  path: string;
+  method: string;
+  status?: number;
+  role?: string | null;
+}) {
+  try {
+    const auditService = new ComplianceAuditService();
+    await auditService.createImmutableLog({
+      userId: input.userId,
+      action: input.allowed ? "AUTHORIZATION_GRANTED" : "AUTHORIZATION_DENIED",
+      entity: "Permission",
+      after: {
+        module: input.module,
+        permissionAction: input.action,
+        allowed: input.allowed,
+        source: input.source,
+        role: input.role ?? null,
+        method: input.method,
+        path: input.path,
+        status: input.status ?? null,
+        requestId: input.requestId,
+      },
+    });
+  } catch (error) {
+    console.error("Falha ao persistir auditoria de permissao:", error);
+  }
+}
+
+export function requirePermission(
+  module: TenantSystemModule,
+  action: TenantPermissionAction,
+): RouteMiddleware {
+  return async (context, next) => {
+    const auth = requireTenantAuthFromState(context);
+    const service = new PermissionService();
+    const decision = await service.resolvePermission(auth.userId, module, action);
+
+    context.state.requiredTenantPermission = {
+      ...decision,
+      module,
+      action,
+    } satisfies TenantRoutePermissionContext;
+
+    if (!decision.allowed) {
+      await writePermissionAuditLog({
+        userId: auth.userId,
+        module,
+        action,
+        allowed: false,
+        source: decision.source,
+        role: decision.role,
+        requestId: context.requestId,
+        method: context.req.method,
+        path: context.url.pathname,
+        status: 403,
+      });
+
+      throw new ForbiddenApiError(`Acesso negado para ${module}:${action}`, {
+        module,
+        action,
+        source: decision.source,
+        role: decision.role,
+      });
+    }
+
+    const response = await next();
+
+    if (service.isCriticalAction(action) && response.status < 400) {
+      await writePermissionAuditLog({
+        userId: auth.userId,
+        module,
+        action,
+        allowed: true,
+        source: decision.source,
+        role: decision.role,
+        requestId: context.requestId,
+        method: context.req.method,
+        path: context.url.pathname,
+        status: response.status,
+      });
+    }
+
     return response;
   };
 }

@@ -6,6 +6,7 @@ import {
   tenantAuthMiddleware,
   tenantBranchContextMiddleware,
   getTenantAuth,
+  requirePermission,
 } from "../../shared/http/auth-middlewares";
 import { auditMiddleware } from "../../shared/http/middlewares";
 import type { Router } from "../../shared/http/router";
@@ -20,6 +21,8 @@ function registerReceiveRoute(router: Router, path: string): void {
     path,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("COMPRAS", "CREATE"),
+    requirePermission("LOTES", "CREATE_LOTE"),
     auditMiddleware,
     async (context) => stockController.receivePurchase(context.req, getTenantAuth(context).userId),
   );
@@ -30,6 +33,7 @@ function registerAdjustRoute(router: Router, path: string): void {
     path,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("INVENTARIO", "ADJUST_STOCK"),
     auditMiddleware,
     async (context) => stockController.adjustStock(context.req, getTenantAuth(context).userId),
   );
@@ -40,6 +44,7 @@ function registerPurchasesRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/compras`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("COMPRAS", "CREATE"),
     auditMiddleware,
     async (context) => purchasesController.createPendingPurchase(context.req, getTenantAuth(context).userId),
   );
@@ -48,6 +53,7 @@ function registerPurchasesRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/fornecedores`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("FORNECEDORES", "VIEW"),
     async (context) => purchasesController.listSuppliers(context.req),
   );
 
@@ -55,6 +61,7 @@ function registerPurchasesRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/compras`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("COMPRAS", "VIEW"),
     async (context) => purchasesController.listPurchases(context.req),
   );
 
@@ -62,6 +69,7 @@ function registerPurchasesRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/compras/:compraId`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("COMPRAS", "VIEW"),
     async (context) => purchasesController.getPurchaseDetail(context.req),
   );
 
@@ -69,6 +77,7 @@ function registerPurchasesRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/compras/:compraId/items`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("COMPRAS", "UPDATE"),
     auditMiddleware,
     async (context) => purchasesController.addPurchaseItem(context.req),
   );
@@ -77,6 +86,7 @@ function registerPurchasesRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/compras/:compraId/items/:itemId`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("COMPRAS", "UPDATE"),
     auditMiddleware,
     async (context) => purchasesController.updatePurchaseItem(context.req),
   );
@@ -85,6 +95,7 @@ function registerPurchasesRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/compras/:compraId/items/:itemId`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("COMPRAS", "DELETE"),
     auditMiddleware,
     async (context) => purchasesController.removePurchaseItem(context.req),
   );
@@ -93,6 +104,8 @@ function registerPurchasesRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/compras/:compraId/confirmar`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("COMPRAS", "APPROVE"),
+    requirePermission("LOTES", "CREATE_LOTE"),
     auditMiddleware,
     async (context) => purchasesController.confirmPurchase(context.req, getTenantAuth(context).userId),
   );
@@ -103,6 +116,7 @@ function registerInventoryRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/inventarios`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("INVENTARIO", "CREATE"),
     auditMiddleware,
     async (context) =>
       inventoryController.openInventory(
@@ -115,6 +129,7 @@ function registerInventoryRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/inventarios`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("INVENTARIO", "VIEW"),
     async (context) => inventoryController.listInventories(context.req),
   );
 
@@ -122,6 +137,7 @@ function registerInventoryRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/inventarios/:inventarioId`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("INVENTARIO", "VIEW"),
     async (context) => inventoryController.getInventoryDetail(context.req),
   );
 
@@ -129,6 +145,7 @@ function registerInventoryRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/inventarios/:inventarioId/itens`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("INVENTARIO", "VIEW"),
     async (context) => inventoryController.listInventoryItems(context.req),
   );
 
@@ -136,6 +153,7 @@ function registerInventoryRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/inventarios/:inventarioId/iniciar-contagem`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("INVENTARIO", "UPDATE"),
     auditMiddleware,
     async (context) => inventoryController.startCounting(context.req),
   );
@@ -144,6 +162,7 @@ function registerInventoryRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/inventarios/:inventarioId/itens/:itemId`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("INVENTARIO", "UPDATE"),
     auditMiddleware,
     async (context) => inventoryController.recordCount(context.req),
   );
@@ -152,6 +171,8 @@ function registerInventoryRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/inventarios/:inventarioId/reconciliar`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("INVENTARIO", "APPROVE"),
+    requirePermission("INVENTARIO", "ADJUST_STOCK"),
     auditMiddleware,
     async (context) =>
       inventoryController.reconcile(
@@ -164,6 +185,7 @@ function registerInventoryRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/inventarios/:inventarioId/cancelar`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("INVENTARIO", "CANCEL"),
     auditMiddleware,
     async (context) => inventoryController.cancel(context.req),
   );
@@ -179,6 +201,7 @@ function registerRequisitionRoutesForResource(
     `${prefix}/tenant/${resourcePath}`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("REQUISICOES", "CREATE"),
     auditMiddleware,
     async (context) =>
       requisitionsController.createRequisition(
@@ -191,6 +214,7 @@ function registerRequisitionRoutesForResource(
     `${prefix}/tenant/${resourcePath}`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("REQUISICOES", "VIEW"),
     async (context) => requisitionsController.listRequisitions(context.req),
   );
 
@@ -198,6 +222,7 @@ function registerRequisitionRoutesForResource(
     `${prefix}/tenant/${resourcePath}/${idParam}`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("REQUISICOES", "VIEW"),
     async (context) => requisitionsController.getRequisitionDetail(context.req),
   );
 
@@ -205,6 +230,7 @@ function registerRequisitionRoutesForResource(
     `${prefix}/tenant/${resourcePath}/${idParam}/items`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("REQUISICOES", "UPDATE"),
     auditMiddleware,
     async (context) => requisitionsController.addRequisitionItem(context.req),
   );
@@ -213,6 +239,7 @@ function registerRequisitionRoutesForResource(
     `${prefix}/tenant/${resourcePath}/${idParam}/items/:itemId`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("REQUISICOES", "UPDATE"),
     auditMiddleware,
     async (context) => requisitionsController.updateRequisitionItem(context.req),
   );
@@ -221,6 +248,7 @@ function registerRequisitionRoutesForResource(
     `${prefix}/tenant/${resourcePath}/${idParam}/items/:itemId`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("REQUISICOES", "DELETE"),
     auditMiddleware,
     async (context) => requisitionsController.removeRequisitionItem(context.req),
   );
@@ -229,6 +257,7 @@ function registerRequisitionRoutesForResource(
     `${prefix}/tenant/${resourcePath}/${idParam}/aprovar`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("REQUISICOES", "APPROVE"),
     auditMiddleware,
     async (context) =>
       requisitionsController.approveRequisition(
@@ -241,6 +270,7 @@ function registerRequisitionRoutesForResource(
     `${prefix}/tenant/${resourcePath}/${idParam}/rejeitar`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("REQUISICOES", "REJECT"),
     auditMiddleware,
     async (context) =>
       requisitionsController.rejectRequisition(
@@ -253,6 +283,7 @@ function registerRequisitionRoutesForResource(
     `${prefix}/tenant/${resourcePath}/${idParam}/confirmar`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("REQUISICOES", "APPROVE"),
     auditMiddleware,
     async (context) =>
       requisitionsController.confirmRequisition(
@@ -265,6 +296,7 @@ function registerRequisitionRoutesForResource(
     `${prefix}/tenant/${resourcePath}/${idParam}/cancelar`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("REQUISICOES", "CANCEL"),
     auditMiddleware,
     async (context) =>
       requisitionsController.cancelRequisition(
@@ -279,6 +311,7 @@ function registerRequisitionRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/lotes`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "CREATE_LOTE"),
     auditMiddleware,
     async (context) => requisitionsController.createLote(context.req),
   );
@@ -287,6 +320,7 @@ function registerRequisitionRoutes(router: Router, prefix: string): void {
     `${prefix}/tenant/produtos/:produtoId/lotes`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "VIEW"),
     async (context) => requisitionsController.listProductLots(context.req),
   );
 
