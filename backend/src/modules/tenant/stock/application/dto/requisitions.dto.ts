@@ -86,6 +86,36 @@ export const createRequisitionSchema = z
 
 export type CreateRequisitionDTO = z.infer<typeof createRequisitionSchema>;
 
+export const updateRequisitionSchema = z
+  .object({
+    numeroDocumento: z
+      .string()
+      .trim()
+      .min(1, "Numero do documento e obrigatorio")
+      .optional(),
+    fornecedorId: z.string().trim().min(1).nullable().optional(),
+    origem: optionalLocationSchema,
+    destino: optionalLocationSchema,
+    observacao: z.string().trim().max(2000).nullable().optional(),
+  })
+  .superRefine((data: any, ctx: any) => {
+    const hasField =
+      data.numeroDocumento !== undefined ||
+      data.fornecedorId !== undefined ||
+      data.origem !== undefined ||
+      data.destino !== undefined ||
+      data.observacao !== undefined;
+
+    if (!hasField) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Informe ao menos um campo para actualizar",
+      });
+    }
+  });
+
+export type UpdateRequisitionDTO = z.infer<typeof updateRequisitionSchema>;
+
 export const addRequisitionItemSchema = z.object({
   produtoId: z.string().trim().min(1, "Produto e obrigatorio"),
   loteId: z.string().trim().min(1).optional(),

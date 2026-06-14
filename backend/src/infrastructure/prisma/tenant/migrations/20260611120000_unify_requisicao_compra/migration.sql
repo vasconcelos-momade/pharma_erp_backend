@@ -13,6 +13,9 @@ ALTER TABLE `transferencias`
     ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE `transferencia_itens`
+  CHANGE COLUMN `quantidade` `quantidadeSolicitada` DECIMAL(14, 2) NOT NULL;
+
+ALTER TABLE `transferencia_itens`
   ADD COLUMN `numeroLote` VARCHAR(100) NULL AFTER `quantidadeSolicitada`,
   ADD COLUMN `dataValidade` DATETIME(3) NULL AFTER `numeroLote`,
   ADD COLUMN `precoCompra` DECIMAL(10, 2) NULL AFTER `dataValidade`,

@@ -226,6 +226,15 @@ function registerRequisitionRoutesForResource(
     async (context) => requisitionsController.getRequisitionDetail(context.req),
   );
 
+  router.patch(
+    `${prefix}/tenant/${resourcePath}/${idParam}`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("REQUISICOES", "UPDATE"),
+    auditMiddleware,
+    async (context) => requisitionsController.updateRequisition(context.req),
+  );
+
   router.post(
     `${prefix}/tenant/${resourcePath}/${idParam}/items`,
     tenantAuthMiddleware(),

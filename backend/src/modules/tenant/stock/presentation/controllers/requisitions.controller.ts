@@ -5,6 +5,7 @@ import {
   createLoteSchema,
   listRequisitionsQuerySchema,
   updateRequisitionItemSchema,
+  updateRequisitionSchema,
 } from "../../application/dto/requisitions.dto";
 import { AddRequisitionCompraItemUseCase } from "../../application/use-cases/requisitions/add-requisition-compra-item.use-case";
 import { AddRequisitionItemUseCase } from "../../application/use-cases/requisitions/add-requisition-item.use-case";
@@ -20,6 +21,7 @@ import { RejectRequisitionUseCase } from "../../application/use-cases/requisitio
 import { RemoveRequisitionItemUseCase } from "../../application/use-cases/requisitions/remove-requisition-item.use-case";
 import { UpdateRequisitionCompraItemUseCase } from "../../application/use-cases/requisitions/update-requisition-compra-item.use-case";
 import { UpdateRequisitionItemUseCase } from "../../application/use-cases/requisitions/update-requisition-item.use-case";
+import { UpdateRequisitionUseCase } from "../../application/use-cases/requisitions/update-requisition.use-case";
 import { ApiError } from "../../../../../shared/http/api-error";
 import {
   getValidationErrorMessage,
@@ -29,6 +31,7 @@ import {
 
 export class RequisitionsController {
   private createUseCase = new CreateRequisitionUseCase();
+  private updateUseCase = new UpdateRequisitionUseCase();
   private createLoteUseCase = new CreateLoteUseCase();
   private listUseCase = new ListRequisitionsUseCase();
   private detailUseCase = new GetRequisitionDetailUseCase();
@@ -108,6 +111,25 @@ export class RequisitionsController {
       const parts = url.pathname.split("/");
       const requisicaoId = parts[parts.length - 1];
       const data = await this.detailUseCase.execute(requisicaoId);
+      return Response.json(this.serialize(data));
+    } catch (error: unknown) {
+      if (error instanceof ApiError && error.status === 404) {
+        return Response.json(
+          { error: error.message, code: error.code },
+          { status: 404 },
+        );
+      }
+      return this.errorResponse(error);
+    }
+  }
+
+  async updateRequisition(req: Request) {
+    try {
+      const url = new URL(req.url);
+      const parts = url.pathname.split("/");
+      const requisicaoId = parts[parts.length - 1];
+      const body = await parseJsonBody(req, updateRequisitionSchema);
+      const data = await this.updateUseCase.execute(requisicaoId, body);
       return Response.json(this.serialize(data));
     } catch (error: unknown) {
       if (error instanceof ApiError && error.status === 404) {
