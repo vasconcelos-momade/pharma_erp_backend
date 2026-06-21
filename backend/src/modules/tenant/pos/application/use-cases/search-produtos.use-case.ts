@@ -14,9 +14,14 @@ export class SearchProdutosUseCase {
     const page = Math.max(1, params?.page ?? 1);
     const pageSize = Math.min(100, Math.max(1, params?.pageSize ?? 20));
 
+    const baseWhere = {
+      ativo: true,
+      deletedAt: null,
+    };
+
     if (barcode) {
-      const produto = await prisma.produto.findUnique({
-        where: { barcode, ativo: true },
+      const produto = await prisma.produto.findFirst({
+        where: { ...baseWhere, barcode },
         select: produtoPosSelect,
       });
       return {
@@ -27,17 +32,20 @@ export class SearchProdutosUseCase {
       };
     }
 
+    const queryFilters = query
+      ? {
+          OR: [
+            { nome: { contains: query } },
+            { substanciaActiva: { contains: query } },
+            { barcode: { contains: query } },
+            ...( /^\d+$/.test(query) ? [{ id: BigInt(query) }] : [] ),
+          ],
+        }
+      : {};
+
     const where = {
-      ativo: true,
-      ...(query
-        ? {
-            OR: [
-              { nome: { contains: query } },
-              { substanciaActiva: { contains: query } },
-              { barcode: { contains: query } },
-            ],
-          }
-        : {}),
+      ...baseWhere,
+      ...(query ? queryFilters : {}),
     };
 
     const items = await prisma.produto.findMany({

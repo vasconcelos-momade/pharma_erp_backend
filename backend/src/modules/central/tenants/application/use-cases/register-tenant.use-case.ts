@@ -1,5 +1,6 @@
 import { prismaCentralUnscoped } from "../../../../../infrastructure/prisma/prisma-central.service";
 import { MySqlManagementService } from "../../../../../infrastructure/database/mysql-management.service";
+import { syncTenantUsersFromCentral } from "../../../../../infrastructure/database/sync-tenant-users.service";
 import { TenantPrismaFactory } from "../../../../../infrastructure/prisma/tenant-prisma.factory";
 import { branchContext } from "../../../../../shared/context/branch-context";
 import { encryptTenantDbPassword } from "../../../../../infrastructure/security/tenant-db-credentials";
@@ -137,8 +138,7 @@ export class RegisterTenantUseCase {
     MySqlManagementService.runMigrations(dbName);
     MySqlManagementService.runRolePermissionsSeed(dbName);
 
-    // 5. Create initial users inside the Tenant Database
-    // Auth/password vive na base central; aqui guardamos só o vínculo (centralUserId) quando existir.
+    // 5. Sincronizar utilizadores tenant a partir da central (+ admin local do registo).
     const centralForAdmin = await prisma.user.findUnique({
       where: { email: adminEmail },
       select: { id: true, name: true, email: true },
@@ -148,7 +148,7 @@ export class RegisterTenantUseCase {
       select: { id: true, name: true, email: true },
     });
 
-    await branchContext.run({
+    const tenantUserCount = await branchContext.run({
       tenantId: tenant.id.toString(),
       branchId: branch.id.toString(),
       dbName,
@@ -160,48 +160,43 @@ export class RegisterTenantUseCase {
       dbPasswordTag: tag,
     }, async () => {
       const prismaTenant = TenantPrismaFactory.getClient();
-
-      await prismaTenant.user.create({
-        data: {
-          name: data.adminName,
-          email: adminEmail,
-          role: "ADMIN",
-          centralUserId: centralForAdmin?.id ?? null,
-        },
-      });
-
-      const shouldCreateOwnerUser =
-        ownerCentral &&
-        ownerCentral.email.toLowerCase() !== adminEmail &&
-        (!centralForAdmin || centralForAdmin.id !== ownerCentral.id);
-
-      if (shouldCreateOwnerUser) {
-        await prismaTenant.user.create({
-          data: {
-            name: ownerCentral.name,
-            email: ownerCentral.email,
-            role: "ADMIN",
-            centralUserId: ownerCentral.id,
+      return syncTenantUsersFromCentral({
+        tenantId: tenant.id,
+        prismaTenant,
+        extraUsers: [
+          {
+            name: data.adminName,
+            email: adminEmail,
+            centralUserId: centralForAdmin?.id ?? null,
           },
-        });
-      }
+        ],
+      });
     });
+
+    runtimeGlobals.console?.log(`👤 ${tenantUserCount} utilizador(es) tenant sincronizados em ${dbName}.`);
 
     const notificationEmail = ownerCentral?.email ?? adminEmail;
     const notificationName = ownerCentral?.name ?? data.adminName;
 
-    await EmailService.send({
-      to: notificationEmail,
-      subject: `Trial iniciado para ${data.nomeEmpresa}`,
-      text: [
-        `O tenant ${data.nomeEmpresa} foi criado com sucesso.`,
-        `Plano: ${defaultPlan.name}.`,
-        `Trial valido ate ${trialEndsAt.toISOString().slice(0, 10)}.`,
-        `Branch inicial: ${branch.name} (${branch.code}).`,
-        "Ao terminar o trial sera emitida uma factura com 3 dias de prazo para pagamento.",
-        `Responsavel registado: ${notificationName}.`,
-      ].join("\n"),
-    });
+    try {
+      await EmailService.send({
+        to: notificationEmail,
+        subject: `Trial iniciado para ${data.nomeEmpresa}`,
+        text: [
+          `O tenant ${data.nomeEmpresa} foi criado com sucesso.`,
+          `Plano: ${defaultPlan.name}.`,
+          `Trial valido ate ${trialEndsAt.toISOString().slice(0, 10)}.`,
+          `Branch inicial: ${branch.name} (${branch.code}).`,
+          "Ao terminar o trial sera emitida uma factura com 3 dias de prazo para pagamento.",
+          `Responsavel registado: ${notificationName}.`,
+        ].join("\n"),
+      });
+    } catch (error) {
+      runtimeGlobals.console?.log(
+        `⚠️ Email de boas-vindas nao enviado para ${notificationEmail}:`,
+        error instanceof Error ? error.message : error,
+      );
+    }
 
     runtimeGlobals.console?.log(`🎉 Tenant ${data.nomeTenant} criado e configurado com sucesso!`);
 

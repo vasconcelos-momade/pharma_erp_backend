@@ -316,6 +316,14 @@ function registerRequisitionRoutesForResource(
 }
 
 function registerRequisitionRoutes(router: Router, prefix: string): void {
+  router.get(
+    `${prefix}/tenant/requisicoes/produtos/search`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("REQUISICOES", "VIEW"),
+    async (context) => requisitionsController.searchProdutos(context.req),
+  );
+
   router.post(
     `${prefix}/tenant/lotes`,
     tenantAuthMiddleware(),
@@ -349,6 +357,14 @@ function registerRequisitionRoutes(router: Router, prefix: string): void {
 }
 
 export function registerStockRoutes(router: Router, prefix: string): void {
+  router.get(
+    `${prefix}/tenant/stock/movements`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("ESTOQUE", "VIEW"),
+    async (context) => stockController.listStockMovements(context.req),
+  );
+
   registerReceiveRoute(router, `${prefix}/tenant/stock/receipts`);
   registerReceiveRoute(router, `${prefix}/tenant/stock/receive`);
 

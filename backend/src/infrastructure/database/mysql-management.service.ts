@@ -1,5 +1,4 @@
 import { execSync } from "child_process";
-import path from "path";
 import { prismaCentral } from "../prisma/prisma-central.service";
 
 export class MySqlManagementService {
@@ -26,27 +25,34 @@ export class MySqlManagementService {
   }
 
   /**
-   * Applies tenant Prisma schema for a specific database
+   * Applies tenant Prisma schema for a new database.
+   *
+   * Não chama `prisma generate` aqui: em dev (`bun --watch`) regerar o client
+   * altera ficheiros importados e reinicia o servidor a meio do registo do tenant,
+   * interrompendo a criação de utilizadores na base tenant.
+   * O client é gerado no entrypoint do container (docker-entrypoint.dev.sh).
    */
   static runMigrations(dbName: string) {
     console.log(`⚙️ [Prisma] Aplicando migrations no banco: ${dbName}`);
-    
+
     const rootPassword = process.env.MYSQL_ROOT_PASSWORD;
     const dbUrl = `mysql://root:${rootPassword}@mysql_central:3306/${dbName}`;
-    const schemaPath = path.resolve("src/infrastructure/prisma/tenant/schema.prisma");
+    const schemaPath = "src/infrastructure/prisma/tenant/schema.prisma";
+    const env = { ...process.env, DATABASE_URL_TENANT: dbUrl };
 
     try {
-      execSync(
-        `DATABASE_URL_TENANT="${dbUrl}" bun run prisma:migrate:tenant`,
-        { stdio: "inherit", env: { ...process.env, DATABASE_URL_TENANT: dbUrl } }
-      );
-
-      execSync(`bun run prisma:generate:tenant`, {
+      execSync(`DATABASE_URL_TENANT="${dbUrl}" bun run prisma:migrate:tenant`, {
         stdio: "inherit",
-        env: { ...process.env, DATABASE_URL_TENANT: dbUrl },
+        env,
       });
 
-      console.log(`✅ [Prisma] Migrations tenant aplicadas com sucesso em ${dbName}.`);
+      // Sincroniza tabelas presentes no schema mas ainda sem migration (ex.: produto_regulacao).
+      execSync(
+        `bunx prisma db push --schema=${schemaPath} --accept-data-loss --skip-generate`,
+        { stdio: "inherit", env },
+      );
+
+      console.log(`✅ [Prisma] Schema tenant aplicado com sucesso em ${dbName}.`);
     } catch (error) {
       console.error(`❌ [Prisma] Erro ao rodar migrations em ${dbName}:`, error);
       throw new Error(`Falha ao aplicar migrations no banco do tenant.`);

@@ -177,5 +177,12 @@ export const createLoteSchema = z.object({
   precoCompra: z.coerce.number().optional(),
 });
 
+export const searchRequisitionProdutosQuerySchema = z.object({
+  q: z.string().trim().min(1).optional(),
+  barcode: z.string().trim().min(1).optional(),
+  page: z.coerce.number().int().positive().optional(),
+  pageSize: z.coerce.number().int().positive().max(100).optional(),
+});
+
 export type CreateLoteDTO = z.infer<typeof createLoteSchema>;
 export type ListRequisitionsQueryDTO = z.infer<typeof listRequisitionsQuerySchema>;

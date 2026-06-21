@@ -1,7 +1,12 @@
 import { ReceivePurchaseUseCase } from "../../application/use-cases/receive-purchase.use-case";
 import { AdjustStockUseCase } from "../../application/use-cases/adjust-stock.use-case";
+import { ListStockMovementsUseCase } from "../../application/use-cases/list-stock-movements.use-case";
+import { listStockMovementsQuerySchema } from "../../application/dto/stock.dto";
 import { z } from "zod";
-import { parseJsonBody } from "../../../../../shared/http/request-validation";
+import {
+  parseJsonBody,
+  parseSearchParams,
+} from "../../../../../shared/http/request-validation";
 import { controllerErrorResponse } from "../../../../../shared/http/controller-error";
 
 const receivePurchaseSchema = z.object({
@@ -29,6 +34,7 @@ const adjustStockSchema = z.object({
 export class StockController {
   private receivePurchaseUseCase = new ReceivePurchaseUseCase();
   private adjustStockUseCase = new AdjustStockUseCase();
+  private listStockMovementsUseCase = new ListStockMovementsUseCase();
 
   async receivePurchase(req: Request, userId: string) {
     try {
@@ -50,6 +56,17 @@ export class StockController {
         motivo: body.motivo,
         userId,
       });
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async listStockMovements(req: Request) {
+    try {
+      const url = new URL(req.url);
+      const query = parseSearchParams(url, listStockMovementsQuerySchema);
+      const result = await this.listStockMovementsUseCase.execute(query);
       return Response.json(this.serialize(result));
     } catch (error: any) {
       return controllerErrorResponse(error);

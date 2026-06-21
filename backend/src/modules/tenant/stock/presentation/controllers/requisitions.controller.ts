@@ -4,6 +4,7 @@ import {
   createRequisitionSchema,
   createLoteSchema,
   listRequisitionsQuerySchema,
+  searchRequisitionProdutosQuerySchema,
   updateRequisitionItemSchema,
   updateRequisitionSchema,
 } from "../../application/dto/requisitions.dto";
@@ -17,6 +18,7 @@ import { CreateLoteUseCase } from "../../application/use-cases/requisitions/crea
 import { GetRequisitionDetailUseCase } from "../../application/use-cases/requisitions/get-requisition-detail.use-case";
 import { ListProductLotsUseCase } from "../../application/use-cases/requisitions/list-product-lots.use-case";
 import { ListRequisitionsUseCase } from "../../application/use-cases/requisitions/list-requisitions.use-case";
+import { SearchRequisitionProdutosUseCase } from "../../application/use-cases/requisitions/search-requisition-produtos.use-case";
 import { RejectRequisitionUseCase } from "../../application/use-cases/requisitions/reject-requisition.use-case";
 import { RemoveRequisitionItemUseCase } from "../../application/use-cases/requisitions/remove-requisition-item.use-case";
 import { UpdateRequisitionCompraItemUseCase } from "../../application/use-cases/requisitions/update-requisition-compra-item.use-case";
@@ -41,6 +43,7 @@ export class RequisitionsController {
   private updateCompraItemUseCase = new UpdateRequisitionCompraItemUseCase();
   private removeItemUseCase = new RemoveRequisitionItemUseCase();
   private listProductLotsUseCase = new ListProductLotsUseCase();
+  private searchProdutosUseCase = new SearchRequisitionProdutosUseCase();
   private approveUseCase = new ApproveRequisitionUseCase();
   private rejectUseCase = new RejectRequisitionUseCase();
   private cancelUseCase = new CancelRequisitionUseCase();
@@ -81,6 +84,24 @@ export class RequisitionsController {
       const url = new URL(req.url);
       const filters = parseSearchParams(url, listRequisitionsQuerySchema);
       const data = await this.listUseCase.execute(filters);
+      return Response.json(this.serialize(data));
+    } catch (error: unknown) {
+      return this.errorResponse(error);
+    }
+  }
+
+  async searchProdutos(req: Request) {
+    try {
+      const url = new URL(req.url);
+      const { q, barcode, page = 1, pageSize = 20 } = parseSearchParams(
+        url,
+        searchRequisitionProdutosQuerySchema,
+      );
+      const data = await this.searchProdutosUseCase.execute({
+        q: q ?? barcode,
+        page,
+        pageSize,
+      });
       return Response.json(this.serialize(data));
     } catch (error: unknown) {
       return this.errorResponse(error);

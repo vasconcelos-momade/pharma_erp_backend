@@ -16,7 +16,7 @@
     "prisma:migrate:tenant": "bash scripts/ensure-tenant-database-url.sh && bunx prisma migrate deploy --schema=src/infrastructure/prisma/tenant/schema.prisma",
     "billing:generate:monthly": "bun scripts/generate-monthly-billing.ts",
     "billing:process:lifecycle": "bun scripts/process-subscription-lifecycle.ts",
-    "dev": "bun run prisma:deploy:central && bun --watch src/main.ts",
+    "dev": "bun run prisma:deploy:central && bun --watch --ignore='**/generated/**' src/main.ts",
     "start": "bun src/main.ts",
     "worker": "bun src/infrastructure/queue/worker.ts",
     "db:reset:central-tenants": "echo 'Run this script from the project root: bash scripts/reset-central-and-tenants.sh'"

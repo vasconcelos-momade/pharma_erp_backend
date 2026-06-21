@@ -1,0 +1,6 @@
+# Evita reinício do `bun --watch` quando Prisma regera clients (volumes Docker).
+[run.watch]
+ignore = [
+  "**/node_modules/**",
+  "**/generated/**",
+]

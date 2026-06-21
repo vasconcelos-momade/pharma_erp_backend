@@ -28,7 +28,7 @@ export function flattenProdutoForApi<T extends Record<string, unknown>>(
     ...base,
     ...resolved,
     regulacao: produto.regulacao ?? null,
-  } as T & ResolvedProdutoPolicy;
+  } as unknown as T & ResolvedProdutoPolicy;
 }
 
 export function regulacaoToPolicyInput(
@@ -59,6 +59,8 @@ export const produtoPosSelect = {
   substanciaActiva: true,
   dosagem: true,
   forma: true,
+  apresentacao: true,
+  ativo: true,
   regulacao: true,
   stockBalance: {
     select: {
@@ -74,7 +76,7 @@ export const produtoPosSelect = {
     },
   },
   lotes: {
-    where: { ativo: true },
+    where: { ativo: true, deletedAt: null },
     orderBy: { dataValidade: "asc" as const },
     take: 1,
     select: {
@@ -84,6 +86,69 @@ export const produtoPosSelect = {
   },
 };
 
+/** Select de catálogo para Requisições (Stock): independente do POS. */
+export const produtoRequisicaoSelect = {
+  id: true,
+  nome: true,
+  barcode: true,
+  precoVenda: true,
+  estoqueAtual: true,
+  estoqueMinimo: true,
+  substanciaActiva: true,
+  dosagem: true,
+  forma: true,
+  apresentacao: true,
+  ativo: true,
+  regulacao: true,
+  stockBalance: {
+    select: {
+      quantidadeDisponivel: true,
+      quantidadeTotal: true,
+    },
+  },
+  taxRule: {
+    select: {
+      tipo: true,
+      taxa: true,
+      codigo: true,
+    },
+  },
+  lotes: {
+    where: {
+      ativo: true,
+      deletedAt: null,
+      disponibilidade: "DISPONIVEL" as const,
+      estadoSanitario: "VALIDO" as const,
+    },
+    orderBy: { dataValidade: "asc" as const },
+    take: 1,
+    select: {
+      numeroLote: true,
+      dataValidade: true,
+    },
+  },
+} as const;
+
+/** Produto para Requisições: todos os activos; lote opcional (FEFO). */
+export function mapRequisicaoProduto<T extends Record<string, unknown>>(
+  row: T,
+): T & ResolvedProdutoPolicy & { lote: string | null; dataValidade: string | null } {
+  const flat = flattenProdutoForApi(row);
+  const disponivel = Number(
+    (row as { stockBalance?: { quantidadeDisponivel?: unknown } }).stockBalance
+      ?.quantidadeDisponivel ?? flat.estoqueAtual ?? 0,
+  );
+  const lotes = (row as { lotes?: Array<{ numeroLote?: string; dataValidade?: Date }> }).lotes;
+  const primeiroLote = lotes?.[0];
+
+  return {
+    ...flat,
+    estoqueAtual: disponivel,
+    lote: primeiroLote?.numeroLote ?? null,
+    dataValidade: primeiroLote?.dataValidade?.toISOString() ?? null,
+  } as T & ResolvedProdutoPolicy & { lote: string | null; dataValidade: string | null };
+}
+
 /** Produto para POS: regulacao flat + stock de StockBalance. */
 export function mapPosProduto<T extends Record<string, unknown>>(row: T): T & ResolvedProdutoPolicy {
   const flat = flattenProdutoForApi(row);
@@ -91,8 +156,13 @@ export function mapPosProduto<T extends Record<string, unknown>>(row: T): T & Re
     (row as { stockBalance?: { quantidadeDisponivel?: unknown } }).stockBalance
       ?.quantidadeDisponivel ?? flat.estoqueAtual ?? 0,
   );
+  const lotes = (row as { lotes?: Array<{ numeroLote?: string; dataValidade?: Date }> }).lotes;
+  const primeiroLote = lotes?.[0];
+
   return {
     ...flat,
     estoqueAtual: disponivel,
+    lote: primeiroLote?.numeroLote ?? null,
+    dataValidade: primeiroLote?.dataValidade?.toISOString() ?? null,
   } as T & ResolvedProdutoPolicy;
 }
