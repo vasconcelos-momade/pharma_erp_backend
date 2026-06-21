@@ -178,7 +178,6 @@ model Produto {
   ativo                    Boolean                 @default(true)
   barcode                  String?                 @unique @db.VarChar(100)
   precoVenda               Decimal                 @db.Decimal(14, 2)
-  estoqueAtual             Decimal                 @default(0) @db.Decimal(14, 2) // CACHE: reconciliado com StockBalance
   estoqueMinimo            Decimal                 @default(0) @db.Decimal(14, 2)
   taxRuleId                BigInt?                 @db.UnsignedBigInt
   version                  Int                     @default(0)

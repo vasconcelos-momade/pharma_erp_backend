@@ -189,6 +189,16 @@ export type Inventario = $Result.DefaultSelection<Prisma.$InventarioPayload>
  */
 export type InventarioItem = $Result.DefaultSelection<Prisma.$InventarioItemPayload>
 /**
+ * Model Requisicao
+ * 
+ */
+export type Requisicao = $Result.DefaultSelection<Prisma.$RequisicaoPayload>
+/**
+ * Model RequisicaoItem
+ * 
+ */
+export type RequisicaoItem = $Result.DefaultSelection<Prisma.$RequisicaoItemPayload>
+/**
  * Model CashBalance
  * 
  */
@@ -574,15 +584,21 @@ export type TipoMovimentoPsicotropico = (typeof TipoMovimentoPsicotropico)[keyof
 
 
 export const SystemModule: {
+  REQUISICOES: 'REQUISICOES',
+  COMPRAS: 'COMPRAS',
   PRODUTOS: 'PRODUTOS',
+  LOTES: 'LOTES',
+  INVENTARIO: 'INVENTARIO',
+  FORNECEDORES: 'FORNECEDORES',
+  CLIENTES: 'CLIENTES',
+  POS: 'POS',
+  RELATORIOS: 'RELATORIOS',
+  UTILIZADORES: 'UTILIZADORES',
+  CONFIGURACOES: 'CONFIGURACOES',
   FATURAS: 'FATURAS',
   CAIXA: 'CAIXA',
   ESTOQUE: 'ESTOQUE',
   PSICOTROPICOS: 'PSICOTROPICOS',
-  FORNECEDORES: 'FORNECEDORES',
-  COMPRAS: 'COMPRAS',
-  CLIENTES: 'CLIENTES',
-  CONFIGURACOES: 'CONFIGURACOES',
   AUDITORIA: 'AUDITORIA'
 };
 
@@ -592,9 +608,16 @@ export type SystemModule = (typeof SystemModule)[keyof typeof SystemModule]
 export const PermissionAction: {
   VIEW: 'VIEW',
   CREATE: 'CREATE',
+  UPDATE: 'UPDATE',
   EDIT: 'EDIT',
   DELETE: 'DELETE',
-  APPROVE: 'APPROVE'
+  APPROVE: 'APPROVE',
+  REJECT: 'REJECT',
+  CANCEL: 'CANCEL',
+  EXPORT: 'EXPORT',
+  CREATE_LOTE: 'CREATE_LOTE',
+  ADJUST_STOCK: 'ADJUST_STOCK',
+  CLOSE_SHIFT: 'CLOSE_SHIFT'
 };
 
 export type PermissionAction = (typeof PermissionAction)[keyof typeof PermissionAction]
@@ -608,6 +631,26 @@ export const StatusInventario: {
 };
 
 export type StatusInventario = (typeof StatusInventario)[keyof typeof StatusInventario]
+
+
+export const TipoRequisicao: {
+  COMPRA: 'COMPRA',
+  ENTRADA: 'ENTRADA',
+  SAIDA: 'SAIDA'
+};
+
+export type TipoRequisicao = (typeof TipoRequisicao)[keyof typeof TipoRequisicao]
+
+
+export const StatusRequisicao: {
+  PENDENTE: 'PENDENTE',
+  APROVADA: 'APROVADA',
+  REJEITADA: 'REJEITADA',
+  CONCLUIDA: 'CONCLUIDA',
+  CANCELADA: 'CANCELADA'
+};
+
+export type StatusRequisicao = (typeof StatusRequisicao)[keyof typeof StatusRequisicao]
 
 
 export const TipoRelatorioSanitario: {
@@ -765,6 +808,14 @@ export const PermissionAction: typeof $Enums.PermissionAction
 export type StatusInventario = $Enums.StatusInventario
 
 export const StatusInventario: typeof $Enums.StatusInventario
+
+export type TipoRequisicao = $Enums.TipoRequisicao
+
+export const TipoRequisicao: typeof $Enums.TipoRequisicao
+
+export type StatusRequisicao = $Enums.StatusRequisicao
+
+export const StatusRequisicao: typeof $Enums.StatusRequisicao
 
 export type TipoRelatorioSanitario = $Enums.TipoRelatorioSanitario
 
@@ -1254,6 +1305,26 @@ export class PrismaClient<
     * ```
     */
   get inventarioItem(): Prisma.InventarioItemDelegate<ExtArgs>;
+
+  /**
+   * `prisma.requisicao`: Exposes CRUD operations for the **Requisicao** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Requisicaos
+    * const requisicaos = await prisma.requisicao.findMany()
+    * ```
+    */
+  get requisicao(): Prisma.RequisicaoDelegate<ExtArgs>;
+
+  /**
+   * `prisma.requisicaoItem`: Exposes CRUD operations for the **RequisicaoItem** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more RequisicaoItems
+    * const requisicaoItems = await prisma.requisicaoItem.findMany()
+    * ```
+    */
+  get requisicaoItem(): Prisma.RequisicaoItemDelegate<ExtArgs>;
 
   /**
    * `prisma.cashBalance`: Exposes CRUD operations for the **CashBalance** model.
@@ -1920,6 +1991,8 @@ export namespace Prisma {
     StockBalance: 'StockBalance',
     Inventario: 'Inventario',
     InventarioItem: 'InventarioItem',
+    Requisicao: 'Requisicao',
+    RequisicaoItem: 'RequisicaoItem',
     CashBalance: 'CashBalance',
     AuditLog: 'AuditLog',
     SanitarioReport: 'SanitarioReport',
@@ -1954,7 +2027,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "user" | "terminal" | "caixa" | "caixaMovimento" | "cliente" | "empresa" | "convenioContrato" | "produto" | "produtoRegulacao" | "produtoClassificacaoEvento" | "servico" | "fornecedor" | "produtoFornecedor" | "compra" | "compraItem" | "lote" | "loteMovimentoSanitario" | "incineracao" | "incineracaoItem" | "estoqueMovimento" | "historicoPreco" | "alertaEstoque" | "fatura" | "faturaItem" | "contaReceber" | "contaReceberPagamento" | "contaPagar" | "estoqueReserva" | "financialMovement" | "pagamento" | "livroPsicotropico" | "rolePermission" | "stockBalance" | "inventario" | "inventarioItem" | "cashBalance" | "auditLog" | "sanitarioReport" | "digitalSignature" | "reportSnapshot" | "userPermission" | "systemConfig" | "stockValuation" | "dispensacao" | "faturaAnulacao" | "faturaItemCancelamento" | "paymentRefund" | "businessEvent" | "caixaSessao" | "stockReversal" | "financialSummary" | "receita" | "livroReceita" | "taxRule"
+      modelProps: "user" | "terminal" | "caixa" | "caixaMovimento" | "cliente" | "empresa" | "convenioContrato" | "produto" | "produtoRegulacao" | "produtoClassificacaoEvento" | "servico" | "fornecedor" | "produtoFornecedor" | "compra" | "compraItem" | "lote" | "loteMovimentoSanitario" | "incineracao" | "incineracaoItem" | "estoqueMovimento" | "historicoPreco" | "alertaEstoque" | "fatura" | "faturaItem" | "contaReceber" | "contaReceberPagamento" | "contaPagar" | "estoqueReserva" | "financialMovement" | "pagamento" | "livroPsicotropico" | "rolePermission" | "stockBalance" | "inventario" | "inventarioItem" | "requisicao" | "requisicaoItem" | "cashBalance" | "auditLog" | "sanitarioReport" | "digitalSignature" | "reportSnapshot" | "userPermission" | "systemConfig" | "stockValuation" | "dispensacao" | "faturaAnulacao" | "faturaItemCancelamento" | "paymentRefund" | "businessEvent" | "caixaSessao" | "stockReversal" | "financialSummary" | "receita" | "livroReceita" | "taxRule"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -4268,6 +4341,138 @@ export namespace Prisma {
           }
         }
       }
+      Requisicao: {
+        payload: Prisma.$RequisicaoPayload<ExtArgs>
+        fields: Prisma.RequisicaoFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.RequisicaoFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RequisicaoPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.RequisicaoFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RequisicaoPayload>
+          }
+          findFirst: {
+            args: Prisma.RequisicaoFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RequisicaoPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.RequisicaoFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RequisicaoPayload>
+          }
+          findMany: {
+            args: Prisma.RequisicaoFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RequisicaoPayload>[]
+          }
+          create: {
+            args: Prisma.RequisicaoCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RequisicaoPayload>
+          }
+          createMany: {
+            args: Prisma.RequisicaoCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.RequisicaoDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RequisicaoPayload>
+          }
+          update: {
+            args: Prisma.RequisicaoUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RequisicaoPayload>
+          }
+          deleteMany: {
+            args: Prisma.RequisicaoDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.RequisicaoUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.RequisicaoUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RequisicaoPayload>
+          }
+          aggregate: {
+            args: Prisma.RequisicaoAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateRequisicao>
+          }
+          groupBy: {
+            args: Prisma.RequisicaoGroupByArgs<ExtArgs>
+            result: $Utils.Optional<RequisicaoGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.RequisicaoCountArgs<ExtArgs>
+            result: $Utils.Optional<RequisicaoCountAggregateOutputType> | number
+          }
+        }
+      }
+      RequisicaoItem: {
+        payload: Prisma.$RequisicaoItemPayload<ExtArgs>
+        fields: Prisma.RequisicaoItemFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.RequisicaoItemFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RequisicaoItemPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.RequisicaoItemFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RequisicaoItemPayload>
+          }
+          findFirst: {
+            args: Prisma.RequisicaoItemFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RequisicaoItemPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.RequisicaoItemFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RequisicaoItemPayload>
+          }
+          findMany: {
+            args: Prisma.RequisicaoItemFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RequisicaoItemPayload>[]
+          }
+          create: {
+            args: Prisma.RequisicaoItemCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RequisicaoItemPayload>
+          }
+          createMany: {
+            args: Prisma.RequisicaoItemCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          delete: {
+            args: Prisma.RequisicaoItemDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RequisicaoItemPayload>
+          }
+          update: {
+            args: Prisma.RequisicaoItemUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RequisicaoItemPayload>
+          }
+          deleteMany: {
+            args: Prisma.RequisicaoItemDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.RequisicaoItemUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          upsert: {
+            args: Prisma.RequisicaoItemUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$RequisicaoItemPayload>
+          }
+          aggregate: {
+            args: Prisma.RequisicaoItemAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateRequisicaoItem>
+          }
+          groupBy: {
+            args: Prisma.RequisicaoItemGroupByArgs<ExtArgs>
+            result: $Utils.Optional<RequisicaoItemGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.RequisicaoItemCountArgs<ExtArgs>
+            result: $Utils.Optional<RequisicaoItemCountAggregateOutputType> | number
+          }
+        }
+      }
       CashBalance: {
         payload: Prisma.$CashBalancePayload<ExtArgs>
         fields: Prisma.CashBalanceFieldRefs
@@ -5711,6 +5916,8 @@ export namespace Prisma {
     movimentosSanitarios: number
     inventariosIniciados: number
     inventariosReconciliados: number
+    requisicoesCriadas: number
+    requisicoesConfirmadas: number
   }
 
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5742,6 +5949,8 @@ export namespace Prisma {
     movimentosSanitarios?: boolean | UserCountOutputTypeCountMovimentosSanitariosArgs
     inventariosIniciados?: boolean | UserCountOutputTypeCountInventariosIniciadosArgs
     inventariosReconciliados?: boolean | UserCountOutputTypeCountInventariosReconciliadosArgs
+    requisicoesCriadas?: boolean | UserCountOutputTypeCountRequisicoesCriadasArgs
+    requisicoesConfirmadas?: boolean | UserCountOutputTypeCountRequisicoesConfirmadasArgs
   }
 
   // Custom InputTypes
@@ -5949,6 +6158,20 @@ export namespace Prisma {
    */
   export type UserCountOutputTypeCountInventariosReconciliadosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: InventarioWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountRequisicoesCriadasArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RequisicaoWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountRequisicoesConfirmadasArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RequisicaoWhereInput
   }
 
 
@@ -6167,6 +6390,7 @@ export namespace Prisma {
     livroReceitas: number
     classificacaoEventos: number
     inventarioItens: number
+    requisicaoItens: number
   }
 
   export type ProdutoCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6184,6 +6408,7 @@ export namespace Prisma {
     livroReceitas?: boolean | ProdutoCountOutputTypeCountLivroReceitasArgs
     classificacaoEventos?: boolean | ProdutoCountOutputTypeCountClassificacaoEventosArgs
     inventarioItens?: boolean | ProdutoCountOutputTypeCountInventarioItensArgs
+    requisicaoItens?: boolean | ProdutoCountOutputTypeCountRequisicaoItensArgs
   }
 
   // Custom InputTypes
@@ -6295,6 +6520,13 @@ export namespace Prisma {
     where?: InventarioItemWhereInput
   }
 
+  /**
+   * ProdutoCountOutputType without action
+   */
+  export type ProdutoCountOutputTypeCountRequisicaoItensArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RequisicaoItemWhereInput
+  }
+
 
   /**
    * Count Type ServicoCountOutputType
@@ -6337,6 +6569,7 @@ export namespace Prisma {
     lotes: number
     contasPagar: number
     historicoPrecos: number
+    requisicoes: number
   }
 
   export type FornecedorCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6345,6 +6578,7 @@ export namespace Prisma {
     lotes?: boolean | FornecedorCountOutputTypeCountLotesArgs
     contasPagar?: boolean | FornecedorCountOutputTypeCountContasPagarArgs
     historicoPrecos?: boolean | FornecedorCountOutputTypeCountHistoricoPrecosArgs
+    requisicoes?: boolean | FornecedorCountOutputTypeCountRequisicoesArgs
   }
 
   // Custom InputTypes
@@ -6391,6 +6625,13 @@ export namespace Prisma {
    */
   export type FornecedorCountOutputTypeCountHistoricoPrecosArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: HistoricoPrecoWhereInput
+  }
+
+  /**
+   * FornecedorCountOutputType without action
+   */
+  export type FornecedorCountOutputTypeCountRequisicoesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RequisicaoWhereInput
   }
 
 
@@ -6449,6 +6690,7 @@ export namespace Prisma {
     movimentosSanitarios: number
     incineracaoItens: number
     inventarioItens: number
+    requisicaoItens: number
   }
 
   export type LoteCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6462,6 +6704,7 @@ export namespace Prisma {
     movimentosSanitarios?: boolean | LoteCountOutputTypeCountMovimentosSanitariosArgs
     incineracaoItens?: boolean | LoteCountOutputTypeCountIncineracaoItensArgs
     inventarioItens?: boolean | LoteCountOutputTypeCountInventarioItensArgs
+    requisicaoItens?: boolean | LoteCountOutputTypeCountRequisicaoItensArgs
   }
 
   // Custom InputTypes
@@ -6543,6 +6786,13 @@ export namespace Prisma {
    */
   export type LoteCountOutputTypeCountInventarioItensArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: InventarioItemWhereInput
+  }
+
+  /**
+   * LoteCountOutputType without action
+   */
+  export type LoteCountOutputTypeCountRequisicaoItensArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RequisicaoItemWhereInput
   }
 
 
@@ -6859,6 +7109,37 @@ export namespace Prisma {
    */
   export type InventarioCountOutputTypeCountItensArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: InventarioItemWhereInput
+  }
+
+
+  /**
+   * Count Type RequisicaoCountOutputType
+   */
+
+  export type RequisicaoCountOutputType = {
+    itens: number
+  }
+
+  export type RequisicaoCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    itens?: boolean | RequisicaoCountOutputTypeCountItensArgs
+  }
+
+  // Custom InputTypes
+  /**
+   * RequisicaoCountOutputType without action
+   */
+  export type RequisicaoCountOutputTypeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RequisicaoCountOutputType
+     */
+    select?: RequisicaoCountOutputTypeSelect<ExtArgs> | null
+  }
+
+  /**
+   * RequisicaoCountOutputType without action
+   */
+  export type RequisicaoCountOutputTypeCountItensArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RequisicaoItemWhereInput
   }
 
 
@@ -7220,6 +7501,8 @@ export namespace Prisma {
     movimentosSanitarios?: boolean | User$movimentosSanitariosArgs<ExtArgs>
     inventariosIniciados?: boolean | User$inventariosIniciadosArgs<ExtArgs>
     inventariosReconciliados?: boolean | User$inventariosReconciliadosArgs<ExtArgs>
+    requisicoesCriadas?: boolean | User$requisicoesCriadasArgs<ExtArgs>
+    requisicoesConfirmadas?: boolean | User$requisicoesConfirmadasArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
@@ -7266,6 +7549,8 @@ export namespace Prisma {
     movimentosSanitarios?: boolean | User$movimentosSanitariosArgs<ExtArgs>
     inventariosIniciados?: boolean | User$inventariosIniciadosArgs<ExtArgs>
     inventariosReconciliados?: boolean | User$inventariosReconciliadosArgs<ExtArgs>
+    requisicoesCriadas?: boolean | User$requisicoesCriadasArgs<ExtArgs>
+    requisicoesConfirmadas?: boolean | User$requisicoesConfirmadasArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -7300,6 +7585,8 @@ export namespace Prisma {
       movimentosSanitarios: Prisma.$LoteMovimentoSanitarioPayload<ExtArgs>[]
       inventariosIniciados: Prisma.$InventarioPayload<ExtArgs>[]
       inventariosReconciliados: Prisma.$InventarioPayload<ExtArgs>[]
+      requisicoesCriadas: Prisma.$RequisicaoPayload<ExtArgs>[]
+      requisicoesConfirmadas: Prisma.$RequisicaoPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: bigint
@@ -7680,6 +7967,8 @@ export namespace Prisma {
     movimentosSanitarios<T extends User$movimentosSanitariosArgs<ExtArgs> = {}>(args?: Subset<T, User$movimentosSanitariosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LoteMovimentoSanitarioPayload<ExtArgs>, T, "findMany"> | Null>
     inventariosIniciados<T extends User$inventariosIniciadosArgs<ExtArgs> = {}>(args?: Subset<T, User$inventariosIniciadosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InventarioPayload<ExtArgs>, T, "findMany"> | Null>
     inventariosReconciliados<T extends User$inventariosReconciliadosArgs<ExtArgs> = {}>(args?: Subset<T, User$inventariosReconciliadosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InventarioPayload<ExtArgs>, T, "findMany"> | Null>
+    requisicoesCriadas<T extends User$requisicoesCriadasArgs<ExtArgs> = {}>(args?: Subset<T, User$requisicoesCriadasArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RequisicaoPayload<ExtArgs>, T, "findMany"> | Null>
+    requisicoesConfirmadas<T extends User$requisicoesConfirmadasArgs<ExtArgs> = {}>(args?: Subset<T, User$requisicoesConfirmadasArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RequisicaoPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -8575,6 +8864,46 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: InventarioScalarFieldEnum | InventarioScalarFieldEnum[]
+  }
+
+  /**
+   * User.requisicoesCriadas
+   */
+  export type User$requisicoesCriadasArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Requisicao
+     */
+    select?: RequisicaoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoInclude<ExtArgs> | null
+    where?: RequisicaoWhereInput
+    orderBy?: RequisicaoOrderByWithRelationInput | RequisicaoOrderByWithRelationInput[]
+    cursor?: RequisicaoWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RequisicaoScalarFieldEnum | RequisicaoScalarFieldEnum[]
+  }
+
+  /**
+   * User.requisicoesConfirmadas
+   */
+  export type User$requisicoesConfirmadasArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Requisicao
+     */
+    select?: RequisicaoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoInclude<ExtArgs> | null
+    where?: RequisicaoWhereInput
+    orderBy?: RequisicaoOrderByWithRelationInput | RequisicaoOrderByWithRelationInput[]
+    cursor?: RequisicaoWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RequisicaoScalarFieldEnum | RequisicaoScalarFieldEnum[]
   }
 
   /**
@@ -14851,7 +15180,6 @@ export namespace Prisma {
   export type ProdutoAvgAggregateOutputType = {
     id: number | null
     precoVenda: Decimal | null
-    estoqueAtual: Decimal | null
     estoqueMinimo: Decimal | null
     taxRuleId: number | null
     version: number | null
@@ -14860,7 +15188,6 @@ export namespace Prisma {
   export type ProdutoSumAggregateOutputType = {
     id: bigint | null
     precoVenda: Decimal | null
-    estoqueAtual: Decimal | null
     estoqueMinimo: Decimal | null
     taxRuleId: bigint | null
     version: number | null
@@ -14876,7 +15203,6 @@ export namespace Prisma {
     ativo: boolean | null
     barcode: string | null
     precoVenda: Decimal | null
-    estoqueAtual: Decimal | null
     estoqueMinimo: Decimal | null
     taxRuleId: bigint | null
     version: number | null
@@ -14895,7 +15221,6 @@ export namespace Prisma {
     ativo: boolean | null
     barcode: string | null
     precoVenda: Decimal | null
-    estoqueAtual: Decimal | null
     estoqueMinimo: Decimal | null
     taxRuleId: bigint | null
     version: number | null
@@ -14914,7 +15239,6 @@ export namespace Prisma {
     ativo: number
     barcode: number
     precoVenda: number
-    estoqueAtual: number
     estoqueMinimo: number
     taxRuleId: number
     version: number
@@ -14928,7 +15252,6 @@ export namespace Prisma {
   export type ProdutoAvgAggregateInputType = {
     id?: true
     precoVenda?: true
-    estoqueAtual?: true
     estoqueMinimo?: true
     taxRuleId?: true
     version?: true
@@ -14937,7 +15260,6 @@ export namespace Prisma {
   export type ProdutoSumAggregateInputType = {
     id?: true
     precoVenda?: true
-    estoqueAtual?: true
     estoqueMinimo?: true
     taxRuleId?: true
     version?: true
@@ -14953,7 +15275,6 @@ export namespace Prisma {
     ativo?: true
     barcode?: true
     precoVenda?: true
-    estoqueAtual?: true
     estoqueMinimo?: true
     taxRuleId?: true
     version?: true
@@ -14972,7 +15293,6 @@ export namespace Prisma {
     ativo?: true
     barcode?: true
     precoVenda?: true
-    estoqueAtual?: true
     estoqueMinimo?: true
     taxRuleId?: true
     version?: true
@@ -14991,7 +15311,6 @@ export namespace Prisma {
     ativo?: true
     barcode?: true
     precoVenda?: true
-    estoqueAtual?: true
     estoqueMinimo?: true
     taxRuleId?: true
     version?: true
@@ -15097,7 +15416,6 @@ export namespace Prisma {
     ativo: boolean
     barcode: string | null
     precoVenda: Decimal
-    estoqueAtual: Decimal
     estoqueMinimo: Decimal
     taxRuleId: bigint | null
     version: number
@@ -15135,7 +15453,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: boolean
     precoVenda?: boolean
-    estoqueAtual?: boolean
     estoqueMinimo?: boolean
     taxRuleId?: boolean
     version?: boolean
@@ -15159,6 +15476,7 @@ export namespace Prisma {
     regulacao?: boolean | Produto$regulacaoArgs<ExtArgs>
     classificacaoEventos?: boolean | Produto$classificacaoEventosArgs<ExtArgs>
     inventarioItens?: boolean | Produto$inventarioItensArgs<ExtArgs>
+    requisicaoItens?: boolean | Produto$requisicaoItensArgs<ExtArgs>
     taxRule?: boolean | Produto$taxRuleArgs<ExtArgs>
     _count?: boolean | ProdutoCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["produto"]>
@@ -15174,7 +15492,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: boolean
     precoVenda?: boolean
-    estoqueAtual?: boolean
     estoqueMinimo?: boolean
     taxRuleId?: boolean
     version?: boolean
@@ -15201,6 +15518,7 @@ export namespace Prisma {
     regulacao?: boolean | Produto$regulacaoArgs<ExtArgs>
     classificacaoEventos?: boolean | Produto$classificacaoEventosArgs<ExtArgs>
     inventarioItens?: boolean | Produto$inventarioItensArgs<ExtArgs>
+    requisicaoItens?: boolean | Produto$requisicaoItensArgs<ExtArgs>
     taxRule?: boolean | Produto$taxRuleArgs<ExtArgs>
     _count?: boolean | ProdutoCountOutputTypeDefaultArgs<ExtArgs>
   }
@@ -15225,6 +15543,7 @@ export namespace Prisma {
       regulacao: Prisma.$ProdutoRegulacaoPayload<ExtArgs> | null
       classificacaoEventos: Prisma.$ProdutoClassificacaoEventoPayload<ExtArgs>[]
       inventarioItens: Prisma.$InventarioItemPayload<ExtArgs>[]
+      requisicaoItens: Prisma.$RequisicaoItemPayload<ExtArgs>[]
       taxRule: Prisma.$TaxRulePayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
@@ -15237,7 +15556,6 @@ export namespace Prisma {
       ativo: boolean
       barcode: string | null
       precoVenda: Prisma.Decimal
-      estoqueAtual: Prisma.Decimal
       estoqueMinimo: Prisma.Decimal
       taxRuleId: bigint | null
       version: number
@@ -15601,6 +15919,7 @@ export namespace Prisma {
     regulacao<T extends Produto$regulacaoArgs<ExtArgs> = {}>(args?: Subset<T, Produto$regulacaoArgs<ExtArgs>>): Prisma__ProdutoRegulacaoClient<$Result.GetResult<Prisma.$ProdutoRegulacaoPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     classificacaoEventos<T extends Produto$classificacaoEventosArgs<ExtArgs> = {}>(args?: Subset<T, Produto$classificacaoEventosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProdutoClassificacaoEventoPayload<ExtArgs>, T, "findMany"> | Null>
     inventarioItens<T extends Produto$inventarioItensArgs<ExtArgs> = {}>(args?: Subset<T, Produto$inventarioItensArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InventarioItemPayload<ExtArgs>, T, "findMany"> | Null>
+    requisicaoItens<T extends Produto$requisicaoItensArgs<ExtArgs> = {}>(args?: Subset<T, Produto$requisicaoItensArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RequisicaoItemPayload<ExtArgs>, T, "findMany"> | Null>
     taxRule<T extends Produto$taxRuleArgs<ExtArgs> = {}>(args?: Subset<T, Produto$taxRuleArgs<ExtArgs>>): Prisma__TaxRuleClient<$Result.GetResult<Prisma.$TaxRulePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -15640,7 +15959,6 @@ export namespace Prisma {
     readonly ativo: FieldRef<"Produto", 'Boolean'>
     readonly barcode: FieldRef<"Produto", 'String'>
     readonly precoVenda: FieldRef<"Produto", 'Decimal'>
-    readonly estoqueAtual: FieldRef<"Produto", 'Decimal'>
     readonly estoqueMinimo: FieldRef<"Produto", 'Decimal'>
     readonly taxRuleId: FieldRef<"Produto", 'BigInt'>
     readonly version: FieldRef<"Produto", 'Int'>
@@ -16268,6 +16586,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: InventarioItemScalarFieldEnum | InventarioItemScalarFieldEnum[]
+  }
+
+  /**
+   * Produto.requisicaoItens
+   */
+  export type Produto$requisicaoItensArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RequisicaoItem
+     */
+    select?: RequisicaoItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoItemInclude<ExtArgs> | null
+    where?: RequisicaoItemWhereInput
+    orderBy?: RequisicaoItemOrderByWithRelationInput | RequisicaoItemOrderByWithRelationInput[]
+    cursor?: RequisicaoItemWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RequisicaoItemScalarFieldEnum | RequisicaoItemScalarFieldEnum[]
   }
 
   /**
@@ -19534,6 +19872,7 @@ export namespace Prisma {
     lotes?: boolean | Fornecedor$lotesArgs<ExtArgs>
     contasPagar?: boolean | Fornecedor$contasPagarArgs<ExtArgs>
     historicoPrecos?: boolean | Fornecedor$historicoPrecosArgs<ExtArgs>
+    requisicoes?: boolean | Fornecedor$requisicoesArgs<ExtArgs>
     _count?: boolean | FornecedorCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["fornecedor"]>
 
@@ -19564,6 +19903,7 @@ export namespace Prisma {
     lotes?: boolean | Fornecedor$lotesArgs<ExtArgs>
     contasPagar?: boolean | Fornecedor$contasPagarArgs<ExtArgs>
     historicoPrecos?: boolean | Fornecedor$historicoPrecosArgs<ExtArgs>
+    requisicoes?: boolean | Fornecedor$requisicoesArgs<ExtArgs>
     _count?: boolean | FornecedorCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -19575,6 +19915,7 @@ export namespace Prisma {
       lotes: Prisma.$LotePayload<ExtArgs>[]
       contasPagar: Prisma.$ContaPagarPayload<ExtArgs>[]
       historicoPrecos: Prisma.$HistoricoPrecoPayload<ExtArgs>[]
+      requisicoes: Prisma.$RequisicaoPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: bigint
@@ -19939,6 +20280,7 @@ export namespace Prisma {
     lotes<T extends Fornecedor$lotesArgs<ExtArgs> = {}>(args?: Subset<T, Fornecedor$lotesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LotePayload<ExtArgs>, T, "findMany"> | Null>
     contasPagar<T extends Fornecedor$contasPagarArgs<ExtArgs> = {}>(args?: Subset<T, Fornecedor$contasPagarArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ContaPagarPayload<ExtArgs>, T, "findMany"> | Null>
     historicoPrecos<T extends Fornecedor$historicoPrecosArgs<ExtArgs> = {}>(args?: Subset<T, Fornecedor$historicoPrecosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$HistoricoPrecoPayload<ExtArgs>, T, "findMany"> | Null>
+    requisicoes<T extends Fornecedor$requisicoesArgs<ExtArgs> = {}>(args?: Subset<T, Fornecedor$requisicoesArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RequisicaoPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -20381,6 +20723,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: HistoricoPrecoScalarFieldEnum | HistoricoPrecoScalarFieldEnum[]
+  }
+
+  /**
+   * Fornecedor.requisicoes
+   */
+  export type Fornecedor$requisicoesArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Requisicao
+     */
+    select?: RequisicaoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoInclude<ExtArgs> | null
+    where?: RequisicaoWhereInput
+    orderBy?: RequisicaoOrderByWithRelationInput | RequisicaoOrderByWithRelationInput[]
+    cursor?: RequisicaoWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RequisicaoScalarFieldEnum | RequisicaoScalarFieldEnum[]
   }
 
   /**
@@ -23707,6 +24069,7 @@ export namespace Prisma {
     movimentosSanitarios?: boolean | Lote$movimentosSanitariosArgs<ExtArgs>
     incineracaoItens?: boolean | Lote$incineracaoItensArgs<ExtArgs>
     inventarioItens?: boolean | Lote$inventarioItensArgs<ExtArgs>
+    requisicaoItens?: boolean | Lote$requisicaoItensArgs<ExtArgs>
     _count?: boolean | LoteCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["lote"]>
 
@@ -23745,6 +24108,7 @@ export namespace Prisma {
     movimentosSanitarios?: boolean | Lote$movimentosSanitariosArgs<ExtArgs>
     incineracaoItens?: boolean | Lote$incineracaoItensArgs<ExtArgs>
     inventarioItens?: boolean | Lote$inventarioItensArgs<ExtArgs>
+    requisicaoItens?: boolean | Lote$requisicaoItensArgs<ExtArgs>
     _count?: boolean | LoteCountOutputTypeDefaultArgs<ExtArgs>
   }
 
@@ -23763,6 +24127,7 @@ export namespace Prisma {
       movimentosSanitarios: Prisma.$LoteMovimentoSanitarioPayload<ExtArgs>[]
       incineracaoItens: Prisma.$IncineracaoItemPayload<ExtArgs>[]
       inventarioItens: Prisma.$InventarioItemPayload<ExtArgs>[]
+      requisicaoItens: Prisma.$RequisicaoItemPayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
       id: bigint
@@ -24135,6 +24500,7 @@ export namespace Prisma {
     movimentosSanitarios<T extends Lote$movimentosSanitariosArgs<ExtArgs> = {}>(args?: Subset<T, Lote$movimentosSanitariosArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$LoteMovimentoSanitarioPayload<ExtArgs>, T, "findMany"> | Null>
     incineracaoItens<T extends Lote$incineracaoItensArgs<ExtArgs> = {}>(args?: Subset<T, Lote$incineracaoItensArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$IncineracaoItemPayload<ExtArgs>, T, "findMany"> | Null>
     inventarioItens<T extends Lote$inventarioItensArgs<ExtArgs> = {}>(args?: Subset<T, Lote$inventarioItensArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$InventarioItemPayload<ExtArgs>, T, "findMany"> | Null>
+    requisicaoItens<T extends Lote$requisicaoItensArgs<ExtArgs> = {}>(args?: Subset<T, Lote$requisicaoItensArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RequisicaoItemPayload<ExtArgs>, T, "findMany"> | Null>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -24693,6 +25059,26 @@ export namespace Prisma {
     take?: number
     skip?: number
     distinct?: InventarioItemScalarFieldEnum | InventarioItemScalarFieldEnum[]
+  }
+
+  /**
+   * Lote.requisicaoItens
+   */
+  export type Lote$requisicaoItensArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RequisicaoItem
+     */
+    select?: RequisicaoItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoItemInclude<ExtArgs> | null
+    where?: RequisicaoItemWhereInput
+    orderBy?: RequisicaoItemOrderByWithRelationInput | RequisicaoItemOrderByWithRelationInput[]
+    cursor?: RequisicaoItemWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RequisicaoItemScalarFieldEnum | RequisicaoItemScalarFieldEnum[]
   }
 
   /**
@@ -44471,6 +44857,2117 @@ export namespace Prisma {
 
 
   /**
+   * Model Requisicao
+   */
+
+  export type AggregateRequisicao = {
+    _count: RequisicaoCountAggregateOutputType | null
+    _avg: RequisicaoAvgAggregateOutputType | null
+    _sum: RequisicaoSumAggregateOutputType | null
+    _min: RequisicaoMinAggregateOutputType | null
+    _max: RequisicaoMaxAggregateOutputType | null
+  }
+
+  export type RequisicaoAvgAggregateOutputType = {
+    id: number | null
+    fornecedorId: number | null
+    total: Decimal | null
+    userId: number | null
+    confirmedById: number | null
+  }
+
+  export type RequisicaoSumAggregateOutputType = {
+    id: bigint | null
+    fornecedorId: bigint | null
+    total: Decimal | null
+    userId: bigint | null
+    confirmedById: bigint | null
+  }
+
+  export type RequisicaoMinAggregateOutputType = {
+    id: bigint | null
+    numeroDocumento: string | null
+    origem: string | null
+    destino: string | null
+    tipo: $Enums.TipoRequisicao | null
+    status: $Enums.StatusRequisicao | null
+    observacao: string | null
+    fornecedorId: bigint | null
+    total: Decimal | null
+    userId: bigint | null
+    confirmedAt: Date | null
+    confirmedById: bigint | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type RequisicaoMaxAggregateOutputType = {
+    id: bigint | null
+    numeroDocumento: string | null
+    origem: string | null
+    destino: string | null
+    tipo: $Enums.TipoRequisicao | null
+    status: $Enums.StatusRequisicao | null
+    observacao: string | null
+    fornecedorId: bigint | null
+    total: Decimal | null
+    userId: bigint | null
+    confirmedAt: Date | null
+    confirmedById: bigint | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type RequisicaoCountAggregateOutputType = {
+    id: number
+    numeroDocumento: number
+    origem: number
+    destino: number
+    tipo: number
+    status: number
+    observacao: number
+    fornecedorId: number
+    total: number
+    userId: number
+    confirmedAt: number
+    confirmedById: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type RequisicaoAvgAggregateInputType = {
+    id?: true
+    fornecedorId?: true
+    total?: true
+    userId?: true
+    confirmedById?: true
+  }
+
+  export type RequisicaoSumAggregateInputType = {
+    id?: true
+    fornecedorId?: true
+    total?: true
+    userId?: true
+    confirmedById?: true
+  }
+
+  export type RequisicaoMinAggregateInputType = {
+    id?: true
+    numeroDocumento?: true
+    origem?: true
+    destino?: true
+    tipo?: true
+    status?: true
+    observacao?: true
+    fornecedorId?: true
+    total?: true
+    userId?: true
+    confirmedAt?: true
+    confirmedById?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type RequisicaoMaxAggregateInputType = {
+    id?: true
+    numeroDocumento?: true
+    origem?: true
+    destino?: true
+    tipo?: true
+    status?: true
+    observacao?: true
+    fornecedorId?: true
+    total?: true
+    userId?: true
+    confirmedAt?: true
+    confirmedById?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type RequisicaoCountAggregateInputType = {
+    id?: true
+    numeroDocumento?: true
+    origem?: true
+    destino?: true
+    tipo?: true
+    status?: true
+    observacao?: true
+    fornecedorId?: true
+    total?: true
+    userId?: true
+    confirmedAt?: true
+    confirmedById?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type RequisicaoAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Requisicao to aggregate.
+     */
+    where?: RequisicaoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Requisicaos to fetch.
+     */
+    orderBy?: RequisicaoOrderByWithRelationInput | RequisicaoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: RequisicaoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Requisicaos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Requisicaos.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned Requisicaos
+    **/
+    _count?: true | RequisicaoCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: RequisicaoAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: RequisicaoSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: RequisicaoMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: RequisicaoMaxAggregateInputType
+  }
+
+  export type GetRequisicaoAggregateType<T extends RequisicaoAggregateArgs> = {
+        [P in keyof T & keyof AggregateRequisicao]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateRequisicao[P]>
+      : GetScalarType<T[P], AggregateRequisicao[P]>
+  }
+
+
+
+
+  export type RequisicaoGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RequisicaoWhereInput
+    orderBy?: RequisicaoOrderByWithAggregationInput | RequisicaoOrderByWithAggregationInput[]
+    by: RequisicaoScalarFieldEnum[] | RequisicaoScalarFieldEnum
+    having?: RequisicaoScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: RequisicaoCountAggregateInputType | true
+    _avg?: RequisicaoAvgAggregateInputType
+    _sum?: RequisicaoSumAggregateInputType
+    _min?: RequisicaoMinAggregateInputType
+    _max?: RequisicaoMaxAggregateInputType
+  }
+
+  export type RequisicaoGroupByOutputType = {
+    id: bigint
+    numeroDocumento: string
+    origem: string | null
+    destino: string | null
+    tipo: $Enums.TipoRequisicao
+    status: $Enums.StatusRequisicao
+    observacao: string | null
+    fornecedorId: bigint | null
+    total: Decimal | null
+    userId: bigint
+    confirmedAt: Date | null
+    confirmedById: bigint | null
+    createdAt: Date
+    updatedAt: Date
+    _count: RequisicaoCountAggregateOutputType | null
+    _avg: RequisicaoAvgAggregateOutputType | null
+    _sum: RequisicaoSumAggregateOutputType | null
+    _min: RequisicaoMinAggregateOutputType | null
+    _max: RequisicaoMaxAggregateOutputType | null
+  }
+
+  type GetRequisicaoGroupByPayload<T extends RequisicaoGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<RequisicaoGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof RequisicaoGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], RequisicaoGroupByOutputType[P]>
+            : GetScalarType<T[P], RequisicaoGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type RequisicaoSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    numeroDocumento?: boolean
+    origem?: boolean
+    destino?: boolean
+    tipo?: boolean
+    status?: boolean
+    observacao?: boolean
+    fornecedorId?: boolean
+    total?: boolean
+    userId?: boolean
+    confirmedAt?: boolean
+    confirmedById?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    confirmedBy?: boolean | Requisicao$confirmedByArgs<ExtArgs>
+    fornecedor?: boolean | Requisicao$fornecedorArgs<ExtArgs>
+    itens?: boolean | Requisicao$itensArgs<ExtArgs>
+    _count?: boolean | RequisicaoCountOutputTypeDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["requisicao"]>
+
+
+  export type RequisicaoSelectScalar = {
+    id?: boolean
+    numeroDocumento?: boolean
+    origem?: boolean
+    destino?: boolean
+    tipo?: boolean
+    status?: boolean
+    observacao?: boolean
+    fornecedorId?: boolean
+    total?: boolean
+    userId?: boolean
+    confirmedAt?: boolean
+    confirmedById?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type RequisicaoInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    user?: boolean | UserDefaultArgs<ExtArgs>
+    confirmedBy?: boolean | Requisicao$confirmedByArgs<ExtArgs>
+    fornecedor?: boolean | Requisicao$fornecedorArgs<ExtArgs>
+    itens?: boolean | Requisicao$itensArgs<ExtArgs>
+    _count?: boolean | RequisicaoCountOutputTypeDefaultArgs<ExtArgs>
+  }
+
+  export type $RequisicaoPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "Requisicao"
+    objects: {
+      user: Prisma.$UserPayload<ExtArgs>
+      confirmedBy: Prisma.$UserPayload<ExtArgs> | null
+      fornecedor: Prisma.$FornecedorPayload<ExtArgs> | null
+      itens: Prisma.$RequisicaoItemPayload<ExtArgs>[]
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: bigint
+      numeroDocumento: string
+      origem: string | null
+      destino: string | null
+      tipo: $Enums.TipoRequisicao
+      status: $Enums.StatusRequisicao
+      observacao: string | null
+      fornecedorId: bigint | null
+      total: Prisma.Decimal | null
+      userId: bigint
+      confirmedAt: Date | null
+      confirmedById: bigint | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["requisicao"]>
+    composites: {}
+  }
+
+  type RequisicaoGetPayload<S extends boolean | null | undefined | RequisicaoDefaultArgs> = $Result.GetResult<Prisma.$RequisicaoPayload, S>
+
+  type RequisicaoCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<RequisicaoFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: RequisicaoCountAggregateInputType | true
+    }
+
+  export interface RequisicaoDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['Requisicao'], meta: { name: 'Requisicao' } }
+    /**
+     * Find zero or one Requisicao that matches the filter.
+     * @param {RequisicaoFindUniqueArgs} args - Arguments to find a Requisicao
+     * @example
+     * // Get one Requisicao
+     * const requisicao = await prisma.requisicao.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends RequisicaoFindUniqueArgs>(args: SelectSubset<T, RequisicaoFindUniqueArgs<ExtArgs>>): Prisma__RequisicaoClient<$Result.GetResult<Prisma.$RequisicaoPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one Requisicao that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {RequisicaoFindUniqueOrThrowArgs} args - Arguments to find a Requisicao
+     * @example
+     * // Get one Requisicao
+     * const requisicao = await prisma.requisicao.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends RequisicaoFindUniqueOrThrowArgs>(args: SelectSubset<T, RequisicaoFindUniqueOrThrowArgs<ExtArgs>>): Prisma__RequisicaoClient<$Result.GetResult<Prisma.$RequisicaoPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first Requisicao that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RequisicaoFindFirstArgs} args - Arguments to find a Requisicao
+     * @example
+     * // Get one Requisicao
+     * const requisicao = await prisma.requisicao.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends RequisicaoFindFirstArgs>(args?: SelectSubset<T, RequisicaoFindFirstArgs<ExtArgs>>): Prisma__RequisicaoClient<$Result.GetResult<Prisma.$RequisicaoPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first Requisicao that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RequisicaoFindFirstOrThrowArgs} args - Arguments to find a Requisicao
+     * @example
+     * // Get one Requisicao
+     * const requisicao = await prisma.requisicao.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends RequisicaoFindFirstOrThrowArgs>(args?: SelectSubset<T, RequisicaoFindFirstOrThrowArgs<ExtArgs>>): Prisma__RequisicaoClient<$Result.GetResult<Prisma.$RequisicaoPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more Requisicaos that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RequisicaoFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all Requisicaos
+     * const requisicaos = await prisma.requisicao.findMany()
+     * 
+     * // Get first 10 Requisicaos
+     * const requisicaos = await prisma.requisicao.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const requisicaoWithIdOnly = await prisma.requisicao.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends RequisicaoFindManyArgs>(args?: SelectSubset<T, RequisicaoFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RequisicaoPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a Requisicao.
+     * @param {RequisicaoCreateArgs} args - Arguments to create a Requisicao.
+     * @example
+     * // Create one Requisicao
+     * const Requisicao = await prisma.requisicao.create({
+     *   data: {
+     *     // ... data to create a Requisicao
+     *   }
+     * })
+     * 
+     */
+    create<T extends RequisicaoCreateArgs>(args: SelectSubset<T, RequisicaoCreateArgs<ExtArgs>>): Prisma__RequisicaoClient<$Result.GetResult<Prisma.$RequisicaoPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many Requisicaos.
+     * @param {RequisicaoCreateManyArgs} args - Arguments to create many Requisicaos.
+     * @example
+     * // Create many Requisicaos
+     * const requisicao = await prisma.requisicao.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends RequisicaoCreateManyArgs>(args?: SelectSubset<T, RequisicaoCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a Requisicao.
+     * @param {RequisicaoDeleteArgs} args - Arguments to delete one Requisicao.
+     * @example
+     * // Delete one Requisicao
+     * const Requisicao = await prisma.requisicao.delete({
+     *   where: {
+     *     // ... filter to delete one Requisicao
+     *   }
+     * })
+     * 
+     */
+    delete<T extends RequisicaoDeleteArgs>(args: SelectSubset<T, RequisicaoDeleteArgs<ExtArgs>>): Prisma__RequisicaoClient<$Result.GetResult<Prisma.$RequisicaoPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one Requisicao.
+     * @param {RequisicaoUpdateArgs} args - Arguments to update one Requisicao.
+     * @example
+     * // Update one Requisicao
+     * const requisicao = await prisma.requisicao.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends RequisicaoUpdateArgs>(args: SelectSubset<T, RequisicaoUpdateArgs<ExtArgs>>): Prisma__RequisicaoClient<$Result.GetResult<Prisma.$RequisicaoPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more Requisicaos.
+     * @param {RequisicaoDeleteManyArgs} args - Arguments to filter Requisicaos to delete.
+     * @example
+     * // Delete a few Requisicaos
+     * const { count } = await prisma.requisicao.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends RequisicaoDeleteManyArgs>(args?: SelectSubset<T, RequisicaoDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more Requisicaos.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RequisicaoUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many Requisicaos
+     * const requisicao = await prisma.requisicao.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends RequisicaoUpdateManyArgs>(args: SelectSubset<T, RequisicaoUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one Requisicao.
+     * @param {RequisicaoUpsertArgs} args - Arguments to update or create a Requisicao.
+     * @example
+     * // Update or create a Requisicao
+     * const requisicao = await prisma.requisicao.upsert({
+     *   create: {
+     *     // ... data to create a Requisicao
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the Requisicao we want to update
+     *   }
+     * })
+     */
+    upsert<T extends RequisicaoUpsertArgs>(args: SelectSubset<T, RequisicaoUpsertArgs<ExtArgs>>): Prisma__RequisicaoClient<$Result.GetResult<Prisma.$RequisicaoPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of Requisicaos.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RequisicaoCountArgs} args - Arguments to filter Requisicaos to count.
+     * @example
+     * // Count the number of Requisicaos
+     * const count = await prisma.requisicao.count({
+     *   where: {
+     *     // ... the filter for the Requisicaos we want to count
+     *   }
+     * })
+    **/
+    count<T extends RequisicaoCountArgs>(
+      args?: Subset<T, RequisicaoCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], RequisicaoCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a Requisicao.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RequisicaoAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends RequisicaoAggregateArgs>(args: Subset<T, RequisicaoAggregateArgs>): Prisma.PrismaPromise<GetRequisicaoAggregateType<T>>
+
+    /**
+     * Group by Requisicao.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RequisicaoGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends RequisicaoGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: RequisicaoGroupByArgs['orderBy'] }
+        : { orderBy?: RequisicaoGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, RequisicaoGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRequisicaoGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the Requisicao model
+   */
+  readonly fields: RequisicaoFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for Requisicao.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__RequisicaoClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    user<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    confirmedBy<T extends Requisicao$confirmedByArgs<ExtArgs> = {}>(args?: Subset<T, Requisicao$confirmedByArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    fornecedor<T extends Requisicao$fornecedorArgs<ExtArgs> = {}>(args?: Subset<T, Requisicao$fornecedorArgs<ExtArgs>>): Prisma__FornecedorClient<$Result.GetResult<Prisma.$FornecedorPayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    itens<T extends Requisicao$itensArgs<ExtArgs> = {}>(args?: Subset<T, Requisicao$itensArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RequisicaoItemPayload<ExtArgs>, T, "findMany"> | Null>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the Requisicao model
+   */ 
+  interface RequisicaoFieldRefs {
+    readonly id: FieldRef<"Requisicao", 'BigInt'>
+    readonly numeroDocumento: FieldRef<"Requisicao", 'String'>
+    readonly origem: FieldRef<"Requisicao", 'String'>
+    readonly destino: FieldRef<"Requisicao", 'String'>
+    readonly tipo: FieldRef<"Requisicao", 'TipoRequisicao'>
+    readonly status: FieldRef<"Requisicao", 'StatusRequisicao'>
+    readonly observacao: FieldRef<"Requisicao", 'String'>
+    readonly fornecedorId: FieldRef<"Requisicao", 'BigInt'>
+    readonly total: FieldRef<"Requisicao", 'Decimal'>
+    readonly userId: FieldRef<"Requisicao", 'BigInt'>
+    readonly confirmedAt: FieldRef<"Requisicao", 'DateTime'>
+    readonly confirmedById: FieldRef<"Requisicao", 'BigInt'>
+    readonly createdAt: FieldRef<"Requisicao", 'DateTime'>
+    readonly updatedAt: FieldRef<"Requisicao", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * Requisicao findUnique
+   */
+  export type RequisicaoFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Requisicao
+     */
+    select?: RequisicaoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoInclude<ExtArgs> | null
+    /**
+     * Filter, which Requisicao to fetch.
+     */
+    where: RequisicaoWhereUniqueInput
+  }
+
+  /**
+   * Requisicao findUniqueOrThrow
+   */
+  export type RequisicaoFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Requisicao
+     */
+    select?: RequisicaoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoInclude<ExtArgs> | null
+    /**
+     * Filter, which Requisicao to fetch.
+     */
+    where: RequisicaoWhereUniqueInput
+  }
+
+  /**
+   * Requisicao findFirst
+   */
+  export type RequisicaoFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Requisicao
+     */
+    select?: RequisicaoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoInclude<ExtArgs> | null
+    /**
+     * Filter, which Requisicao to fetch.
+     */
+    where?: RequisicaoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Requisicaos to fetch.
+     */
+    orderBy?: RequisicaoOrderByWithRelationInput | RequisicaoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Requisicaos.
+     */
+    cursor?: RequisicaoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Requisicaos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Requisicaos.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Requisicaos.
+     */
+    distinct?: RequisicaoScalarFieldEnum | RequisicaoScalarFieldEnum[]
+  }
+
+  /**
+   * Requisicao findFirstOrThrow
+   */
+  export type RequisicaoFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Requisicao
+     */
+    select?: RequisicaoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoInclude<ExtArgs> | null
+    /**
+     * Filter, which Requisicao to fetch.
+     */
+    where?: RequisicaoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Requisicaos to fetch.
+     */
+    orderBy?: RequisicaoOrderByWithRelationInput | RequisicaoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for Requisicaos.
+     */
+    cursor?: RequisicaoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Requisicaos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Requisicaos.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Requisicaos.
+     */
+    distinct?: RequisicaoScalarFieldEnum | RequisicaoScalarFieldEnum[]
+  }
+
+  /**
+   * Requisicao findMany
+   */
+  export type RequisicaoFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Requisicao
+     */
+    select?: RequisicaoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoInclude<ExtArgs> | null
+    /**
+     * Filter, which Requisicaos to fetch.
+     */
+    where?: RequisicaoWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of Requisicaos to fetch.
+     */
+    orderBy?: RequisicaoOrderByWithRelationInput | RequisicaoOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing Requisicaos.
+     */
+    cursor?: RequisicaoWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` Requisicaos from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` Requisicaos.
+     */
+    skip?: number
+    distinct?: RequisicaoScalarFieldEnum | RequisicaoScalarFieldEnum[]
+  }
+
+  /**
+   * Requisicao create
+   */
+  export type RequisicaoCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Requisicao
+     */
+    select?: RequisicaoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoInclude<ExtArgs> | null
+    /**
+     * The data needed to create a Requisicao.
+     */
+    data: XOR<RequisicaoCreateInput, RequisicaoUncheckedCreateInput>
+  }
+
+  /**
+   * Requisicao createMany
+   */
+  export type RequisicaoCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many Requisicaos.
+     */
+    data: RequisicaoCreateManyInput | RequisicaoCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * Requisicao update
+   */
+  export type RequisicaoUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Requisicao
+     */
+    select?: RequisicaoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoInclude<ExtArgs> | null
+    /**
+     * The data needed to update a Requisicao.
+     */
+    data: XOR<RequisicaoUpdateInput, RequisicaoUncheckedUpdateInput>
+    /**
+     * Choose, which Requisicao to update.
+     */
+    where: RequisicaoWhereUniqueInput
+  }
+
+  /**
+   * Requisicao updateMany
+   */
+  export type RequisicaoUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update Requisicaos.
+     */
+    data: XOR<RequisicaoUpdateManyMutationInput, RequisicaoUncheckedUpdateManyInput>
+    /**
+     * Filter which Requisicaos to update
+     */
+    where?: RequisicaoWhereInput
+  }
+
+  /**
+   * Requisicao upsert
+   */
+  export type RequisicaoUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Requisicao
+     */
+    select?: RequisicaoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoInclude<ExtArgs> | null
+    /**
+     * The filter to search for the Requisicao to update in case it exists.
+     */
+    where: RequisicaoWhereUniqueInput
+    /**
+     * In case the Requisicao found by the `where` argument doesn't exist, create a new Requisicao with this data.
+     */
+    create: XOR<RequisicaoCreateInput, RequisicaoUncheckedCreateInput>
+    /**
+     * In case the Requisicao was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<RequisicaoUpdateInput, RequisicaoUncheckedUpdateInput>
+  }
+
+  /**
+   * Requisicao delete
+   */
+  export type RequisicaoDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Requisicao
+     */
+    select?: RequisicaoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoInclude<ExtArgs> | null
+    /**
+     * Filter which Requisicao to delete.
+     */
+    where: RequisicaoWhereUniqueInput
+  }
+
+  /**
+   * Requisicao deleteMany
+   */
+  export type RequisicaoDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which Requisicaos to delete
+     */
+    where?: RequisicaoWhereInput
+  }
+
+  /**
+   * Requisicao.confirmedBy
+   */
+  export type Requisicao$confirmedByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
+  }
+
+  /**
+   * Requisicao.fornecedor
+   */
+  export type Requisicao$fornecedorArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Fornecedor
+     */
+    select?: FornecedorSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: FornecedorInclude<ExtArgs> | null
+    where?: FornecedorWhereInput
+  }
+
+  /**
+   * Requisicao.itens
+   */
+  export type Requisicao$itensArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RequisicaoItem
+     */
+    select?: RequisicaoItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoItemInclude<ExtArgs> | null
+    where?: RequisicaoItemWhereInput
+    orderBy?: RequisicaoItemOrderByWithRelationInput | RequisicaoItemOrderByWithRelationInput[]
+    cursor?: RequisicaoItemWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: RequisicaoItemScalarFieldEnum | RequisicaoItemScalarFieldEnum[]
+  }
+
+  /**
+   * Requisicao without action
+   */
+  export type RequisicaoDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Requisicao
+     */
+    select?: RequisicaoSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model RequisicaoItem
+   */
+
+  export type AggregateRequisicaoItem = {
+    _count: RequisicaoItemCountAggregateOutputType | null
+    _avg: RequisicaoItemAvgAggregateOutputType | null
+    _sum: RequisicaoItemSumAggregateOutputType | null
+    _min: RequisicaoItemMinAggregateOutputType | null
+    _max: RequisicaoItemMaxAggregateOutputType | null
+  }
+
+  export type RequisicaoItemAvgAggregateOutputType = {
+    id: number | null
+    requisicaoId: number | null
+    produtoId: number | null
+    loteId: number | null
+    quantidadeSolicitada: Decimal | null
+    precoCompra: Decimal | null
+    precoVenda: Decimal | null
+    subtotal: Decimal | null
+  }
+
+  export type RequisicaoItemSumAggregateOutputType = {
+    id: bigint | null
+    requisicaoId: bigint | null
+    produtoId: bigint | null
+    loteId: bigint | null
+    quantidadeSolicitada: Decimal | null
+    precoCompra: Decimal | null
+    precoVenda: Decimal | null
+    subtotal: Decimal | null
+  }
+
+  export type RequisicaoItemMinAggregateOutputType = {
+    id: bigint | null
+    requisicaoId: bigint | null
+    produtoId: bigint | null
+    loteId: bigint | null
+    quantidadeSolicitada: Decimal | null
+    numeroLote: string | null
+    dataValidade: Date | null
+    precoCompra: Decimal | null
+    precoVenda: Decimal | null
+    subtotal: Decimal | null
+  }
+
+  export type RequisicaoItemMaxAggregateOutputType = {
+    id: bigint | null
+    requisicaoId: bigint | null
+    produtoId: bigint | null
+    loteId: bigint | null
+    quantidadeSolicitada: Decimal | null
+    numeroLote: string | null
+    dataValidade: Date | null
+    precoCompra: Decimal | null
+    precoVenda: Decimal | null
+    subtotal: Decimal | null
+  }
+
+  export type RequisicaoItemCountAggregateOutputType = {
+    id: number
+    requisicaoId: number
+    produtoId: number
+    loteId: number
+    quantidadeSolicitada: number
+    numeroLote: number
+    dataValidade: number
+    precoCompra: number
+    precoVenda: number
+    subtotal: number
+    _all: number
+  }
+
+
+  export type RequisicaoItemAvgAggregateInputType = {
+    id?: true
+    requisicaoId?: true
+    produtoId?: true
+    loteId?: true
+    quantidadeSolicitada?: true
+    precoCompra?: true
+    precoVenda?: true
+    subtotal?: true
+  }
+
+  export type RequisicaoItemSumAggregateInputType = {
+    id?: true
+    requisicaoId?: true
+    produtoId?: true
+    loteId?: true
+    quantidadeSolicitada?: true
+    precoCompra?: true
+    precoVenda?: true
+    subtotal?: true
+  }
+
+  export type RequisicaoItemMinAggregateInputType = {
+    id?: true
+    requisicaoId?: true
+    produtoId?: true
+    loteId?: true
+    quantidadeSolicitada?: true
+    numeroLote?: true
+    dataValidade?: true
+    precoCompra?: true
+    precoVenda?: true
+    subtotal?: true
+  }
+
+  export type RequisicaoItemMaxAggregateInputType = {
+    id?: true
+    requisicaoId?: true
+    produtoId?: true
+    loteId?: true
+    quantidadeSolicitada?: true
+    numeroLote?: true
+    dataValidade?: true
+    precoCompra?: true
+    precoVenda?: true
+    subtotal?: true
+  }
+
+  export type RequisicaoItemCountAggregateInputType = {
+    id?: true
+    requisicaoId?: true
+    produtoId?: true
+    loteId?: true
+    quantidadeSolicitada?: true
+    numeroLote?: true
+    dataValidade?: true
+    precoCompra?: true
+    precoVenda?: true
+    subtotal?: true
+    _all?: true
+  }
+
+  export type RequisicaoItemAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RequisicaoItem to aggregate.
+     */
+    where?: RequisicaoItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RequisicaoItems to fetch.
+     */
+    orderBy?: RequisicaoItemOrderByWithRelationInput | RequisicaoItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: RequisicaoItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RequisicaoItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RequisicaoItems.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned RequisicaoItems
+    **/
+    _count?: true | RequisicaoItemCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: RequisicaoItemAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: RequisicaoItemSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: RequisicaoItemMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: RequisicaoItemMaxAggregateInputType
+  }
+
+  export type GetRequisicaoItemAggregateType<T extends RequisicaoItemAggregateArgs> = {
+        [P in keyof T & keyof AggregateRequisicaoItem]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateRequisicaoItem[P]>
+      : GetScalarType<T[P], AggregateRequisicaoItem[P]>
+  }
+
+
+
+
+  export type RequisicaoItemGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: RequisicaoItemWhereInput
+    orderBy?: RequisicaoItemOrderByWithAggregationInput | RequisicaoItemOrderByWithAggregationInput[]
+    by: RequisicaoItemScalarFieldEnum[] | RequisicaoItemScalarFieldEnum
+    having?: RequisicaoItemScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: RequisicaoItemCountAggregateInputType | true
+    _avg?: RequisicaoItemAvgAggregateInputType
+    _sum?: RequisicaoItemSumAggregateInputType
+    _min?: RequisicaoItemMinAggregateInputType
+    _max?: RequisicaoItemMaxAggregateInputType
+  }
+
+  export type RequisicaoItemGroupByOutputType = {
+    id: bigint
+    requisicaoId: bigint
+    produtoId: bigint
+    loteId: bigint | null
+    quantidadeSolicitada: Decimal
+    numeroLote: string | null
+    dataValidade: Date | null
+    precoCompra: Decimal | null
+    precoVenda: Decimal | null
+    subtotal: Decimal | null
+    _count: RequisicaoItemCountAggregateOutputType | null
+    _avg: RequisicaoItemAvgAggregateOutputType | null
+    _sum: RequisicaoItemSumAggregateOutputType | null
+    _min: RequisicaoItemMinAggregateOutputType | null
+    _max: RequisicaoItemMaxAggregateOutputType | null
+  }
+
+  type GetRequisicaoItemGroupByPayload<T extends RequisicaoItemGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<RequisicaoItemGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof RequisicaoItemGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], RequisicaoItemGroupByOutputType[P]>
+            : GetScalarType<T[P], RequisicaoItemGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type RequisicaoItemSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    requisicaoId?: boolean
+    produtoId?: boolean
+    loteId?: boolean
+    quantidadeSolicitada?: boolean
+    numeroLote?: boolean
+    dataValidade?: boolean
+    precoCompra?: boolean
+    precoVenda?: boolean
+    subtotal?: boolean
+    requisicao?: boolean | RequisicaoDefaultArgs<ExtArgs>
+    produto?: boolean | ProdutoDefaultArgs<ExtArgs>
+    lote?: boolean | RequisicaoItem$loteArgs<ExtArgs>
+  }, ExtArgs["result"]["requisicaoItem"]>
+
+
+  export type RequisicaoItemSelectScalar = {
+    id?: boolean
+    requisicaoId?: boolean
+    produtoId?: boolean
+    loteId?: boolean
+    quantidadeSolicitada?: boolean
+    numeroLote?: boolean
+    dataValidade?: boolean
+    precoCompra?: boolean
+    precoVenda?: boolean
+    subtotal?: boolean
+  }
+
+  export type RequisicaoItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    requisicao?: boolean | RequisicaoDefaultArgs<ExtArgs>
+    produto?: boolean | ProdutoDefaultArgs<ExtArgs>
+    lote?: boolean | RequisicaoItem$loteArgs<ExtArgs>
+  }
+
+  export type $RequisicaoItemPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "RequisicaoItem"
+    objects: {
+      requisicao: Prisma.$RequisicaoPayload<ExtArgs>
+      produto: Prisma.$ProdutoPayload<ExtArgs>
+      lote: Prisma.$LotePayload<ExtArgs> | null
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: bigint
+      requisicaoId: bigint
+      produtoId: bigint
+      loteId: bigint | null
+      quantidadeSolicitada: Prisma.Decimal
+      numeroLote: string | null
+      dataValidade: Date | null
+      precoCompra: Prisma.Decimal | null
+      precoVenda: Prisma.Decimal | null
+      subtotal: Prisma.Decimal | null
+    }, ExtArgs["result"]["requisicaoItem"]>
+    composites: {}
+  }
+
+  type RequisicaoItemGetPayload<S extends boolean | null | undefined | RequisicaoItemDefaultArgs> = $Result.GetResult<Prisma.$RequisicaoItemPayload, S>
+
+  type RequisicaoItemCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+    Omit<RequisicaoItemFindManyArgs, 'select' | 'include' | 'distinct'> & {
+      select?: RequisicaoItemCountAggregateInputType | true
+    }
+
+  export interface RequisicaoItemDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['RequisicaoItem'], meta: { name: 'RequisicaoItem' } }
+    /**
+     * Find zero or one RequisicaoItem that matches the filter.
+     * @param {RequisicaoItemFindUniqueArgs} args - Arguments to find a RequisicaoItem
+     * @example
+     * // Get one RequisicaoItem
+     * const requisicaoItem = await prisma.requisicaoItem.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends RequisicaoItemFindUniqueArgs>(args: SelectSubset<T, RequisicaoItemFindUniqueArgs<ExtArgs>>): Prisma__RequisicaoItemClient<$Result.GetResult<Prisma.$RequisicaoItemPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+
+    /**
+     * Find one RequisicaoItem that matches the filter or throw an error with `error.code='P2025'` 
+     * if no matches were found.
+     * @param {RequisicaoItemFindUniqueOrThrowArgs} args - Arguments to find a RequisicaoItem
+     * @example
+     * // Get one RequisicaoItem
+     * const requisicaoItem = await prisma.requisicaoItem.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends RequisicaoItemFindUniqueOrThrowArgs>(args: SelectSubset<T, RequisicaoItemFindUniqueOrThrowArgs<ExtArgs>>): Prisma__RequisicaoItemClient<$Result.GetResult<Prisma.$RequisicaoItemPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
+
+    /**
+     * Find the first RequisicaoItem that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RequisicaoItemFindFirstArgs} args - Arguments to find a RequisicaoItem
+     * @example
+     * // Get one RequisicaoItem
+     * const requisicaoItem = await prisma.requisicaoItem.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends RequisicaoItemFindFirstArgs>(args?: SelectSubset<T, RequisicaoItemFindFirstArgs<ExtArgs>>): Prisma__RequisicaoItemClient<$Result.GetResult<Prisma.$RequisicaoItemPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
+
+    /**
+     * Find the first RequisicaoItem that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RequisicaoItemFindFirstOrThrowArgs} args - Arguments to find a RequisicaoItem
+     * @example
+     * // Get one RequisicaoItem
+     * const requisicaoItem = await prisma.requisicaoItem.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends RequisicaoItemFindFirstOrThrowArgs>(args?: SelectSubset<T, RequisicaoItemFindFirstOrThrowArgs<ExtArgs>>): Prisma__RequisicaoItemClient<$Result.GetResult<Prisma.$RequisicaoItemPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
+
+    /**
+     * Find zero or more RequisicaoItems that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RequisicaoItemFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all RequisicaoItems
+     * const requisicaoItems = await prisma.requisicaoItem.findMany()
+     * 
+     * // Get first 10 RequisicaoItems
+     * const requisicaoItems = await prisma.requisicaoItem.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const requisicaoItemWithIdOnly = await prisma.requisicaoItem.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends RequisicaoItemFindManyArgs>(args?: SelectSubset<T, RequisicaoItemFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RequisicaoItemPayload<ExtArgs>, T, "findMany">>
+
+    /**
+     * Create a RequisicaoItem.
+     * @param {RequisicaoItemCreateArgs} args - Arguments to create a RequisicaoItem.
+     * @example
+     * // Create one RequisicaoItem
+     * const RequisicaoItem = await prisma.requisicaoItem.create({
+     *   data: {
+     *     // ... data to create a RequisicaoItem
+     *   }
+     * })
+     * 
+     */
+    create<T extends RequisicaoItemCreateArgs>(args: SelectSubset<T, RequisicaoItemCreateArgs<ExtArgs>>): Prisma__RequisicaoItemClient<$Result.GetResult<Prisma.$RequisicaoItemPayload<ExtArgs>, T, "create">, never, ExtArgs>
+
+    /**
+     * Create many RequisicaoItems.
+     * @param {RequisicaoItemCreateManyArgs} args - Arguments to create many RequisicaoItems.
+     * @example
+     * // Create many RequisicaoItems
+     * const requisicaoItem = await prisma.requisicaoItem.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends RequisicaoItemCreateManyArgs>(args?: SelectSubset<T, RequisicaoItemCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Delete a RequisicaoItem.
+     * @param {RequisicaoItemDeleteArgs} args - Arguments to delete one RequisicaoItem.
+     * @example
+     * // Delete one RequisicaoItem
+     * const RequisicaoItem = await prisma.requisicaoItem.delete({
+     *   where: {
+     *     // ... filter to delete one RequisicaoItem
+     *   }
+     * })
+     * 
+     */
+    delete<T extends RequisicaoItemDeleteArgs>(args: SelectSubset<T, RequisicaoItemDeleteArgs<ExtArgs>>): Prisma__RequisicaoItemClient<$Result.GetResult<Prisma.$RequisicaoItemPayload<ExtArgs>, T, "delete">, never, ExtArgs>
+
+    /**
+     * Update one RequisicaoItem.
+     * @param {RequisicaoItemUpdateArgs} args - Arguments to update one RequisicaoItem.
+     * @example
+     * // Update one RequisicaoItem
+     * const requisicaoItem = await prisma.requisicaoItem.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends RequisicaoItemUpdateArgs>(args: SelectSubset<T, RequisicaoItemUpdateArgs<ExtArgs>>): Prisma__RequisicaoItemClient<$Result.GetResult<Prisma.$RequisicaoItemPayload<ExtArgs>, T, "update">, never, ExtArgs>
+
+    /**
+     * Delete zero or more RequisicaoItems.
+     * @param {RequisicaoItemDeleteManyArgs} args - Arguments to filter RequisicaoItems to delete.
+     * @example
+     * // Delete a few RequisicaoItems
+     * const { count } = await prisma.requisicaoItem.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends RequisicaoItemDeleteManyArgs>(args?: SelectSubset<T, RequisicaoItemDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more RequisicaoItems.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RequisicaoItemUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many RequisicaoItems
+     * const requisicaoItem = await prisma.requisicaoItem.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends RequisicaoItemUpdateManyArgs>(args: SelectSubset<T, RequisicaoItemUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create or update one RequisicaoItem.
+     * @param {RequisicaoItemUpsertArgs} args - Arguments to update or create a RequisicaoItem.
+     * @example
+     * // Update or create a RequisicaoItem
+     * const requisicaoItem = await prisma.requisicaoItem.upsert({
+     *   create: {
+     *     // ... data to create a RequisicaoItem
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the RequisicaoItem we want to update
+     *   }
+     * })
+     */
+    upsert<T extends RequisicaoItemUpsertArgs>(args: SelectSubset<T, RequisicaoItemUpsertArgs<ExtArgs>>): Prisma__RequisicaoItemClient<$Result.GetResult<Prisma.$RequisicaoItemPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
+
+
+    /**
+     * Count the number of RequisicaoItems.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RequisicaoItemCountArgs} args - Arguments to filter RequisicaoItems to count.
+     * @example
+     * // Count the number of RequisicaoItems
+     * const count = await prisma.requisicaoItem.count({
+     *   where: {
+     *     // ... the filter for the RequisicaoItems we want to count
+     *   }
+     * })
+    **/
+    count<T extends RequisicaoItemCountArgs>(
+      args?: Subset<T, RequisicaoItemCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], RequisicaoItemCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a RequisicaoItem.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RequisicaoItemAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends RequisicaoItemAggregateArgs>(args: Subset<T, RequisicaoItemAggregateArgs>): Prisma.PrismaPromise<GetRequisicaoItemAggregateType<T>>
+
+    /**
+     * Group by RequisicaoItem.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {RequisicaoItemGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends RequisicaoItemGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: RequisicaoItemGroupByArgs['orderBy'] }
+        : { orderBy?: RequisicaoItemGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, RequisicaoItemGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRequisicaoItemGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the RequisicaoItem model
+   */
+  readonly fields: RequisicaoItemFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for RequisicaoItem.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__RequisicaoItemClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    requisicao<T extends RequisicaoDefaultArgs<ExtArgs> = {}>(args?: Subset<T, RequisicaoDefaultArgs<ExtArgs>>): Prisma__RequisicaoClient<$Result.GetResult<Prisma.$RequisicaoPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    produto<T extends ProdutoDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ProdutoDefaultArgs<ExtArgs>>): Prisma__ProdutoClient<$Result.GetResult<Prisma.$ProdutoPayload<ExtArgs>, T, "findUniqueOrThrow"> | Null, Null, ExtArgs>
+    lote<T extends RequisicaoItem$loteArgs<ExtArgs> = {}>(args?: Subset<T, RequisicaoItem$loteArgs<ExtArgs>>): Prisma__LoteClient<$Result.GetResult<Prisma.$LotePayload<ExtArgs>, T, "findUniqueOrThrow"> | null, null, ExtArgs>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the RequisicaoItem model
+   */ 
+  interface RequisicaoItemFieldRefs {
+    readonly id: FieldRef<"RequisicaoItem", 'BigInt'>
+    readonly requisicaoId: FieldRef<"RequisicaoItem", 'BigInt'>
+    readonly produtoId: FieldRef<"RequisicaoItem", 'BigInt'>
+    readonly loteId: FieldRef<"RequisicaoItem", 'BigInt'>
+    readonly quantidadeSolicitada: FieldRef<"RequisicaoItem", 'Decimal'>
+    readonly numeroLote: FieldRef<"RequisicaoItem", 'String'>
+    readonly dataValidade: FieldRef<"RequisicaoItem", 'DateTime'>
+    readonly precoCompra: FieldRef<"RequisicaoItem", 'Decimal'>
+    readonly precoVenda: FieldRef<"RequisicaoItem", 'Decimal'>
+    readonly subtotal: FieldRef<"RequisicaoItem", 'Decimal'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * RequisicaoItem findUnique
+   */
+  export type RequisicaoItemFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RequisicaoItem
+     */
+    select?: RequisicaoItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoItemInclude<ExtArgs> | null
+    /**
+     * Filter, which RequisicaoItem to fetch.
+     */
+    where: RequisicaoItemWhereUniqueInput
+  }
+
+  /**
+   * RequisicaoItem findUniqueOrThrow
+   */
+  export type RequisicaoItemFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RequisicaoItem
+     */
+    select?: RequisicaoItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoItemInclude<ExtArgs> | null
+    /**
+     * Filter, which RequisicaoItem to fetch.
+     */
+    where: RequisicaoItemWhereUniqueInput
+  }
+
+  /**
+   * RequisicaoItem findFirst
+   */
+  export type RequisicaoItemFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RequisicaoItem
+     */
+    select?: RequisicaoItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoItemInclude<ExtArgs> | null
+    /**
+     * Filter, which RequisicaoItem to fetch.
+     */
+    where?: RequisicaoItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RequisicaoItems to fetch.
+     */
+    orderBy?: RequisicaoItemOrderByWithRelationInput | RequisicaoItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RequisicaoItems.
+     */
+    cursor?: RequisicaoItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RequisicaoItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RequisicaoItems.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RequisicaoItems.
+     */
+    distinct?: RequisicaoItemScalarFieldEnum | RequisicaoItemScalarFieldEnum[]
+  }
+
+  /**
+   * RequisicaoItem findFirstOrThrow
+   */
+  export type RequisicaoItemFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RequisicaoItem
+     */
+    select?: RequisicaoItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoItemInclude<ExtArgs> | null
+    /**
+     * Filter, which RequisicaoItem to fetch.
+     */
+    where?: RequisicaoItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RequisicaoItems to fetch.
+     */
+    orderBy?: RequisicaoItemOrderByWithRelationInput | RequisicaoItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for RequisicaoItems.
+     */
+    cursor?: RequisicaoItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RequisicaoItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RequisicaoItems.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of RequisicaoItems.
+     */
+    distinct?: RequisicaoItemScalarFieldEnum | RequisicaoItemScalarFieldEnum[]
+  }
+
+  /**
+   * RequisicaoItem findMany
+   */
+  export type RequisicaoItemFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RequisicaoItem
+     */
+    select?: RequisicaoItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoItemInclude<ExtArgs> | null
+    /**
+     * Filter, which RequisicaoItems to fetch.
+     */
+    where?: RequisicaoItemWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of RequisicaoItems to fetch.
+     */
+    orderBy?: RequisicaoItemOrderByWithRelationInput | RequisicaoItemOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing RequisicaoItems.
+     */
+    cursor?: RequisicaoItemWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` RequisicaoItems from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` RequisicaoItems.
+     */
+    skip?: number
+    distinct?: RequisicaoItemScalarFieldEnum | RequisicaoItemScalarFieldEnum[]
+  }
+
+  /**
+   * RequisicaoItem create
+   */
+  export type RequisicaoItemCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RequisicaoItem
+     */
+    select?: RequisicaoItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoItemInclude<ExtArgs> | null
+    /**
+     * The data needed to create a RequisicaoItem.
+     */
+    data: XOR<RequisicaoItemCreateInput, RequisicaoItemUncheckedCreateInput>
+  }
+
+  /**
+   * RequisicaoItem createMany
+   */
+  export type RequisicaoItemCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many RequisicaoItems.
+     */
+    data: RequisicaoItemCreateManyInput | RequisicaoItemCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * RequisicaoItem update
+   */
+  export type RequisicaoItemUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RequisicaoItem
+     */
+    select?: RequisicaoItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoItemInclude<ExtArgs> | null
+    /**
+     * The data needed to update a RequisicaoItem.
+     */
+    data: XOR<RequisicaoItemUpdateInput, RequisicaoItemUncheckedUpdateInput>
+    /**
+     * Choose, which RequisicaoItem to update.
+     */
+    where: RequisicaoItemWhereUniqueInput
+  }
+
+  /**
+   * RequisicaoItem updateMany
+   */
+  export type RequisicaoItemUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update RequisicaoItems.
+     */
+    data: XOR<RequisicaoItemUpdateManyMutationInput, RequisicaoItemUncheckedUpdateManyInput>
+    /**
+     * Filter which RequisicaoItems to update
+     */
+    where?: RequisicaoItemWhereInput
+  }
+
+  /**
+   * RequisicaoItem upsert
+   */
+  export type RequisicaoItemUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RequisicaoItem
+     */
+    select?: RequisicaoItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoItemInclude<ExtArgs> | null
+    /**
+     * The filter to search for the RequisicaoItem to update in case it exists.
+     */
+    where: RequisicaoItemWhereUniqueInput
+    /**
+     * In case the RequisicaoItem found by the `where` argument doesn't exist, create a new RequisicaoItem with this data.
+     */
+    create: XOR<RequisicaoItemCreateInput, RequisicaoItemUncheckedCreateInput>
+    /**
+     * In case the RequisicaoItem was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<RequisicaoItemUpdateInput, RequisicaoItemUncheckedUpdateInput>
+  }
+
+  /**
+   * RequisicaoItem delete
+   */
+  export type RequisicaoItemDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RequisicaoItem
+     */
+    select?: RequisicaoItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoItemInclude<ExtArgs> | null
+    /**
+     * Filter which RequisicaoItem to delete.
+     */
+    where: RequisicaoItemWhereUniqueInput
+  }
+
+  /**
+   * RequisicaoItem deleteMany
+   */
+  export type RequisicaoItemDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which RequisicaoItems to delete
+     */
+    where?: RequisicaoItemWhereInput
+  }
+
+  /**
+   * RequisicaoItem.lote
+   */
+  export type RequisicaoItem$loteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the Lote
+     */
+    select?: LoteSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: LoteInclude<ExtArgs> | null
+    where?: LoteWhereInput
+  }
+
+  /**
+   * RequisicaoItem without action
+   */
+  export type RequisicaoItemDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the RequisicaoItem
+     */
+    select?: RequisicaoItemSelect<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: RequisicaoItemInclude<ExtArgs> | null
+  }
+
+
+  /**
    * Model CashBalance
    */
 
@@ -63248,7 +65745,6 @@ export namespace Prisma {
     ativo: 'ativo',
     barcode: 'barcode',
     precoVenda: 'precoVenda',
-    estoqueAtual: 'estoqueAtual',
     estoqueMinimo: 'estoqueMinimo',
     taxRuleId: 'taxRuleId',
     version: 'version',
@@ -63703,6 +66199,42 @@ export namespace Prisma {
   };
 
   export type InventarioItemScalarFieldEnum = (typeof InventarioItemScalarFieldEnum)[keyof typeof InventarioItemScalarFieldEnum]
+
+
+  export const RequisicaoScalarFieldEnum: {
+    id: 'id',
+    numeroDocumento: 'numeroDocumento',
+    origem: 'origem',
+    destino: 'destino',
+    tipo: 'tipo',
+    status: 'status',
+    observacao: 'observacao',
+    fornecedorId: 'fornecedorId',
+    total: 'total',
+    userId: 'userId',
+    confirmedAt: 'confirmedAt',
+    confirmedById: 'confirmedById',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type RequisicaoScalarFieldEnum = (typeof RequisicaoScalarFieldEnum)[keyof typeof RequisicaoScalarFieldEnum]
+
+
+  export const RequisicaoItemScalarFieldEnum: {
+    id: 'id',
+    requisicaoId: 'requisicaoId',
+    produtoId: 'produtoId',
+    loteId: 'loteId',
+    quantidadeSolicitada: 'quantidadeSolicitada',
+    numeroLote: 'numeroLote',
+    dataValidade: 'dataValidade',
+    precoCompra: 'precoCompra',
+    precoVenda: 'precoVenda',
+    subtotal: 'subtotal'
+  };
+
+  export type RequisicaoItemScalarFieldEnum = (typeof RequisicaoItemScalarFieldEnum)[keyof typeof RequisicaoItemScalarFieldEnum]
 
 
   export const CashBalanceScalarFieldEnum: {
@@ -64293,6 +66825,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'TipoRequisicao'
+   */
+  export type EnumTipoRequisicaoFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TipoRequisicao'>
+    
+
+
+  /**
+   * Reference to a field of type 'StatusRequisicao'
+   */
+  export type EnumStatusRequisicaoFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'StatusRequisicao'>
+    
+
+
+  /**
    * Reference to a field of type 'TipoRelatorioSanitario'
    */
   export type EnumTipoRelatorioSanitarioFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TipoRelatorioSanitario'>
@@ -64372,6 +66918,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioListRelationFilter
     inventariosIniciados?: InventarioListRelationFilter
     inventariosReconciliados?: InventarioListRelationFilter
+    requisicoesCriadas?: RequisicaoListRelationFilter
+    requisicoesConfirmadas?: RequisicaoListRelationFilter
   }
 
   export type UserOrderByWithRelationInput = {
@@ -64413,6 +66961,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioOrderByRelationAggregateInput
     inventariosIniciados?: InventarioOrderByRelationAggregateInput
     inventariosReconciliados?: InventarioOrderByRelationAggregateInput
+    requisicoesCriadas?: RequisicaoOrderByRelationAggregateInput
+    requisicoesConfirmadas?: RequisicaoOrderByRelationAggregateInput
   }
 
   export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -64457,6 +67007,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioListRelationFilter
     inventariosIniciados?: InventarioListRelationFilter
     inventariosReconciliados?: InventarioListRelationFilter
+    requisicoesCriadas?: RequisicaoListRelationFilter
+    requisicoesConfirmadas?: RequisicaoListRelationFilter
   }, "id" | "email">
 
   export type UserOrderByWithAggregationInput = {
@@ -65040,7 +67592,6 @@ export namespace Prisma {
     ativo?: BoolFilter<"Produto"> | boolean
     barcode?: StringNullableFilter<"Produto"> | string | null
     precoVenda?: DecimalFilter<"Produto"> | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFilter<"Produto"> | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFilter<"Produto"> | Decimal | DecimalJsLike | number | string
     taxRuleId?: BigIntNullableFilter<"Produto"> | bigint | number | null
     version?: IntFilter<"Produto"> | number
@@ -65064,6 +67615,7 @@ export namespace Prisma {
     regulacao?: XOR<ProdutoRegulacaoNullableRelationFilter, ProdutoRegulacaoWhereInput> | null
     classificacaoEventos?: ProdutoClassificacaoEventoListRelationFilter
     inventarioItens?: InventarioItemListRelationFilter
+    requisicaoItens?: RequisicaoItemListRelationFilter
     taxRule?: XOR<TaxRuleNullableRelationFilter, TaxRuleWhereInput> | null
   }
 
@@ -65077,7 +67629,6 @@ export namespace Prisma {
     ativo?: SortOrder
     barcode?: SortOrderInput | SortOrder
     precoVenda?: SortOrder
-    estoqueAtual?: SortOrder
     estoqueMinimo?: SortOrder
     taxRuleId?: SortOrderInput | SortOrder
     version?: SortOrder
@@ -65101,6 +67652,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoOrderByWithRelationInput
     classificacaoEventos?: ProdutoClassificacaoEventoOrderByRelationAggregateInput
     inventarioItens?: InventarioItemOrderByRelationAggregateInput
+    requisicaoItens?: RequisicaoItemOrderByRelationAggregateInput
     taxRule?: TaxRuleOrderByWithRelationInput
   }
 
@@ -65117,7 +67669,6 @@ export namespace Prisma {
     apresentacao?: StringNullableFilter<"Produto"> | string | null
     ativo?: BoolFilter<"Produto"> | boolean
     precoVenda?: DecimalFilter<"Produto"> | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFilter<"Produto"> | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFilter<"Produto"> | Decimal | DecimalJsLike | number | string
     taxRuleId?: BigIntNullableFilter<"Produto"> | bigint | number | null
     version?: IntFilter<"Produto"> | number
@@ -65141,6 +67692,7 @@ export namespace Prisma {
     regulacao?: XOR<ProdutoRegulacaoNullableRelationFilter, ProdutoRegulacaoWhereInput> | null
     classificacaoEventos?: ProdutoClassificacaoEventoListRelationFilter
     inventarioItens?: InventarioItemListRelationFilter
+    requisicaoItens?: RequisicaoItemListRelationFilter
     taxRule?: XOR<TaxRuleNullableRelationFilter, TaxRuleWhereInput> | null
   }, "id" | "barcode">
 
@@ -65154,7 +67706,6 @@ export namespace Prisma {
     ativo?: SortOrder
     barcode?: SortOrderInput | SortOrder
     precoVenda?: SortOrder
-    estoqueAtual?: SortOrder
     estoqueMinimo?: SortOrder
     taxRuleId?: SortOrderInput | SortOrder
     version?: SortOrder
@@ -65181,7 +67732,6 @@ export namespace Prisma {
     ativo?: BoolWithAggregatesFilter<"Produto"> | boolean
     barcode?: StringNullableWithAggregatesFilter<"Produto"> | string | null
     precoVenda?: DecimalWithAggregatesFilter<"Produto"> | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalWithAggregatesFilter<"Produto"> | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalWithAggregatesFilter<"Produto"> | Decimal | DecimalJsLike | number | string
     taxRuleId?: BigIntNullableWithAggregatesFilter<"Produto"> | bigint | number | null
     version?: IntWithAggregatesFilter<"Produto"> | number
@@ -65455,6 +68005,7 @@ export namespace Prisma {
     lotes?: LoteListRelationFilter
     contasPagar?: ContaPagarListRelationFilter
     historicoPrecos?: HistoricoPrecoListRelationFilter
+    requisicoes?: RequisicaoListRelationFilter
   }
 
   export type FornecedorOrderByWithRelationInput = {
@@ -65480,6 +68031,7 @@ export namespace Prisma {
     lotes?: LoteOrderByRelationAggregateInput
     contasPagar?: ContaPagarOrderByRelationAggregateInput
     historicoPrecos?: HistoricoPrecoOrderByRelationAggregateInput
+    requisicoes?: RequisicaoOrderByRelationAggregateInput
   }
 
   export type FornecedorWhereUniqueInput = Prisma.AtLeast<{
@@ -65508,6 +68060,7 @@ export namespace Prisma {
     lotes?: LoteListRelationFilter
     contasPagar?: ContaPagarListRelationFilter
     historicoPrecos?: HistoricoPrecoListRelationFilter
+    requisicoes?: RequisicaoListRelationFilter
   }, "id" | "nome">
 
   export type FornecedorOrderByWithAggregationInput = {
@@ -65826,6 +68379,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioListRelationFilter
     incineracaoItens?: IncineracaoItemListRelationFilter
     inventarioItens?: InventarioItemListRelationFilter
+    requisicaoItens?: RequisicaoItemListRelationFilter
   }
 
   export type LoteOrderByWithRelationInput = {
@@ -65859,10 +68413,12 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioOrderByRelationAggregateInput
     incineracaoItens?: IncineracaoItemOrderByRelationAggregateInput
     inventarioItens?: InventarioItemOrderByRelationAggregateInput
+    requisicaoItens?: RequisicaoItemOrderByRelationAggregateInput
   }
 
   export type LoteWhereUniqueInput = Prisma.AtLeast<{
     id?: bigint | number
+    produtoId_numeroLote_dataValidade?: LoteProdutoIdNumeroLoteDataValidadeCompoundUniqueInput
     AND?: LoteWhereInput | LoteWhereInput[]
     OR?: LoteWhereInput[]
     NOT?: LoteWhereInput | LoteWhereInput[]
@@ -65895,7 +68451,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioListRelationFilter
     incineracaoItens?: IncineracaoItemListRelationFilter
     inventarioItens?: InventarioItemListRelationFilter
-  }, "id">
+    requisicaoItens?: RequisicaoItemListRelationFilter
+  }, "id" | "produtoId_numeroLote_dataValidade">
 
   export type LoteOrderByWithAggregationInput = {
     id?: SortOrder
@@ -67688,6 +70245,206 @@ export namespace Prisma {
     divergencia?: DecimalWithAggregatesFilter<"InventarioItem"> | Decimal | DecimalJsLike | number | string
   }
 
+  export type RequisicaoWhereInput = {
+    AND?: RequisicaoWhereInput | RequisicaoWhereInput[]
+    OR?: RequisicaoWhereInput[]
+    NOT?: RequisicaoWhereInput | RequisicaoWhereInput[]
+    id?: BigIntFilter<"Requisicao"> | bigint | number
+    numeroDocumento?: StringFilter<"Requisicao"> | string
+    origem?: StringNullableFilter<"Requisicao"> | string | null
+    destino?: StringNullableFilter<"Requisicao"> | string | null
+    tipo?: EnumTipoRequisicaoFilter<"Requisicao"> | $Enums.TipoRequisicao
+    status?: EnumStatusRequisicaoFilter<"Requisicao"> | $Enums.StatusRequisicao
+    observacao?: StringNullableFilter<"Requisicao"> | string | null
+    fornecedorId?: BigIntNullableFilter<"Requisicao"> | bigint | number | null
+    total?: DecimalNullableFilter<"Requisicao"> | Decimal | DecimalJsLike | number | string | null
+    userId?: BigIntFilter<"Requisicao"> | bigint | number
+    confirmedAt?: DateTimeNullableFilter<"Requisicao"> | Date | string | null
+    confirmedById?: BigIntNullableFilter<"Requisicao"> | bigint | number | null
+    createdAt?: DateTimeFilter<"Requisicao"> | Date | string
+    updatedAt?: DateTimeFilter<"Requisicao"> | Date | string
+    user?: XOR<UserRelationFilter, UserWhereInput>
+    confirmedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+    fornecedor?: XOR<FornecedorNullableRelationFilter, FornecedorWhereInput> | null
+    itens?: RequisicaoItemListRelationFilter
+  }
+
+  export type RequisicaoOrderByWithRelationInput = {
+    id?: SortOrder
+    numeroDocumento?: SortOrder
+    origem?: SortOrderInput | SortOrder
+    destino?: SortOrderInput | SortOrder
+    tipo?: SortOrder
+    status?: SortOrder
+    observacao?: SortOrderInput | SortOrder
+    fornecedorId?: SortOrderInput | SortOrder
+    total?: SortOrderInput | SortOrder
+    userId?: SortOrder
+    confirmedAt?: SortOrderInput | SortOrder
+    confirmedById?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    user?: UserOrderByWithRelationInput
+    confirmedBy?: UserOrderByWithRelationInput
+    fornecedor?: FornecedorOrderByWithRelationInput
+    itens?: RequisicaoItemOrderByRelationAggregateInput
+  }
+
+  export type RequisicaoWhereUniqueInput = Prisma.AtLeast<{
+    id?: bigint | number
+    numeroDocumento?: string
+    AND?: RequisicaoWhereInput | RequisicaoWhereInput[]
+    OR?: RequisicaoWhereInput[]
+    NOT?: RequisicaoWhereInput | RequisicaoWhereInput[]
+    origem?: StringNullableFilter<"Requisicao"> | string | null
+    destino?: StringNullableFilter<"Requisicao"> | string | null
+    tipo?: EnumTipoRequisicaoFilter<"Requisicao"> | $Enums.TipoRequisicao
+    status?: EnumStatusRequisicaoFilter<"Requisicao"> | $Enums.StatusRequisicao
+    observacao?: StringNullableFilter<"Requisicao"> | string | null
+    fornecedorId?: BigIntNullableFilter<"Requisicao"> | bigint | number | null
+    total?: DecimalNullableFilter<"Requisicao"> | Decimal | DecimalJsLike | number | string | null
+    userId?: BigIntFilter<"Requisicao"> | bigint | number
+    confirmedAt?: DateTimeNullableFilter<"Requisicao"> | Date | string | null
+    confirmedById?: BigIntNullableFilter<"Requisicao"> | bigint | number | null
+    createdAt?: DateTimeFilter<"Requisicao"> | Date | string
+    updatedAt?: DateTimeFilter<"Requisicao"> | Date | string
+    user?: XOR<UserRelationFilter, UserWhereInput>
+    confirmedBy?: XOR<UserNullableRelationFilter, UserWhereInput> | null
+    fornecedor?: XOR<FornecedorNullableRelationFilter, FornecedorWhereInput> | null
+    itens?: RequisicaoItemListRelationFilter
+  }, "id" | "numeroDocumento">
+
+  export type RequisicaoOrderByWithAggregationInput = {
+    id?: SortOrder
+    numeroDocumento?: SortOrder
+    origem?: SortOrderInput | SortOrder
+    destino?: SortOrderInput | SortOrder
+    tipo?: SortOrder
+    status?: SortOrder
+    observacao?: SortOrderInput | SortOrder
+    fornecedorId?: SortOrderInput | SortOrder
+    total?: SortOrderInput | SortOrder
+    userId?: SortOrder
+    confirmedAt?: SortOrderInput | SortOrder
+    confirmedById?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: RequisicaoCountOrderByAggregateInput
+    _avg?: RequisicaoAvgOrderByAggregateInput
+    _max?: RequisicaoMaxOrderByAggregateInput
+    _min?: RequisicaoMinOrderByAggregateInput
+    _sum?: RequisicaoSumOrderByAggregateInput
+  }
+
+  export type RequisicaoScalarWhereWithAggregatesInput = {
+    AND?: RequisicaoScalarWhereWithAggregatesInput | RequisicaoScalarWhereWithAggregatesInput[]
+    OR?: RequisicaoScalarWhereWithAggregatesInput[]
+    NOT?: RequisicaoScalarWhereWithAggregatesInput | RequisicaoScalarWhereWithAggregatesInput[]
+    id?: BigIntWithAggregatesFilter<"Requisicao"> | bigint | number
+    numeroDocumento?: StringWithAggregatesFilter<"Requisicao"> | string
+    origem?: StringNullableWithAggregatesFilter<"Requisicao"> | string | null
+    destino?: StringNullableWithAggregatesFilter<"Requisicao"> | string | null
+    tipo?: EnumTipoRequisicaoWithAggregatesFilter<"Requisicao"> | $Enums.TipoRequisicao
+    status?: EnumStatusRequisicaoWithAggregatesFilter<"Requisicao"> | $Enums.StatusRequisicao
+    observacao?: StringNullableWithAggregatesFilter<"Requisicao"> | string | null
+    fornecedorId?: BigIntNullableWithAggregatesFilter<"Requisicao"> | bigint | number | null
+    total?: DecimalNullableWithAggregatesFilter<"Requisicao"> | Decimal | DecimalJsLike | number | string | null
+    userId?: BigIntWithAggregatesFilter<"Requisicao"> | bigint | number
+    confirmedAt?: DateTimeNullableWithAggregatesFilter<"Requisicao"> | Date | string | null
+    confirmedById?: BigIntNullableWithAggregatesFilter<"Requisicao"> | bigint | number | null
+    createdAt?: DateTimeWithAggregatesFilter<"Requisicao"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"Requisicao"> | Date | string
+  }
+
+  export type RequisicaoItemWhereInput = {
+    AND?: RequisicaoItemWhereInput | RequisicaoItemWhereInput[]
+    OR?: RequisicaoItemWhereInput[]
+    NOT?: RequisicaoItemWhereInput | RequisicaoItemWhereInput[]
+    id?: BigIntFilter<"RequisicaoItem"> | bigint | number
+    requisicaoId?: BigIntFilter<"RequisicaoItem"> | bigint | number
+    produtoId?: BigIntFilter<"RequisicaoItem"> | bigint | number
+    loteId?: BigIntNullableFilter<"RequisicaoItem"> | bigint | number | null
+    quantidadeSolicitada?: DecimalFilter<"RequisicaoItem"> | Decimal | DecimalJsLike | number | string
+    numeroLote?: StringNullableFilter<"RequisicaoItem"> | string | null
+    dataValidade?: DateTimeNullableFilter<"RequisicaoItem"> | Date | string | null
+    precoCompra?: DecimalNullableFilter<"RequisicaoItem"> | Decimal | DecimalJsLike | number | string | null
+    precoVenda?: DecimalNullableFilter<"RequisicaoItem"> | Decimal | DecimalJsLike | number | string | null
+    subtotal?: DecimalNullableFilter<"RequisicaoItem"> | Decimal | DecimalJsLike | number | string | null
+    requisicao?: XOR<RequisicaoRelationFilter, RequisicaoWhereInput>
+    produto?: XOR<ProdutoRelationFilter, ProdutoWhereInput>
+    lote?: XOR<LoteNullableRelationFilter, LoteWhereInput> | null
+  }
+
+  export type RequisicaoItemOrderByWithRelationInput = {
+    id?: SortOrder
+    requisicaoId?: SortOrder
+    produtoId?: SortOrder
+    loteId?: SortOrderInput | SortOrder
+    quantidadeSolicitada?: SortOrder
+    numeroLote?: SortOrderInput | SortOrder
+    dataValidade?: SortOrderInput | SortOrder
+    precoCompra?: SortOrderInput | SortOrder
+    precoVenda?: SortOrderInput | SortOrder
+    subtotal?: SortOrderInput | SortOrder
+    requisicao?: RequisicaoOrderByWithRelationInput
+    produto?: ProdutoOrderByWithRelationInput
+    lote?: LoteOrderByWithRelationInput
+  }
+
+  export type RequisicaoItemWhereUniqueInput = Prisma.AtLeast<{
+    id?: bigint | number
+    requisicaoId_produtoId_loteId?: RequisicaoItemRequisicaoIdProdutoIdLoteIdCompoundUniqueInput
+    AND?: RequisicaoItemWhereInput | RequisicaoItemWhereInput[]
+    OR?: RequisicaoItemWhereInput[]
+    NOT?: RequisicaoItemWhereInput | RequisicaoItemWhereInput[]
+    requisicaoId?: BigIntFilter<"RequisicaoItem"> | bigint | number
+    produtoId?: BigIntFilter<"RequisicaoItem"> | bigint | number
+    loteId?: BigIntNullableFilter<"RequisicaoItem"> | bigint | number | null
+    quantidadeSolicitada?: DecimalFilter<"RequisicaoItem"> | Decimal | DecimalJsLike | number | string
+    numeroLote?: StringNullableFilter<"RequisicaoItem"> | string | null
+    dataValidade?: DateTimeNullableFilter<"RequisicaoItem"> | Date | string | null
+    precoCompra?: DecimalNullableFilter<"RequisicaoItem"> | Decimal | DecimalJsLike | number | string | null
+    precoVenda?: DecimalNullableFilter<"RequisicaoItem"> | Decimal | DecimalJsLike | number | string | null
+    subtotal?: DecimalNullableFilter<"RequisicaoItem"> | Decimal | DecimalJsLike | number | string | null
+    requisicao?: XOR<RequisicaoRelationFilter, RequisicaoWhereInput>
+    produto?: XOR<ProdutoRelationFilter, ProdutoWhereInput>
+    lote?: XOR<LoteNullableRelationFilter, LoteWhereInput> | null
+  }, "id" | "requisicaoId_produtoId_loteId">
+
+  export type RequisicaoItemOrderByWithAggregationInput = {
+    id?: SortOrder
+    requisicaoId?: SortOrder
+    produtoId?: SortOrder
+    loteId?: SortOrderInput | SortOrder
+    quantidadeSolicitada?: SortOrder
+    numeroLote?: SortOrderInput | SortOrder
+    dataValidade?: SortOrderInput | SortOrder
+    precoCompra?: SortOrderInput | SortOrder
+    precoVenda?: SortOrderInput | SortOrder
+    subtotal?: SortOrderInput | SortOrder
+    _count?: RequisicaoItemCountOrderByAggregateInput
+    _avg?: RequisicaoItemAvgOrderByAggregateInput
+    _max?: RequisicaoItemMaxOrderByAggregateInput
+    _min?: RequisicaoItemMinOrderByAggregateInput
+    _sum?: RequisicaoItemSumOrderByAggregateInput
+  }
+
+  export type RequisicaoItemScalarWhereWithAggregatesInput = {
+    AND?: RequisicaoItemScalarWhereWithAggregatesInput | RequisicaoItemScalarWhereWithAggregatesInput[]
+    OR?: RequisicaoItemScalarWhereWithAggregatesInput[]
+    NOT?: RequisicaoItemScalarWhereWithAggregatesInput | RequisicaoItemScalarWhereWithAggregatesInput[]
+    id?: BigIntWithAggregatesFilter<"RequisicaoItem"> | bigint | number
+    requisicaoId?: BigIntWithAggregatesFilter<"RequisicaoItem"> | bigint | number
+    produtoId?: BigIntWithAggregatesFilter<"RequisicaoItem"> | bigint | number
+    loteId?: BigIntNullableWithAggregatesFilter<"RequisicaoItem"> | bigint | number | null
+    quantidadeSolicitada?: DecimalWithAggregatesFilter<"RequisicaoItem"> | Decimal | DecimalJsLike | number | string
+    numeroLote?: StringNullableWithAggregatesFilter<"RequisicaoItem"> | string | null
+    dataValidade?: DateTimeNullableWithAggregatesFilter<"RequisicaoItem"> | Date | string | null
+    precoCompra?: DecimalNullableWithAggregatesFilter<"RequisicaoItem"> | Decimal | DecimalJsLike | number | string | null
+    precoVenda?: DecimalNullableWithAggregatesFilter<"RequisicaoItem"> | Decimal | DecimalJsLike | number | string | null
+    subtotal?: DecimalNullableWithAggregatesFilter<"RequisicaoItem"> | Decimal | DecimalJsLike | number | string | null
+  }
+
   export type CashBalanceWhereInput = {
     AND?: CashBalanceWhereInput | CashBalanceWhereInput[]
     OR?: CashBalanceWhereInput[]
@@ -69283,6 +72040,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateInput = {
@@ -69324,6 +72083,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUpdateInput = {
@@ -69365,6 +72126,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateInput = {
@@ -69406,6 +72169,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserCreateManyInput = {
@@ -70053,7 +72818,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -70076,6 +72840,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutProdutoInput
     taxRule?: TaxRuleCreateNestedOneWithoutProdutosInput
   }
 
@@ -70089,7 +72854,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     taxRuleId?: bigint | number | null
     version?: number
@@ -70113,6 +72877,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoUpdateInput = {
@@ -70125,7 +72890,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -70148,6 +72912,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutProdutoNestedInput
     taxRule?: TaxRuleUpdateOneWithoutProdutosNestedInput
   }
 
@@ -70161,7 +72926,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     version?: IntFieldUpdateOperationsInput | number
@@ -70185,6 +72949,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput
   }
 
   export type ProdutoCreateManyInput = {
@@ -70197,7 +72962,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     taxRuleId?: bigint | number | null
     version?: number
@@ -70216,7 +72980,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -70234,7 +72997,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     version?: IntFieldUpdateOperationsInput | number
@@ -70526,6 +73288,7 @@ export namespace Prisma {
     lotes?: LoteCreateNestedManyWithoutFornecedorInput
     contasPagar?: ContaPagarCreateNestedManyWithoutFornecedorInput
     historicoPrecos?: HistoricoPrecoCreateNestedManyWithoutFornecedorInput
+    requisicoes?: RequisicaoCreateNestedManyWithoutFornecedorInput
   }
 
   export type FornecedorUncheckedCreateInput = {
@@ -70551,6 +73314,7 @@ export namespace Prisma {
     lotes?: LoteUncheckedCreateNestedManyWithoutFornecedorInput
     contasPagar?: ContaPagarUncheckedCreateNestedManyWithoutFornecedorInput
     historicoPrecos?: HistoricoPrecoUncheckedCreateNestedManyWithoutFornecedorInput
+    requisicoes?: RequisicaoUncheckedCreateNestedManyWithoutFornecedorInput
   }
 
   export type FornecedorUpdateInput = {
@@ -70576,6 +73340,7 @@ export namespace Prisma {
     lotes?: LoteUpdateManyWithoutFornecedorNestedInput
     contasPagar?: ContaPagarUpdateManyWithoutFornecedorNestedInput
     historicoPrecos?: HistoricoPrecoUpdateManyWithoutFornecedorNestedInput
+    requisicoes?: RequisicaoUpdateManyWithoutFornecedorNestedInput
   }
 
   export type FornecedorUncheckedUpdateInput = {
@@ -70601,6 +73366,7 @@ export namespace Prisma {
     lotes?: LoteUncheckedUpdateManyWithoutFornecedorNestedInput
     contasPagar?: ContaPagarUncheckedUpdateManyWithoutFornecedorNestedInput
     historicoPrecos?: HistoricoPrecoUncheckedUpdateManyWithoutFornecedorNestedInput
+    requisicoes?: RequisicaoUncheckedUpdateManyWithoutFornecedorNestedInput
   }
 
   export type FornecedorCreateManyInput = {
@@ -70933,6 +73699,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutLoteInput
   }
 
   export type LoteUncheckedCreateInput = {
@@ -70964,6 +73731,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemUncheckedCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutLoteInput
   }
 
   export type LoteUpdateInput = {
@@ -70995,6 +73763,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutLoteNestedInput
   }
 
   export type LoteUncheckedUpdateInput = {
@@ -71026,6 +73795,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUncheckedUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutLoteNestedInput
   }
 
   export type LoteCreateManyInput = {
@@ -72882,6 +75652,214 @@ export namespace Prisma {
     divergencia?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
+  export type RequisicaoCreateInput = {
+    id?: bigint | number
+    numeroDocumento: string
+    origem?: string | null
+    destino?: string | null
+    tipo?: $Enums.TipoRequisicao
+    status?: $Enums.StatusRequisicao
+    observacao?: string | null
+    total?: Decimal | DecimalJsLike | number | string | null
+    confirmedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutRequisicoesCriadasInput
+    confirmedBy?: UserCreateNestedOneWithoutRequisicoesConfirmadasInput
+    fornecedor?: FornecedorCreateNestedOneWithoutRequisicoesInput
+    itens?: RequisicaoItemCreateNestedManyWithoutRequisicaoInput
+  }
+
+  export type RequisicaoUncheckedCreateInput = {
+    id?: bigint | number
+    numeroDocumento: string
+    origem?: string | null
+    destino?: string | null
+    tipo?: $Enums.TipoRequisicao
+    status?: $Enums.StatusRequisicao
+    observacao?: string | null
+    fornecedorId?: bigint | number | null
+    total?: Decimal | DecimalJsLike | number | string | null
+    userId: bigint | number
+    confirmedAt?: Date | string | null
+    confirmedById?: bigint | number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    itens?: RequisicaoItemUncheckedCreateNestedManyWithoutRequisicaoInput
+  }
+
+  export type RequisicaoUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    numeroDocumento?: StringFieldUpdateOperationsInput | string
+    origem?: NullableStringFieldUpdateOperationsInput | string | null
+    destino?: NullableStringFieldUpdateOperationsInput | string | null
+    tipo?: EnumTipoRequisicaoFieldUpdateOperationsInput | $Enums.TipoRequisicao
+    status?: EnumStatusRequisicaoFieldUpdateOperationsInput | $Enums.StatusRequisicao
+    observacao?: NullableStringFieldUpdateOperationsInput | string | null
+    total?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutRequisicoesCriadasNestedInput
+    confirmedBy?: UserUpdateOneWithoutRequisicoesConfirmadasNestedInput
+    fornecedor?: FornecedorUpdateOneWithoutRequisicoesNestedInput
+    itens?: RequisicaoItemUpdateManyWithoutRequisicaoNestedInput
+  }
+
+  export type RequisicaoUncheckedUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    numeroDocumento?: StringFieldUpdateOperationsInput | string
+    origem?: NullableStringFieldUpdateOperationsInput | string | null
+    destino?: NullableStringFieldUpdateOperationsInput | string | null
+    tipo?: EnumTipoRequisicaoFieldUpdateOperationsInput | $Enums.TipoRequisicao
+    status?: EnumStatusRequisicaoFieldUpdateOperationsInput | $Enums.StatusRequisicao
+    observacao?: NullableStringFieldUpdateOperationsInput | string | null
+    fornecedorId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    total?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    userId?: BigIntFieldUpdateOperationsInput | bigint | number
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    itens?: RequisicaoItemUncheckedUpdateManyWithoutRequisicaoNestedInput
+  }
+
+  export type RequisicaoCreateManyInput = {
+    id?: bigint | number
+    numeroDocumento: string
+    origem?: string | null
+    destino?: string | null
+    tipo?: $Enums.TipoRequisicao
+    status?: $Enums.StatusRequisicao
+    observacao?: string | null
+    fornecedorId?: bigint | number | null
+    total?: Decimal | DecimalJsLike | number | string | null
+    userId: bigint | number
+    confirmedAt?: Date | string | null
+    confirmedById?: bigint | number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RequisicaoUpdateManyMutationInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    numeroDocumento?: StringFieldUpdateOperationsInput | string
+    origem?: NullableStringFieldUpdateOperationsInput | string | null
+    destino?: NullableStringFieldUpdateOperationsInput | string | null
+    tipo?: EnumTipoRequisicaoFieldUpdateOperationsInput | $Enums.TipoRequisicao
+    status?: EnumStatusRequisicaoFieldUpdateOperationsInput | $Enums.StatusRequisicao
+    observacao?: NullableStringFieldUpdateOperationsInput | string | null
+    total?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RequisicaoUncheckedUpdateManyInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    numeroDocumento?: StringFieldUpdateOperationsInput | string
+    origem?: NullableStringFieldUpdateOperationsInput | string | null
+    destino?: NullableStringFieldUpdateOperationsInput | string | null
+    tipo?: EnumTipoRequisicaoFieldUpdateOperationsInput | $Enums.TipoRequisicao
+    status?: EnumStatusRequisicaoFieldUpdateOperationsInput | $Enums.StatusRequisicao
+    observacao?: NullableStringFieldUpdateOperationsInput | string | null
+    fornecedorId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    total?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    userId?: BigIntFieldUpdateOperationsInput | bigint | number
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RequisicaoItemCreateInput = {
+    id?: bigint | number
+    quantidadeSolicitada: Decimal | DecimalJsLike | number | string
+    numeroLote?: string | null
+    dataValidade?: Date | string | null
+    precoCompra?: Decimal | DecimalJsLike | number | string | null
+    precoVenda?: Decimal | DecimalJsLike | number | string | null
+    subtotal?: Decimal | DecimalJsLike | number | string | null
+    requisicao: RequisicaoCreateNestedOneWithoutItensInput
+    produto: ProdutoCreateNestedOneWithoutRequisicaoItensInput
+    lote?: LoteCreateNestedOneWithoutRequisicaoItensInput
+  }
+
+  export type RequisicaoItemUncheckedCreateInput = {
+    id?: bigint | number
+    requisicaoId: bigint | number
+    produtoId: bigint | number
+    loteId?: bigint | number | null
+    quantidadeSolicitada: Decimal | DecimalJsLike | number | string
+    numeroLote?: string | null
+    dataValidade?: Date | string | null
+    precoCompra?: Decimal | DecimalJsLike | number | string | null
+    precoVenda?: Decimal | DecimalJsLike | number | string | null
+    subtotal?: Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type RequisicaoItemUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    quantidadeSolicitada?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    numeroLote?: NullableStringFieldUpdateOperationsInput | string | null
+    dataValidade?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precoCompra?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    precoVenda?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subtotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    requisicao?: RequisicaoUpdateOneRequiredWithoutItensNestedInput
+    produto?: ProdutoUpdateOneRequiredWithoutRequisicaoItensNestedInput
+    lote?: LoteUpdateOneWithoutRequisicaoItensNestedInput
+  }
+
+  export type RequisicaoItemUncheckedUpdateInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    requisicaoId?: BigIntFieldUpdateOperationsInput | bigint | number
+    produtoId?: BigIntFieldUpdateOperationsInput | bigint | number
+    loteId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    quantidadeSolicitada?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    numeroLote?: NullableStringFieldUpdateOperationsInput | string | null
+    dataValidade?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precoCompra?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    precoVenda?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subtotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type RequisicaoItemCreateManyInput = {
+    id?: bigint | number
+    requisicaoId: bigint | number
+    produtoId: bigint | number
+    loteId?: bigint | number | null
+    quantidadeSolicitada: Decimal | DecimalJsLike | number | string
+    numeroLote?: string | null
+    dataValidade?: Date | string | null
+    precoCompra?: Decimal | DecimalJsLike | number | string | null
+    precoVenda?: Decimal | DecimalJsLike | number | string | null
+    subtotal?: Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type RequisicaoItemUpdateManyMutationInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    quantidadeSolicitada?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    numeroLote?: NullableStringFieldUpdateOperationsInput | string | null
+    dataValidade?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precoCompra?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    precoVenda?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subtotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type RequisicaoItemUncheckedUpdateManyInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    requisicaoId?: BigIntFieldUpdateOperationsInput | bigint | number
+    produtoId?: BigIntFieldUpdateOperationsInput | bigint | number
+    loteId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    quantidadeSolicitada?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    numeroLote?: NullableStringFieldUpdateOperationsInput | string | null
+    dataValidade?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precoCompra?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    precoVenda?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subtotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+  }
+
   export type CashBalanceCreateInput = {
     id?: bigint | number
     saldoDinheiro?: Decimal | DecimalJsLike | number | string
@@ -74723,6 +77701,12 @@ export namespace Prisma {
     none?: InventarioWhereInput
   }
 
+  export type RequisicaoListRelationFilter = {
+    every?: RequisicaoWhereInput
+    some?: RequisicaoWhereInput
+    none?: RequisicaoWhereInput
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -74809,6 +77793,10 @@ export namespace Prisma {
   }
 
   export type InventarioOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
+  export type RequisicaoOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
@@ -75597,6 +78585,12 @@ export namespace Prisma {
     none?: InventarioItemWhereInput
   }
 
+  export type RequisicaoItemListRelationFilter = {
+    every?: RequisicaoItemWhereInput
+    some?: RequisicaoItemWhereInput
+    none?: RequisicaoItemWhereInput
+  }
+
   export type TaxRuleNullableRelationFilter = {
     is?: TaxRuleWhereInput | null
     isNot?: TaxRuleWhereInput | null
@@ -75638,6 +78632,10 @@ export namespace Prisma {
     _count?: SortOrder
   }
 
+  export type RequisicaoItemOrderByRelationAggregateInput = {
+    _count?: SortOrder
+  }
+
   export type ProdutoCountOrderByAggregateInput = {
     id?: SortOrder
     nome?: SortOrder
@@ -75648,7 +78646,6 @@ export namespace Prisma {
     ativo?: SortOrder
     barcode?: SortOrder
     precoVenda?: SortOrder
-    estoqueAtual?: SortOrder
     estoqueMinimo?: SortOrder
     taxRuleId?: SortOrder
     version?: SortOrder
@@ -75660,7 +78657,6 @@ export namespace Prisma {
   export type ProdutoAvgOrderByAggregateInput = {
     id?: SortOrder
     precoVenda?: SortOrder
-    estoqueAtual?: SortOrder
     estoqueMinimo?: SortOrder
     taxRuleId?: SortOrder
     version?: SortOrder
@@ -75676,7 +78672,6 @@ export namespace Prisma {
     ativo?: SortOrder
     barcode?: SortOrder
     precoVenda?: SortOrder
-    estoqueAtual?: SortOrder
     estoqueMinimo?: SortOrder
     taxRuleId?: SortOrder
     version?: SortOrder
@@ -75695,7 +78690,6 @@ export namespace Prisma {
     ativo?: SortOrder
     barcode?: SortOrder
     precoVenda?: SortOrder
-    estoqueAtual?: SortOrder
     estoqueMinimo?: SortOrder
     taxRuleId?: SortOrder
     version?: SortOrder
@@ -75707,7 +78701,6 @@ export namespace Prisma {
   export type ProdutoSumOrderByAggregateInput = {
     id?: SortOrder
     precoVenda?: SortOrder
-    estoqueAtual?: SortOrder
     estoqueMinimo?: SortOrder
     taxRuleId?: SortOrder
     version?: SortOrder
@@ -76290,6 +79283,12 @@ export namespace Prisma {
 
   export type IncineracaoItemOrderByRelationAggregateInput = {
     _count?: SortOrder
+  }
+
+  export type LoteProdutoIdNumeroLoteDataValidadeCompoundUniqueInput = {
+    produtoId: bigint | number
+    numeroLote: string
+    dataValidade: Date | string
   }
 
   export type LoteCountOrderByAggregateInput = {
@@ -77865,6 +80864,179 @@ export namespace Prisma {
     divergencia?: SortOrder
   }
 
+  export type EnumTipoRequisicaoFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoRequisicao | EnumTipoRequisicaoFieldRefInput<$PrismaModel>
+    in?: $Enums.TipoRequisicao[]
+    notIn?: $Enums.TipoRequisicao[]
+    not?: NestedEnumTipoRequisicaoFilter<$PrismaModel> | $Enums.TipoRequisicao
+  }
+
+  export type EnumStatusRequisicaoFilter<$PrismaModel = never> = {
+    equals?: $Enums.StatusRequisicao | EnumStatusRequisicaoFieldRefInput<$PrismaModel>
+    in?: $Enums.StatusRequisicao[]
+    notIn?: $Enums.StatusRequisicao[]
+    not?: NestedEnumStatusRequisicaoFilter<$PrismaModel> | $Enums.StatusRequisicao
+  }
+
+  export type RequisicaoCountOrderByAggregateInput = {
+    id?: SortOrder
+    numeroDocumento?: SortOrder
+    origem?: SortOrder
+    destino?: SortOrder
+    tipo?: SortOrder
+    status?: SortOrder
+    observacao?: SortOrder
+    fornecedorId?: SortOrder
+    total?: SortOrder
+    userId?: SortOrder
+    confirmedAt?: SortOrder
+    confirmedById?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RequisicaoAvgOrderByAggregateInput = {
+    id?: SortOrder
+    fornecedorId?: SortOrder
+    total?: SortOrder
+    userId?: SortOrder
+    confirmedById?: SortOrder
+  }
+
+  export type RequisicaoMaxOrderByAggregateInput = {
+    id?: SortOrder
+    numeroDocumento?: SortOrder
+    origem?: SortOrder
+    destino?: SortOrder
+    tipo?: SortOrder
+    status?: SortOrder
+    observacao?: SortOrder
+    fornecedorId?: SortOrder
+    total?: SortOrder
+    userId?: SortOrder
+    confirmedAt?: SortOrder
+    confirmedById?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RequisicaoMinOrderByAggregateInput = {
+    id?: SortOrder
+    numeroDocumento?: SortOrder
+    origem?: SortOrder
+    destino?: SortOrder
+    tipo?: SortOrder
+    status?: SortOrder
+    observacao?: SortOrder
+    fornecedorId?: SortOrder
+    total?: SortOrder
+    userId?: SortOrder
+    confirmedAt?: SortOrder
+    confirmedById?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type RequisicaoSumOrderByAggregateInput = {
+    id?: SortOrder
+    fornecedorId?: SortOrder
+    total?: SortOrder
+    userId?: SortOrder
+    confirmedById?: SortOrder
+  }
+
+  export type EnumTipoRequisicaoWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoRequisicao | EnumTipoRequisicaoFieldRefInput<$PrismaModel>
+    in?: $Enums.TipoRequisicao[]
+    notIn?: $Enums.TipoRequisicao[]
+    not?: NestedEnumTipoRequisicaoWithAggregatesFilter<$PrismaModel> | $Enums.TipoRequisicao
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumTipoRequisicaoFilter<$PrismaModel>
+    _max?: NestedEnumTipoRequisicaoFilter<$PrismaModel>
+  }
+
+  export type EnumStatusRequisicaoWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.StatusRequisicao | EnumStatusRequisicaoFieldRefInput<$PrismaModel>
+    in?: $Enums.StatusRequisicao[]
+    notIn?: $Enums.StatusRequisicao[]
+    not?: NestedEnumStatusRequisicaoWithAggregatesFilter<$PrismaModel> | $Enums.StatusRequisicao
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumStatusRequisicaoFilter<$PrismaModel>
+    _max?: NestedEnumStatusRequisicaoFilter<$PrismaModel>
+  }
+
+  export type RequisicaoRelationFilter = {
+    is?: RequisicaoWhereInput
+    isNot?: RequisicaoWhereInput
+  }
+
+  export type RequisicaoItemRequisicaoIdProdutoIdLoteIdCompoundUniqueInput = {
+    requisicaoId: bigint | number
+    produtoId: bigint | number
+    loteId: bigint | number
+  }
+
+  export type RequisicaoItemCountOrderByAggregateInput = {
+    id?: SortOrder
+    requisicaoId?: SortOrder
+    produtoId?: SortOrder
+    loteId?: SortOrder
+    quantidadeSolicitada?: SortOrder
+    numeroLote?: SortOrder
+    dataValidade?: SortOrder
+    precoCompra?: SortOrder
+    precoVenda?: SortOrder
+    subtotal?: SortOrder
+  }
+
+  export type RequisicaoItemAvgOrderByAggregateInput = {
+    id?: SortOrder
+    requisicaoId?: SortOrder
+    produtoId?: SortOrder
+    loteId?: SortOrder
+    quantidadeSolicitada?: SortOrder
+    precoCompra?: SortOrder
+    precoVenda?: SortOrder
+    subtotal?: SortOrder
+  }
+
+  export type RequisicaoItemMaxOrderByAggregateInput = {
+    id?: SortOrder
+    requisicaoId?: SortOrder
+    produtoId?: SortOrder
+    loteId?: SortOrder
+    quantidadeSolicitada?: SortOrder
+    numeroLote?: SortOrder
+    dataValidade?: SortOrder
+    precoCompra?: SortOrder
+    precoVenda?: SortOrder
+    subtotal?: SortOrder
+  }
+
+  export type RequisicaoItemMinOrderByAggregateInput = {
+    id?: SortOrder
+    requisicaoId?: SortOrder
+    produtoId?: SortOrder
+    loteId?: SortOrder
+    quantidadeSolicitada?: SortOrder
+    numeroLote?: SortOrder
+    dataValidade?: SortOrder
+    precoCompra?: SortOrder
+    precoVenda?: SortOrder
+    subtotal?: SortOrder
+  }
+
+  export type RequisicaoItemSumOrderByAggregateInput = {
+    id?: SortOrder
+    requisicaoId?: SortOrder
+    produtoId?: SortOrder
+    loteId?: SortOrder
+    quantidadeSolicitada?: SortOrder
+    precoCompra?: SortOrder
+    precoVenda?: SortOrder
+    subtotal?: SortOrder
+  }
+
   export type CashBalanceCountOrderByAggregateInput = {
     id?: SortOrder
     caixaId?: SortOrder
@@ -79238,6 +82410,20 @@ export namespace Prisma {
     connect?: InventarioWhereUniqueInput | InventarioWhereUniqueInput[]
   }
 
+  export type RequisicaoCreateNestedManyWithoutUserInput = {
+    create?: XOR<RequisicaoCreateWithoutUserInput, RequisicaoUncheckedCreateWithoutUserInput> | RequisicaoCreateWithoutUserInput[] | RequisicaoUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: RequisicaoCreateOrConnectWithoutUserInput | RequisicaoCreateOrConnectWithoutUserInput[]
+    createMany?: RequisicaoCreateManyUserInputEnvelope
+    connect?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+  }
+
+  export type RequisicaoCreateNestedManyWithoutConfirmedByInput = {
+    create?: XOR<RequisicaoCreateWithoutConfirmedByInput, RequisicaoUncheckedCreateWithoutConfirmedByInput> | RequisicaoCreateWithoutConfirmedByInput[] | RequisicaoUncheckedCreateWithoutConfirmedByInput[]
+    connectOrCreate?: RequisicaoCreateOrConnectWithoutConfirmedByInput | RequisicaoCreateOrConnectWithoutConfirmedByInput[]
+    createMany?: RequisicaoCreateManyConfirmedByInputEnvelope
+    connect?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+  }
+
   export type CaixaMovimentoUncheckedCreateNestedManyWithoutUserInput = {
     create?: XOR<CaixaMovimentoCreateWithoutUserInput, CaixaMovimentoUncheckedCreateWithoutUserInput> | CaixaMovimentoCreateWithoutUserInput[] | CaixaMovimentoUncheckedCreateWithoutUserInput[]
     connectOrCreate?: CaixaMovimentoCreateOrConnectWithoutUserInput | CaixaMovimentoCreateOrConnectWithoutUserInput[]
@@ -79432,6 +82618,20 @@ export namespace Prisma {
     connectOrCreate?: InventarioCreateOrConnectWithoutReconciliadoPorInput | InventarioCreateOrConnectWithoutReconciliadoPorInput[]
     createMany?: InventarioCreateManyReconciliadoPorInputEnvelope
     connect?: InventarioWhereUniqueInput | InventarioWhereUniqueInput[]
+  }
+
+  export type RequisicaoUncheckedCreateNestedManyWithoutUserInput = {
+    create?: XOR<RequisicaoCreateWithoutUserInput, RequisicaoUncheckedCreateWithoutUserInput> | RequisicaoCreateWithoutUserInput[] | RequisicaoUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: RequisicaoCreateOrConnectWithoutUserInput | RequisicaoCreateOrConnectWithoutUserInput[]
+    createMany?: RequisicaoCreateManyUserInputEnvelope
+    connect?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+  }
+
+  export type RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput = {
+    create?: XOR<RequisicaoCreateWithoutConfirmedByInput, RequisicaoUncheckedCreateWithoutConfirmedByInput> | RequisicaoCreateWithoutConfirmedByInput[] | RequisicaoUncheckedCreateWithoutConfirmedByInput[]
+    connectOrCreate?: RequisicaoCreateOrConnectWithoutConfirmedByInput | RequisicaoCreateOrConnectWithoutConfirmedByInput[]
+    createMany?: RequisicaoCreateManyConfirmedByInputEnvelope
+    connect?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
   }
 
   export type BigIntFieldUpdateOperationsInput = {
@@ -79874,6 +83074,34 @@ export namespace Prisma {
     deleteMany?: InventarioScalarWhereInput | InventarioScalarWhereInput[]
   }
 
+  export type RequisicaoUpdateManyWithoutUserNestedInput = {
+    create?: XOR<RequisicaoCreateWithoutUserInput, RequisicaoUncheckedCreateWithoutUserInput> | RequisicaoCreateWithoutUserInput[] | RequisicaoUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: RequisicaoCreateOrConnectWithoutUserInput | RequisicaoCreateOrConnectWithoutUserInput[]
+    upsert?: RequisicaoUpsertWithWhereUniqueWithoutUserInput | RequisicaoUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: RequisicaoCreateManyUserInputEnvelope
+    set?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    disconnect?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    delete?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    connect?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    update?: RequisicaoUpdateWithWhereUniqueWithoutUserInput | RequisicaoUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: RequisicaoUpdateManyWithWhereWithoutUserInput | RequisicaoUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: RequisicaoScalarWhereInput | RequisicaoScalarWhereInput[]
+  }
+
+  export type RequisicaoUpdateManyWithoutConfirmedByNestedInput = {
+    create?: XOR<RequisicaoCreateWithoutConfirmedByInput, RequisicaoUncheckedCreateWithoutConfirmedByInput> | RequisicaoCreateWithoutConfirmedByInput[] | RequisicaoUncheckedCreateWithoutConfirmedByInput[]
+    connectOrCreate?: RequisicaoCreateOrConnectWithoutConfirmedByInput | RequisicaoCreateOrConnectWithoutConfirmedByInput[]
+    upsert?: RequisicaoUpsertWithWhereUniqueWithoutConfirmedByInput | RequisicaoUpsertWithWhereUniqueWithoutConfirmedByInput[]
+    createMany?: RequisicaoCreateManyConfirmedByInputEnvelope
+    set?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    disconnect?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    delete?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    connect?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    update?: RequisicaoUpdateWithWhereUniqueWithoutConfirmedByInput | RequisicaoUpdateWithWhereUniqueWithoutConfirmedByInput[]
+    updateMany?: RequisicaoUpdateManyWithWhereWithoutConfirmedByInput | RequisicaoUpdateManyWithWhereWithoutConfirmedByInput[]
+    deleteMany?: RequisicaoScalarWhereInput | RequisicaoScalarWhereInput[]
+  }
+
   export type CaixaMovimentoUncheckedUpdateManyWithoutUserNestedInput = {
     create?: XOR<CaixaMovimentoCreateWithoutUserInput, CaixaMovimentoUncheckedCreateWithoutUserInput> | CaixaMovimentoCreateWithoutUserInput[] | CaixaMovimentoUncheckedCreateWithoutUserInput[]
     connectOrCreate?: CaixaMovimentoCreateOrConnectWithoutUserInput | CaixaMovimentoCreateOrConnectWithoutUserInput[]
@@ -80264,6 +83492,34 @@ export namespace Prisma {
     update?: InventarioUpdateWithWhereUniqueWithoutReconciliadoPorInput | InventarioUpdateWithWhereUniqueWithoutReconciliadoPorInput[]
     updateMany?: InventarioUpdateManyWithWhereWithoutReconciliadoPorInput | InventarioUpdateManyWithWhereWithoutReconciliadoPorInput[]
     deleteMany?: InventarioScalarWhereInput | InventarioScalarWhereInput[]
+  }
+
+  export type RequisicaoUncheckedUpdateManyWithoutUserNestedInput = {
+    create?: XOR<RequisicaoCreateWithoutUserInput, RequisicaoUncheckedCreateWithoutUserInput> | RequisicaoCreateWithoutUserInput[] | RequisicaoUncheckedCreateWithoutUserInput[]
+    connectOrCreate?: RequisicaoCreateOrConnectWithoutUserInput | RequisicaoCreateOrConnectWithoutUserInput[]
+    upsert?: RequisicaoUpsertWithWhereUniqueWithoutUserInput | RequisicaoUpsertWithWhereUniqueWithoutUserInput[]
+    createMany?: RequisicaoCreateManyUserInputEnvelope
+    set?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    disconnect?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    delete?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    connect?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    update?: RequisicaoUpdateWithWhereUniqueWithoutUserInput | RequisicaoUpdateWithWhereUniqueWithoutUserInput[]
+    updateMany?: RequisicaoUpdateManyWithWhereWithoutUserInput | RequisicaoUpdateManyWithWhereWithoutUserInput[]
+    deleteMany?: RequisicaoScalarWhereInput | RequisicaoScalarWhereInput[]
+  }
+
+  export type RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput = {
+    create?: XOR<RequisicaoCreateWithoutConfirmedByInput, RequisicaoUncheckedCreateWithoutConfirmedByInput> | RequisicaoCreateWithoutConfirmedByInput[] | RequisicaoUncheckedCreateWithoutConfirmedByInput[]
+    connectOrCreate?: RequisicaoCreateOrConnectWithoutConfirmedByInput | RequisicaoCreateOrConnectWithoutConfirmedByInput[]
+    upsert?: RequisicaoUpsertWithWhereUniqueWithoutConfirmedByInput | RequisicaoUpsertWithWhereUniqueWithoutConfirmedByInput[]
+    createMany?: RequisicaoCreateManyConfirmedByInputEnvelope
+    set?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    disconnect?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    delete?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    connect?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    update?: RequisicaoUpdateWithWhereUniqueWithoutConfirmedByInput | RequisicaoUpdateWithWhereUniqueWithoutConfirmedByInput[]
+    updateMany?: RequisicaoUpdateManyWithWhereWithoutConfirmedByInput | RequisicaoUpdateManyWithWhereWithoutConfirmedByInput[]
+    deleteMany?: RequisicaoScalarWhereInput | RequisicaoScalarWhereInput[]
   }
 
   export type CaixaCreateNestedOneWithoutTerminalInput = {
@@ -81074,6 +84330,13 @@ export namespace Prisma {
     connect?: InventarioItemWhereUniqueInput | InventarioItemWhereUniqueInput[]
   }
 
+  export type RequisicaoItemCreateNestedManyWithoutProdutoInput = {
+    create?: XOR<RequisicaoItemCreateWithoutProdutoInput, RequisicaoItemUncheckedCreateWithoutProdutoInput> | RequisicaoItemCreateWithoutProdutoInput[] | RequisicaoItemUncheckedCreateWithoutProdutoInput[]
+    connectOrCreate?: RequisicaoItemCreateOrConnectWithoutProdutoInput | RequisicaoItemCreateOrConnectWithoutProdutoInput[]
+    createMany?: RequisicaoItemCreateManyProdutoInputEnvelope
+    connect?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+  }
+
   export type TaxRuleCreateNestedOneWithoutProdutosInput = {
     create?: XOR<TaxRuleCreateWithoutProdutosInput, TaxRuleUncheckedCreateWithoutProdutosInput>
     connectOrCreate?: TaxRuleCreateOrConnectWithoutProdutosInput
@@ -81194,6 +84457,13 @@ export namespace Prisma {
     connectOrCreate?: InventarioItemCreateOrConnectWithoutProdutoInput | InventarioItemCreateOrConnectWithoutProdutoInput[]
     createMany?: InventarioItemCreateManyProdutoInputEnvelope
     connect?: InventarioItemWhereUniqueInput | InventarioItemWhereUniqueInput[]
+  }
+
+  export type RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput = {
+    create?: XOR<RequisicaoItemCreateWithoutProdutoInput, RequisicaoItemUncheckedCreateWithoutProdutoInput> | RequisicaoItemCreateWithoutProdutoInput[] | RequisicaoItemUncheckedCreateWithoutProdutoInput[]
+    connectOrCreate?: RequisicaoItemCreateOrConnectWithoutProdutoInput | RequisicaoItemCreateOrConnectWithoutProdutoInput[]
+    createMany?: RequisicaoItemCreateManyProdutoInputEnvelope
+    connect?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
   }
 
   export type ProdutoFornecedorUpdateManyWithoutProdutoNestedInput = {
@@ -81420,6 +84690,20 @@ export namespace Prisma {
     update?: InventarioItemUpdateWithWhereUniqueWithoutProdutoInput | InventarioItemUpdateWithWhereUniqueWithoutProdutoInput[]
     updateMany?: InventarioItemUpdateManyWithWhereWithoutProdutoInput | InventarioItemUpdateManyWithWhereWithoutProdutoInput[]
     deleteMany?: InventarioItemScalarWhereInput | InventarioItemScalarWhereInput[]
+  }
+
+  export type RequisicaoItemUpdateManyWithoutProdutoNestedInput = {
+    create?: XOR<RequisicaoItemCreateWithoutProdutoInput, RequisicaoItemUncheckedCreateWithoutProdutoInput> | RequisicaoItemCreateWithoutProdutoInput[] | RequisicaoItemUncheckedCreateWithoutProdutoInput[]
+    connectOrCreate?: RequisicaoItemCreateOrConnectWithoutProdutoInput | RequisicaoItemCreateOrConnectWithoutProdutoInput[]
+    upsert?: RequisicaoItemUpsertWithWhereUniqueWithoutProdutoInput | RequisicaoItemUpsertWithWhereUniqueWithoutProdutoInput[]
+    createMany?: RequisicaoItemCreateManyProdutoInputEnvelope
+    set?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    disconnect?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    delete?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    connect?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    update?: RequisicaoItemUpdateWithWhereUniqueWithoutProdutoInput | RequisicaoItemUpdateWithWhereUniqueWithoutProdutoInput[]
+    updateMany?: RequisicaoItemUpdateManyWithWhereWithoutProdutoInput | RequisicaoItemUpdateManyWithWhereWithoutProdutoInput[]
+    deleteMany?: RequisicaoItemScalarWhereInput | RequisicaoItemScalarWhereInput[]
   }
 
   export type TaxRuleUpdateOneWithoutProdutosNestedInput = {
@@ -81658,6 +84942,20 @@ export namespace Prisma {
     deleteMany?: InventarioItemScalarWhereInput | InventarioItemScalarWhereInput[]
   }
 
+  export type RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput = {
+    create?: XOR<RequisicaoItemCreateWithoutProdutoInput, RequisicaoItemUncheckedCreateWithoutProdutoInput> | RequisicaoItemCreateWithoutProdutoInput[] | RequisicaoItemUncheckedCreateWithoutProdutoInput[]
+    connectOrCreate?: RequisicaoItemCreateOrConnectWithoutProdutoInput | RequisicaoItemCreateOrConnectWithoutProdutoInput[]
+    upsert?: RequisicaoItemUpsertWithWhereUniqueWithoutProdutoInput | RequisicaoItemUpsertWithWhereUniqueWithoutProdutoInput[]
+    createMany?: RequisicaoItemCreateManyProdutoInputEnvelope
+    set?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    disconnect?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    delete?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    connect?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    update?: RequisicaoItemUpdateWithWhereUniqueWithoutProdutoInput | RequisicaoItemUpdateWithWhereUniqueWithoutProdutoInput[]
+    updateMany?: RequisicaoItemUpdateManyWithWhereWithoutProdutoInput | RequisicaoItemUpdateManyWithWhereWithoutProdutoInput[]
+    deleteMany?: RequisicaoItemScalarWhereInput | RequisicaoItemScalarWhereInput[]
+  }
+
   export type ProdutoCreateNestedOneWithoutRegulacaoInput = {
     create?: XOR<ProdutoCreateWithoutRegulacaoInput, ProdutoUncheckedCreateWithoutRegulacaoInput>
     connectOrCreate?: ProdutoCreateOrConnectWithoutRegulacaoInput
@@ -81791,6 +85089,13 @@ export namespace Prisma {
     connect?: HistoricoPrecoWhereUniqueInput | HistoricoPrecoWhereUniqueInput[]
   }
 
+  export type RequisicaoCreateNestedManyWithoutFornecedorInput = {
+    create?: XOR<RequisicaoCreateWithoutFornecedorInput, RequisicaoUncheckedCreateWithoutFornecedorInput> | RequisicaoCreateWithoutFornecedorInput[] | RequisicaoUncheckedCreateWithoutFornecedorInput[]
+    connectOrCreate?: RequisicaoCreateOrConnectWithoutFornecedorInput | RequisicaoCreateOrConnectWithoutFornecedorInput[]
+    createMany?: RequisicaoCreateManyFornecedorInputEnvelope
+    connect?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+  }
+
   export type ProdutoFornecedorUncheckedCreateNestedManyWithoutFornecedorInput = {
     create?: XOR<ProdutoFornecedorCreateWithoutFornecedorInput, ProdutoFornecedorUncheckedCreateWithoutFornecedorInput> | ProdutoFornecedorCreateWithoutFornecedorInput[] | ProdutoFornecedorUncheckedCreateWithoutFornecedorInput[]
     connectOrCreate?: ProdutoFornecedorCreateOrConnectWithoutFornecedorInput | ProdutoFornecedorCreateOrConnectWithoutFornecedorInput[]
@@ -81824,6 +85129,13 @@ export namespace Prisma {
     connectOrCreate?: HistoricoPrecoCreateOrConnectWithoutFornecedorInput | HistoricoPrecoCreateOrConnectWithoutFornecedorInput[]
     createMany?: HistoricoPrecoCreateManyFornecedorInputEnvelope
     connect?: HistoricoPrecoWhereUniqueInput | HistoricoPrecoWhereUniqueInput[]
+  }
+
+  export type RequisicaoUncheckedCreateNestedManyWithoutFornecedorInput = {
+    create?: XOR<RequisicaoCreateWithoutFornecedorInput, RequisicaoUncheckedCreateWithoutFornecedorInput> | RequisicaoCreateWithoutFornecedorInput[] | RequisicaoUncheckedCreateWithoutFornecedorInput[]
+    connectOrCreate?: RequisicaoCreateOrConnectWithoutFornecedorInput | RequisicaoCreateOrConnectWithoutFornecedorInput[]
+    createMany?: RequisicaoCreateManyFornecedorInputEnvelope
+    connect?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
   }
 
   export type NullableEnumTipoFornecedorFieldUpdateOperationsInput = {
@@ -81900,6 +85212,20 @@ export namespace Prisma {
     deleteMany?: HistoricoPrecoScalarWhereInput | HistoricoPrecoScalarWhereInput[]
   }
 
+  export type RequisicaoUpdateManyWithoutFornecedorNestedInput = {
+    create?: XOR<RequisicaoCreateWithoutFornecedorInput, RequisicaoUncheckedCreateWithoutFornecedorInput> | RequisicaoCreateWithoutFornecedorInput[] | RequisicaoUncheckedCreateWithoutFornecedorInput[]
+    connectOrCreate?: RequisicaoCreateOrConnectWithoutFornecedorInput | RequisicaoCreateOrConnectWithoutFornecedorInput[]
+    upsert?: RequisicaoUpsertWithWhereUniqueWithoutFornecedorInput | RequisicaoUpsertWithWhereUniqueWithoutFornecedorInput[]
+    createMany?: RequisicaoCreateManyFornecedorInputEnvelope
+    set?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    disconnect?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    delete?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    connect?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    update?: RequisicaoUpdateWithWhereUniqueWithoutFornecedorInput | RequisicaoUpdateWithWhereUniqueWithoutFornecedorInput[]
+    updateMany?: RequisicaoUpdateManyWithWhereWithoutFornecedorInput | RequisicaoUpdateManyWithWhereWithoutFornecedorInput[]
+    deleteMany?: RequisicaoScalarWhereInput | RequisicaoScalarWhereInput[]
+  }
+
   export type ProdutoFornecedorUncheckedUpdateManyWithoutFornecedorNestedInput = {
     create?: XOR<ProdutoFornecedorCreateWithoutFornecedorInput, ProdutoFornecedorUncheckedCreateWithoutFornecedorInput> | ProdutoFornecedorCreateWithoutFornecedorInput[] | ProdutoFornecedorUncheckedCreateWithoutFornecedorInput[]
     connectOrCreate?: ProdutoFornecedorCreateOrConnectWithoutFornecedorInput | ProdutoFornecedorCreateOrConnectWithoutFornecedorInput[]
@@ -81968,6 +85294,20 @@ export namespace Prisma {
     update?: HistoricoPrecoUpdateWithWhereUniqueWithoutFornecedorInput | HistoricoPrecoUpdateWithWhereUniqueWithoutFornecedorInput[]
     updateMany?: HistoricoPrecoUpdateManyWithWhereWithoutFornecedorInput | HistoricoPrecoUpdateManyWithWhereWithoutFornecedorInput[]
     deleteMany?: HistoricoPrecoScalarWhereInput | HistoricoPrecoScalarWhereInput[]
+  }
+
+  export type RequisicaoUncheckedUpdateManyWithoutFornecedorNestedInput = {
+    create?: XOR<RequisicaoCreateWithoutFornecedorInput, RequisicaoUncheckedCreateWithoutFornecedorInput> | RequisicaoCreateWithoutFornecedorInput[] | RequisicaoUncheckedCreateWithoutFornecedorInput[]
+    connectOrCreate?: RequisicaoCreateOrConnectWithoutFornecedorInput | RequisicaoCreateOrConnectWithoutFornecedorInput[]
+    upsert?: RequisicaoUpsertWithWhereUniqueWithoutFornecedorInput | RequisicaoUpsertWithWhereUniqueWithoutFornecedorInput[]
+    createMany?: RequisicaoCreateManyFornecedorInputEnvelope
+    set?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    disconnect?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    delete?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    connect?: RequisicaoWhereUniqueInput | RequisicaoWhereUniqueInput[]
+    update?: RequisicaoUpdateWithWhereUniqueWithoutFornecedorInput | RequisicaoUpdateWithWhereUniqueWithoutFornecedorInput[]
+    updateMany?: RequisicaoUpdateManyWithWhereWithoutFornecedorInput | RequisicaoUpdateManyWithWhereWithoutFornecedorInput[]
+    deleteMany?: RequisicaoScalarWhereInput | RequisicaoScalarWhereInput[]
   }
 
   export type ProdutoCreateNestedOneWithoutFornecedoresInput = {
@@ -82218,6 +85558,13 @@ export namespace Prisma {
     connect?: InventarioItemWhereUniqueInput | InventarioItemWhereUniqueInput[]
   }
 
+  export type RequisicaoItemCreateNestedManyWithoutLoteInput = {
+    create?: XOR<RequisicaoItemCreateWithoutLoteInput, RequisicaoItemUncheckedCreateWithoutLoteInput> | RequisicaoItemCreateWithoutLoteInput[] | RequisicaoItemUncheckedCreateWithoutLoteInput[]
+    connectOrCreate?: RequisicaoItemCreateOrConnectWithoutLoteInput | RequisicaoItemCreateOrConnectWithoutLoteInput[]
+    createMany?: RequisicaoItemCreateManyLoteInputEnvelope
+    connect?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+  }
+
   export type EstoqueMovimentoUncheckedCreateNestedManyWithoutLoteInput = {
     create?: XOR<EstoqueMovimentoCreateWithoutLoteInput, EstoqueMovimentoUncheckedCreateWithoutLoteInput> | EstoqueMovimentoCreateWithoutLoteInput[] | EstoqueMovimentoUncheckedCreateWithoutLoteInput[]
     connectOrCreate?: EstoqueMovimentoCreateOrConnectWithoutLoteInput | EstoqueMovimentoCreateOrConnectWithoutLoteInput[]
@@ -82286,6 +85633,13 @@ export namespace Prisma {
     connectOrCreate?: InventarioItemCreateOrConnectWithoutLoteInput | InventarioItemCreateOrConnectWithoutLoteInput[]
     createMany?: InventarioItemCreateManyLoteInputEnvelope
     connect?: InventarioItemWhereUniqueInput | InventarioItemWhereUniqueInput[]
+  }
+
+  export type RequisicaoItemUncheckedCreateNestedManyWithoutLoteInput = {
+    create?: XOR<RequisicaoItemCreateWithoutLoteInput, RequisicaoItemUncheckedCreateWithoutLoteInput> | RequisicaoItemCreateWithoutLoteInput[] | RequisicaoItemUncheckedCreateWithoutLoteInput[]
+    connectOrCreate?: RequisicaoItemCreateOrConnectWithoutLoteInput | RequisicaoItemCreateOrConnectWithoutLoteInput[]
+    createMany?: RequisicaoItemCreateManyLoteInputEnvelope
+    connect?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
   }
 
   export type EnumEstadoSanitarioLoteFieldUpdateOperationsInput = {
@@ -82454,6 +85808,20 @@ export namespace Prisma {
     deleteMany?: InventarioItemScalarWhereInput | InventarioItemScalarWhereInput[]
   }
 
+  export type RequisicaoItemUpdateManyWithoutLoteNestedInput = {
+    create?: XOR<RequisicaoItemCreateWithoutLoteInput, RequisicaoItemUncheckedCreateWithoutLoteInput> | RequisicaoItemCreateWithoutLoteInput[] | RequisicaoItemUncheckedCreateWithoutLoteInput[]
+    connectOrCreate?: RequisicaoItemCreateOrConnectWithoutLoteInput | RequisicaoItemCreateOrConnectWithoutLoteInput[]
+    upsert?: RequisicaoItemUpsertWithWhereUniqueWithoutLoteInput | RequisicaoItemUpsertWithWhereUniqueWithoutLoteInput[]
+    createMany?: RequisicaoItemCreateManyLoteInputEnvelope
+    set?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    disconnect?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    delete?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    connect?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    update?: RequisicaoItemUpdateWithWhereUniqueWithoutLoteInput | RequisicaoItemUpdateWithWhereUniqueWithoutLoteInput[]
+    updateMany?: RequisicaoItemUpdateManyWithWhereWithoutLoteInput | RequisicaoItemUpdateManyWithWhereWithoutLoteInput[]
+    deleteMany?: RequisicaoItemScalarWhereInput | RequisicaoItemScalarWhereInput[]
+  }
+
   export type EstoqueMovimentoUncheckedUpdateManyWithoutLoteNestedInput = {
     create?: XOR<EstoqueMovimentoCreateWithoutLoteInput, EstoqueMovimentoUncheckedCreateWithoutLoteInput> | EstoqueMovimentoCreateWithoutLoteInput[] | EstoqueMovimentoUncheckedCreateWithoutLoteInput[]
     connectOrCreate?: EstoqueMovimentoCreateOrConnectWithoutLoteInput | EstoqueMovimentoCreateOrConnectWithoutLoteInput[]
@@ -82592,6 +85960,20 @@ export namespace Prisma {
     update?: InventarioItemUpdateWithWhereUniqueWithoutLoteInput | InventarioItemUpdateWithWhereUniqueWithoutLoteInput[]
     updateMany?: InventarioItemUpdateManyWithWhereWithoutLoteInput | InventarioItemUpdateManyWithWhereWithoutLoteInput[]
     deleteMany?: InventarioItemScalarWhereInput | InventarioItemScalarWhereInput[]
+  }
+
+  export type RequisicaoItemUncheckedUpdateManyWithoutLoteNestedInput = {
+    create?: XOR<RequisicaoItemCreateWithoutLoteInput, RequisicaoItemUncheckedCreateWithoutLoteInput> | RequisicaoItemCreateWithoutLoteInput[] | RequisicaoItemUncheckedCreateWithoutLoteInput[]
+    connectOrCreate?: RequisicaoItemCreateOrConnectWithoutLoteInput | RequisicaoItemCreateOrConnectWithoutLoteInput[]
+    upsert?: RequisicaoItemUpsertWithWhereUniqueWithoutLoteInput | RequisicaoItemUpsertWithWhereUniqueWithoutLoteInput[]
+    createMany?: RequisicaoItemCreateManyLoteInputEnvelope
+    set?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    disconnect?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    delete?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    connect?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    update?: RequisicaoItemUpdateWithWhereUniqueWithoutLoteInput | RequisicaoItemUpdateWithWhereUniqueWithoutLoteInput[]
+    updateMany?: RequisicaoItemUpdateManyWithWhereWithoutLoteInput | RequisicaoItemUpdateManyWithWhereWithoutLoteInput[]
+    deleteMany?: RequisicaoItemScalarWhereInput | RequisicaoItemScalarWhereInput[]
   }
 
   export type LoteCreateNestedOneWithoutMovimentosSanitariosInput = {
@@ -84240,6 +87622,146 @@ export namespace Prisma {
     update?: XOR<XOR<LoteUpdateToOneWithWhereWithoutInventarioItensInput, LoteUpdateWithoutInventarioItensInput>, LoteUncheckedUpdateWithoutInventarioItensInput>
   }
 
+  export type UserCreateNestedOneWithoutRequisicoesCriadasInput = {
+    create?: XOR<UserCreateWithoutRequisicoesCriadasInput, UserUncheckedCreateWithoutRequisicoesCriadasInput>
+    connectOrCreate?: UserCreateOrConnectWithoutRequisicoesCriadasInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type UserCreateNestedOneWithoutRequisicoesConfirmadasInput = {
+    create?: XOR<UserCreateWithoutRequisicoesConfirmadasInput, UserUncheckedCreateWithoutRequisicoesConfirmadasInput>
+    connectOrCreate?: UserCreateOrConnectWithoutRequisicoesConfirmadasInput
+    connect?: UserWhereUniqueInput
+  }
+
+  export type FornecedorCreateNestedOneWithoutRequisicoesInput = {
+    create?: XOR<FornecedorCreateWithoutRequisicoesInput, FornecedorUncheckedCreateWithoutRequisicoesInput>
+    connectOrCreate?: FornecedorCreateOrConnectWithoutRequisicoesInput
+    connect?: FornecedorWhereUniqueInput
+  }
+
+  export type RequisicaoItemCreateNestedManyWithoutRequisicaoInput = {
+    create?: XOR<RequisicaoItemCreateWithoutRequisicaoInput, RequisicaoItemUncheckedCreateWithoutRequisicaoInput> | RequisicaoItemCreateWithoutRequisicaoInput[] | RequisicaoItemUncheckedCreateWithoutRequisicaoInput[]
+    connectOrCreate?: RequisicaoItemCreateOrConnectWithoutRequisicaoInput | RequisicaoItemCreateOrConnectWithoutRequisicaoInput[]
+    createMany?: RequisicaoItemCreateManyRequisicaoInputEnvelope
+    connect?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+  }
+
+  export type RequisicaoItemUncheckedCreateNestedManyWithoutRequisicaoInput = {
+    create?: XOR<RequisicaoItemCreateWithoutRequisicaoInput, RequisicaoItemUncheckedCreateWithoutRequisicaoInput> | RequisicaoItemCreateWithoutRequisicaoInput[] | RequisicaoItemUncheckedCreateWithoutRequisicaoInput[]
+    connectOrCreate?: RequisicaoItemCreateOrConnectWithoutRequisicaoInput | RequisicaoItemCreateOrConnectWithoutRequisicaoInput[]
+    createMany?: RequisicaoItemCreateManyRequisicaoInputEnvelope
+    connect?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+  }
+
+  export type EnumTipoRequisicaoFieldUpdateOperationsInput = {
+    set?: $Enums.TipoRequisicao
+  }
+
+  export type EnumStatusRequisicaoFieldUpdateOperationsInput = {
+    set?: $Enums.StatusRequisicao
+  }
+
+  export type UserUpdateOneRequiredWithoutRequisicoesCriadasNestedInput = {
+    create?: XOR<UserCreateWithoutRequisicoesCriadasInput, UserUncheckedCreateWithoutRequisicoesCriadasInput>
+    connectOrCreate?: UserCreateOrConnectWithoutRequisicoesCriadasInput
+    upsert?: UserUpsertWithoutRequisicoesCriadasInput
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutRequisicoesCriadasInput, UserUpdateWithoutRequisicoesCriadasInput>, UserUncheckedUpdateWithoutRequisicoesCriadasInput>
+  }
+
+  export type UserUpdateOneWithoutRequisicoesConfirmadasNestedInput = {
+    create?: XOR<UserCreateWithoutRequisicoesConfirmadasInput, UserUncheckedCreateWithoutRequisicoesConfirmadasInput>
+    connectOrCreate?: UserCreateOrConnectWithoutRequisicoesConfirmadasInput
+    upsert?: UserUpsertWithoutRequisicoesConfirmadasInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutRequisicoesConfirmadasInput, UserUpdateWithoutRequisicoesConfirmadasInput>, UserUncheckedUpdateWithoutRequisicoesConfirmadasInput>
+  }
+
+  export type FornecedorUpdateOneWithoutRequisicoesNestedInput = {
+    create?: XOR<FornecedorCreateWithoutRequisicoesInput, FornecedorUncheckedCreateWithoutRequisicoesInput>
+    connectOrCreate?: FornecedorCreateOrConnectWithoutRequisicoesInput
+    upsert?: FornecedorUpsertWithoutRequisicoesInput
+    disconnect?: FornecedorWhereInput | boolean
+    delete?: FornecedorWhereInput | boolean
+    connect?: FornecedorWhereUniqueInput
+    update?: XOR<XOR<FornecedorUpdateToOneWithWhereWithoutRequisicoesInput, FornecedorUpdateWithoutRequisicoesInput>, FornecedorUncheckedUpdateWithoutRequisicoesInput>
+  }
+
+  export type RequisicaoItemUpdateManyWithoutRequisicaoNestedInput = {
+    create?: XOR<RequisicaoItemCreateWithoutRequisicaoInput, RequisicaoItemUncheckedCreateWithoutRequisicaoInput> | RequisicaoItemCreateWithoutRequisicaoInput[] | RequisicaoItemUncheckedCreateWithoutRequisicaoInput[]
+    connectOrCreate?: RequisicaoItemCreateOrConnectWithoutRequisicaoInput | RequisicaoItemCreateOrConnectWithoutRequisicaoInput[]
+    upsert?: RequisicaoItemUpsertWithWhereUniqueWithoutRequisicaoInput | RequisicaoItemUpsertWithWhereUniqueWithoutRequisicaoInput[]
+    createMany?: RequisicaoItemCreateManyRequisicaoInputEnvelope
+    set?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    disconnect?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    delete?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    connect?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    update?: RequisicaoItemUpdateWithWhereUniqueWithoutRequisicaoInput | RequisicaoItemUpdateWithWhereUniqueWithoutRequisicaoInput[]
+    updateMany?: RequisicaoItemUpdateManyWithWhereWithoutRequisicaoInput | RequisicaoItemUpdateManyWithWhereWithoutRequisicaoInput[]
+    deleteMany?: RequisicaoItemScalarWhereInput | RequisicaoItemScalarWhereInput[]
+  }
+
+  export type RequisicaoItemUncheckedUpdateManyWithoutRequisicaoNestedInput = {
+    create?: XOR<RequisicaoItemCreateWithoutRequisicaoInput, RequisicaoItemUncheckedCreateWithoutRequisicaoInput> | RequisicaoItemCreateWithoutRequisicaoInput[] | RequisicaoItemUncheckedCreateWithoutRequisicaoInput[]
+    connectOrCreate?: RequisicaoItemCreateOrConnectWithoutRequisicaoInput | RequisicaoItemCreateOrConnectWithoutRequisicaoInput[]
+    upsert?: RequisicaoItemUpsertWithWhereUniqueWithoutRequisicaoInput | RequisicaoItemUpsertWithWhereUniqueWithoutRequisicaoInput[]
+    createMany?: RequisicaoItemCreateManyRequisicaoInputEnvelope
+    set?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    disconnect?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    delete?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    connect?: RequisicaoItemWhereUniqueInput | RequisicaoItemWhereUniqueInput[]
+    update?: RequisicaoItemUpdateWithWhereUniqueWithoutRequisicaoInput | RequisicaoItemUpdateWithWhereUniqueWithoutRequisicaoInput[]
+    updateMany?: RequisicaoItemUpdateManyWithWhereWithoutRequisicaoInput | RequisicaoItemUpdateManyWithWhereWithoutRequisicaoInput[]
+    deleteMany?: RequisicaoItemScalarWhereInput | RequisicaoItemScalarWhereInput[]
+  }
+
+  export type RequisicaoCreateNestedOneWithoutItensInput = {
+    create?: XOR<RequisicaoCreateWithoutItensInput, RequisicaoUncheckedCreateWithoutItensInput>
+    connectOrCreate?: RequisicaoCreateOrConnectWithoutItensInput
+    connect?: RequisicaoWhereUniqueInput
+  }
+
+  export type ProdutoCreateNestedOneWithoutRequisicaoItensInput = {
+    create?: XOR<ProdutoCreateWithoutRequisicaoItensInput, ProdutoUncheckedCreateWithoutRequisicaoItensInput>
+    connectOrCreate?: ProdutoCreateOrConnectWithoutRequisicaoItensInput
+    connect?: ProdutoWhereUniqueInput
+  }
+
+  export type LoteCreateNestedOneWithoutRequisicaoItensInput = {
+    create?: XOR<LoteCreateWithoutRequisicaoItensInput, LoteUncheckedCreateWithoutRequisicaoItensInput>
+    connectOrCreate?: LoteCreateOrConnectWithoutRequisicaoItensInput
+    connect?: LoteWhereUniqueInput
+  }
+
+  export type RequisicaoUpdateOneRequiredWithoutItensNestedInput = {
+    create?: XOR<RequisicaoCreateWithoutItensInput, RequisicaoUncheckedCreateWithoutItensInput>
+    connectOrCreate?: RequisicaoCreateOrConnectWithoutItensInput
+    upsert?: RequisicaoUpsertWithoutItensInput
+    connect?: RequisicaoWhereUniqueInput
+    update?: XOR<XOR<RequisicaoUpdateToOneWithWhereWithoutItensInput, RequisicaoUpdateWithoutItensInput>, RequisicaoUncheckedUpdateWithoutItensInput>
+  }
+
+  export type ProdutoUpdateOneRequiredWithoutRequisicaoItensNestedInput = {
+    create?: XOR<ProdutoCreateWithoutRequisicaoItensInput, ProdutoUncheckedCreateWithoutRequisicaoItensInput>
+    connectOrCreate?: ProdutoCreateOrConnectWithoutRequisicaoItensInput
+    upsert?: ProdutoUpsertWithoutRequisicaoItensInput
+    connect?: ProdutoWhereUniqueInput
+    update?: XOR<XOR<ProdutoUpdateToOneWithWhereWithoutRequisicaoItensInput, ProdutoUpdateWithoutRequisicaoItensInput>, ProdutoUncheckedUpdateWithoutRequisicaoItensInput>
+  }
+
+  export type LoteUpdateOneWithoutRequisicaoItensNestedInput = {
+    create?: XOR<LoteCreateWithoutRequisicaoItensInput, LoteUncheckedCreateWithoutRequisicaoItensInput>
+    connectOrCreate?: LoteCreateOrConnectWithoutRequisicaoItensInput
+    upsert?: LoteUpsertWithoutRequisicaoItensInput
+    disconnect?: LoteWhereInput | boolean
+    delete?: LoteWhereInput | boolean
+    connect?: LoteWhereUniqueInput
+    update?: XOR<XOR<LoteUpdateToOneWithWhereWithoutRequisicaoItensInput, LoteUpdateWithoutRequisicaoItensInput>, LoteUncheckedUpdateWithoutRequisicaoItensInput>
+  }
+
   export type CaixaCreateNestedOneWithoutCashBalanceInput = {
     create?: XOR<CaixaCreateWithoutCashBalanceInput, CaixaUncheckedCreateWithoutCashBalanceInput>
     connectOrCreate?: CaixaCreateOrConnectWithoutCashBalanceInput
@@ -85828,6 +89350,40 @@ export namespace Prisma {
     _max?: NestedEnumStatusInventarioFilter<$PrismaModel>
   }
 
+  export type NestedEnumTipoRequisicaoFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoRequisicao | EnumTipoRequisicaoFieldRefInput<$PrismaModel>
+    in?: $Enums.TipoRequisicao[]
+    notIn?: $Enums.TipoRequisicao[]
+    not?: NestedEnumTipoRequisicaoFilter<$PrismaModel> | $Enums.TipoRequisicao
+  }
+
+  export type NestedEnumStatusRequisicaoFilter<$PrismaModel = never> = {
+    equals?: $Enums.StatusRequisicao | EnumStatusRequisicaoFieldRefInput<$PrismaModel>
+    in?: $Enums.StatusRequisicao[]
+    notIn?: $Enums.StatusRequisicao[]
+    not?: NestedEnumStatusRequisicaoFilter<$PrismaModel> | $Enums.StatusRequisicao
+  }
+
+  export type NestedEnumTipoRequisicaoWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.TipoRequisicao | EnumTipoRequisicaoFieldRefInput<$PrismaModel>
+    in?: $Enums.TipoRequisicao[]
+    notIn?: $Enums.TipoRequisicao[]
+    not?: NestedEnumTipoRequisicaoWithAggregatesFilter<$PrismaModel> | $Enums.TipoRequisicao
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumTipoRequisicaoFilter<$PrismaModel>
+    _max?: NestedEnumTipoRequisicaoFilter<$PrismaModel>
+  }
+
+  export type NestedEnumStatusRequisicaoWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.StatusRequisicao | EnumStatusRequisicaoFieldRefInput<$PrismaModel>
+    in?: $Enums.StatusRequisicao[]
+    notIn?: $Enums.StatusRequisicao[]
+    not?: NestedEnumStatusRequisicaoWithAggregatesFilter<$PrismaModel> | $Enums.StatusRequisicao
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumStatusRequisicaoFilter<$PrismaModel>
+    _max?: NestedEnumStatusRequisicaoFilter<$PrismaModel>
+  }
+
   export type NestedEnumTipoRelatorioSanitarioFilter<$PrismaModel = never> = {
     equals?: $Enums.TipoRelatorioSanitario | EnumTipoRelatorioSanitarioFieldRefInput<$PrismaModel>
     in?: $Enums.TipoRelatorioSanitario[]
@@ -87137,6 +90693,94 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type RequisicaoCreateWithoutUserInput = {
+    id?: bigint | number
+    numeroDocumento: string
+    origem?: string | null
+    destino?: string | null
+    tipo?: $Enums.TipoRequisicao
+    status?: $Enums.StatusRequisicao
+    observacao?: string | null
+    total?: Decimal | DecimalJsLike | number | string | null
+    confirmedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    confirmedBy?: UserCreateNestedOneWithoutRequisicoesConfirmadasInput
+    fornecedor?: FornecedorCreateNestedOneWithoutRequisicoesInput
+    itens?: RequisicaoItemCreateNestedManyWithoutRequisicaoInput
+  }
+
+  export type RequisicaoUncheckedCreateWithoutUserInput = {
+    id?: bigint | number
+    numeroDocumento: string
+    origem?: string | null
+    destino?: string | null
+    tipo?: $Enums.TipoRequisicao
+    status?: $Enums.StatusRequisicao
+    observacao?: string | null
+    fornecedorId?: bigint | number | null
+    total?: Decimal | DecimalJsLike | number | string | null
+    confirmedAt?: Date | string | null
+    confirmedById?: bigint | number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    itens?: RequisicaoItemUncheckedCreateNestedManyWithoutRequisicaoInput
+  }
+
+  export type RequisicaoCreateOrConnectWithoutUserInput = {
+    where: RequisicaoWhereUniqueInput
+    create: XOR<RequisicaoCreateWithoutUserInput, RequisicaoUncheckedCreateWithoutUserInput>
+  }
+
+  export type RequisicaoCreateManyUserInputEnvelope = {
+    data: RequisicaoCreateManyUserInput | RequisicaoCreateManyUserInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type RequisicaoCreateWithoutConfirmedByInput = {
+    id?: bigint | number
+    numeroDocumento: string
+    origem?: string | null
+    destino?: string | null
+    tipo?: $Enums.TipoRequisicao
+    status?: $Enums.StatusRequisicao
+    observacao?: string | null
+    total?: Decimal | DecimalJsLike | number | string | null
+    confirmedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutRequisicoesCriadasInput
+    fornecedor?: FornecedorCreateNestedOneWithoutRequisicoesInput
+    itens?: RequisicaoItemCreateNestedManyWithoutRequisicaoInput
+  }
+
+  export type RequisicaoUncheckedCreateWithoutConfirmedByInput = {
+    id?: bigint | number
+    numeroDocumento: string
+    origem?: string | null
+    destino?: string | null
+    tipo?: $Enums.TipoRequisicao
+    status?: $Enums.StatusRequisicao
+    observacao?: string | null
+    fornecedorId?: bigint | number | null
+    total?: Decimal | DecimalJsLike | number | string | null
+    userId: bigint | number
+    confirmedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    itens?: RequisicaoItemUncheckedCreateNestedManyWithoutRequisicaoInput
+  }
+
+  export type RequisicaoCreateOrConnectWithoutConfirmedByInput = {
+    where: RequisicaoWhereUniqueInput
+    create: XOR<RequisicaoCreateWithoutConfirmedByInput, RequisicaoUncheckedCreateWithoutConfirmedByInput>
+  }
+
+  export type RequisicaoCreateManyConfirmedByInputEnvelope = {
+    data: RequisicaoCreateManyConfirmedByInput | RequisicaoCreateManyConfirmedByInput[]
+    skipDuplicates?: boolean
+  }
+
   export type CaixaMovimentoUpsertWithWhereUniqueWithoutUserInput = {
     where: CaixaMovimentoWhereUniqueInput
     update: XOR<CaixaMovimentoUpdateWithoutUserInput, CaixaMovimentoUncheckedUpdateWithoutUserInput>
@@ -87955,6 +91599,58 @@ export namespace Prisma {
     data: XOR<InventarioUpdateManyMutationInput, InventarioUncheckedUpdateManyWithoutReconciliadoPorInput>
   }
 
+  export type RequisicaoUpsertWithWhereUniqueWithoutUserInput = {
+    where: RequisicaoWhereUniqueInput
+    update: XOR<RequisicaoUpdateWithoutUserInput, RequisicaoUncheckedUpdateWithoutUserInput>
+    create: XOR<RequisicaoCreateWithoutUserInput, RequisicaoUncheckedCreateWithoutUserInput>
+  }
+
+  export type RequisicaoUpdateWithWhereUniqueWithoutUserInput = {
+    where: RequisicaoWhereUniqueInput
+    data: XOR<RequisicaoUpdateWithoutUserInput, RequisicaoUncheckedUpdateWithoutUserInput>
+  }
+
+  export type RequisicaoUpdateManyWithWhereWithoutUserInput = {
+    where: RequisicaoScalarWhereInput
+    data: XOR<RequisicaoUpdateManyMutationInput, RequisicaoUncheckedUpdateManyWithoutUserInput>
+  }
+
+  export type RequisicaoScalarWhereInput = {
+    AND?: RequisicaoScalarWhereInput | RequisicaoScalarWhereInput[]
+    OR?: RequisicaoScalarWhereInput[]
+    NOT?: RequisicaoScalarWhereInput | RequisicaoScalarWhereInput[]
+    id?: BigIntFilter<"Requisicao"> | bigint | number
+    numeroDocumento?: StringFilter<"Requisicao"> | string
+    origem?: StringNullableFilter<"Requisicao"> | string | null
+    destino?: StringNullableFilter<"Requisicao"> | string | null
+    tipo?: EnumTipoRequisicaoFilter<"Requisicao"> | $Enums.TipoRequisicao
+    status?: EnumStatusRequisicaoFilter<"Requisicao"> | $Enums.StatusRequisicao
+    observacao?: StringNullableFilter<"Requisicao"> | string | null
+    fornecedorId?: BigIntNullableFilter<"Requisicao"> | bigint | number | null
+    total?: DecimalNullableFilter<"Requisicao"> | Decimal | DecimalJsLike | number | string | null
+    userId?: BigIntFilter<"Requisicao"> | bigint | number
+    confirmedAt?: DateTimeNullableFilter<"Requisicao"> | Date | string | null
+    confirmedById?: BigIntNullableFilter<"Requisicao"> | bigint | number | null
+    createdAt?: DateTimeFilter<"Requisicao"> | Date | string
+    updatedAt?: DateTimeFilter<"Requisicao"> | Date | string
+  }
+
+  export type RequisicaoUpsertWithWhereUniqueWithoutConfirmedByInput = {
+    where: RequisicaoWhereUniqueInput
+    update: XOR<RequisicaoUpdateWithoutConfirmedByInput, RequisicaoUncheckedUpdateWithoutConfirmedByInput>
+    create: XOR<RequisicaoCreateWithoutConfirmedByInput, RequisicaoUncheckedCreateWithoutConfirmedByInput>
+  }
+
+  export type RequisicaoUpdateWithWhereUniqueWithoutConfirmedByInput = {
+    where: RequisicaoWhereUniqueInput
+    data: XOR<RequisicaoUpdateWithoutConfirmedByInput, RequisicaoUncheckedUpdateWithoutConfirmedByInput>
+  }
+
+  export type RequisicaoUpdateManyWithWhereWithoutConfirmedByInput = {
+    where: RequisicaoScalarWhereInput
+    data: XOR<RequisicaoUpdateManyMutationInput, RequisicaoUncheckedUpdateManyWithoutConfirmedByInput>
+  }
+
   export type CaixaCreateWithoutTerminalInput = {
     id?: bigint | number
     saldoAtual?: Decimal | DecimalJsLike | number | string
@@ -88595,6 +92291,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutCaixaMovimentosInput = {
@@ -88635,6 +92333,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutCaixaMovimentosInput = {
@@ -88811,6 +92511,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCaixaMovimentosInput = {
@@ -88851,6 +92553,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type FaturaUpsertWithoutCaixaMovimentosInput = {
@@ -89611,6 +93315,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutLoteInput
   }
 
   export type LoteUncheckedCreateWithoutProdutoInput = {
@@ -89641,6 +93346,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemUncheckedCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutLoteInput
   }
 
   export type LoteCreateOrConnectWithoutProdutoInput = {
@@ -90162,6 +93868,40 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type RequisicaoItemCreateWithoutProdutoInput = {
+    id?: bigint | number
+    quantidadeSolicitada: Decimal | DecimalJsLike | number | string
+    numeroLote?: string | null
+    dataValidade?: Date | string | null
+    precoCompra?: Decimal | DecimalJsLike | number | string | null
+    precoVenda?: Decimal | DecimalJsLike | number | string | null
+    subtotal?: Decimal | DecimalJsLike | number | string | null
+    requisicao: RequisicaoCreateNestedOneWithoutItensInput
+    lote?: LoteCreateNestedOneWithoutRequisicaoItensInput
+  }
+
+  export type RequisicaoItemUncheckedCreateWithoutProdutoInput = {
+    id?: bigint | number
+    requisicaoId: bigint | number
+    loteId?: bigint | number | null
+    quantidadeSolicitada: Decimal | DecimalJsLike | number | string
+    numeroLote?: string | null
+    dataValidade?: Date | string | null
+    precoCompra?: Decimal | DecimalJsLike | number | string | null
+    precoVenda?: Decimal | DecimalJsLike | number | string | null
+    subtotal?: Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type RequisicaoItemCreateOrConnectWithoutProdutoInput = {
+    where: RequisicaoItemWhereUniqueInput
+    create: XOR<RequisicaoItemCreateWithoutProdutoInput, RequisicaoItemUncheckedCreateWithoutProdutoInput>
+  }
+
+  export type RequisicaoItemCreateManyProdutoInputEnvelope = {
+    data: RequisicaoItemCreateManyProdutoInput | RequisicaoItemCreateManyProdutoInput[]
+    skipDuplicates?: boolean
+  }
+
   export type TaxRuleCreateWithoutProdutosInput = {
     id?: bigint | number
     codigo: string
@@ -90657,6 +94397,38 @@ export namespace Prisma {
     divergencia?: DecimalFilter<"InventarioItem"> | Decimal | DecimalJsLike | number | string
   }
 
+  export type RequisicaoItemUpsertWithWhereUniqueWithoutProdutoInput = {
+    where: RequisicaoItemWhereUniqueInput
+    update: XOR<RequisicaoItemUpdateWithoutProdutoInput, RequisicaoItemUncheckedUpdateWithoutProdutoInput>
+    create: XOR<RequisicaoItemCreateWithoutProdutoInput, RequisicaoItemUncheckedCreateWithoutProdutoInput>
+  }
+
+  export type RequisicaoItemUpdateWithWhereUniqueWithoutProdutoInput = {
+    where: RequisicaoItemWhereUniqueInput
+    data: XOR<RequisicaoItemUpdateWithoutProdutoInput, RequisicaoItemUncheckedUpdateWithoutProdutoInput>
+  }
+
+  export type RequisicaoItemUpdateManyWithWhereWithoutProdutoInput = {
+    where: RequisicaoItemScalarWhereInput
+    data: XOR<RequisicaoItemUpdateManyMutationInput, RequisicaoItemUncheckedUpdateManyWithoutProdutoInput>
+  }
+
+  export type RequisicaoItemScalarWhereInput = {
+    AND?: RequisicaoItemScalarWhereInput | RequisicaoItemScalarWhereInput[]
+    OR?: RequisicaoItemScalarWhereInput[]
+    NOT?: RequisicaoItemScalarWhereInput | RequisicaoItemScalarWhereInput[]
+    id?: BigIntFilter<"RequisicaoItem"> | bigint | number
+    requisicaoId?: BigIntFilter<"RequisicaoItem"> | bigint | number
+    produtoId?: BigIntFilter<"RequisicaoItem"> | bigint | number
+    loteId?: BigIntNullableFilter<"RequisicaoItem"> | bigint | number | null
+    quantidadeSolicitada?: DecimalFilter<"RequisicaoItem"> | Decimal | DecimalJsLike | number | string
+    numeroLote?: StringNullableFilter<"RequisicaoItem"> | string | null
+    dataValidade?: DateTimeNullableFilter<"RequisicaoItem"> | Date | string | null
+    precoCompra?: DecimalNullableFilter<"RequisicaoItem"> | Decimal | DecimalJsLike | number | string | null
+    precoVenda?: DecimalNullableFilter<"RequisicaoItem"> | Decimal | DecimalJsLike | number | string | null
+    subtotal?: DecimalNullableFilter<"RequisicaoItem"> | Decimal | DecimalJsLike | number | string | null
+  }
+
   export type TaxRuleUpsertWithoutProdutosInput = {
     update: XOR<TaxRuleUpdateWithoutProdutosInput, TaxRuleUncheckedUpdateWithoutProdutosInput>
     create: XOR<TaxRuleCreateWithoutProdutosInput, TaxRuleUncheckedCreateWithoutProdutosInput>
@@ -90710,7 +94482,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -90732,6 +94503,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaCreateNestedManyWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutProdutoInput
     taxRule?: TaxRuleCreateNestedOneWithoutProdutosInput
   }
 
@@ -90745,7 +94517,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     taxRuleId?: bigint | number | null
     version?: number
@@ -90768,6 +94539,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaUncheckedCreateNestedManyWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoCreateOrConnectWithoutRegulacaoInput = {
@@ -90796,7 +94568,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -90818,6 +94589,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaUpdateManyWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutProdutoNestedInput
     taxRule?: TaxRuleUpdateOneWithoutProdutosNestedInput
   }
 
@@ -90831,7 +94603,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     version?: IntFieldUpdateOperationsInput | number
@@ -90854,6 +94625,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaUncheckedUpdateManyWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput
   }
 
   export type ProdutoCreateWithoutClassificacaoEventosInput = {
@@ -90866,7 +94638,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -90888,6 +94659,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaCreateNestedManyWithoutProdutoInput
     regulacao?: ProdutoRegulacaoCreateNestedOneWithoutProdutoInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutProdutoInput
     taxRule?: TaxRuleCreateNestedOneWithoutProdutosInput
   }
 
@@ -90901,7 +94673,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     taxRuleId?: bigint | number | null
     version?: number
@@ -90924,6 +94695,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaUncheckedCreateNestedManyWithoutProdutoInput
     regulacao?: ProdutoRegulacaoUncheckedCreateNestedOneWithoutProdutoInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoCreateOrConnectWithoutClassificacaoEventosInput = {
@@ -90952,7 +94724,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -90974,6 +94745,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaUpdateManyWithoutProdutoNestedInput
     regulacao?: ProdutoRegulacaoUpdateOneWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutProdutoNestedInput
     taxRule?: TaxRuleUpdateOneWithoutProdutosNestedInput
   }
 
@@ -90987,7 +94759,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     version?: IntFieldUpdateOperationsInput | number
@@ -91010,6 +94781,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaUncheckedUpdateManyWithoutProdutoNestedInput
     regulacao?: ProdutoRegulacaoUncheckedUpdateOneWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput
   }
 
   export type FaturaItemCreateWithoutServicoInput = {
@@ -91260,6 +95032,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutLoteInput
   }
 
   export type LoteUncheckedCreateWithoutFornecedorInput = {
@@ -91290,6 +95063,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemUncheckedCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutLoteInput
   }
 
   export type LoteCreateOrConnectWithoutFornecedorInput = {
@@ -91365,6 +95139,50 @@ export namespace Prisma {
 
   export type HistoricoPrecoCreateManyFornecedorInputEnvelope = {
     data: HistoricoPrecoCreateManyFornecedorInput | HistoricoPrecoCreateManyFornecedorInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type RequisicaoCreateWithoutFornecedorInput = {
+    id?: bigint | number
+    numeroDocumento: string
+    origem?: string | null
+    destino?: string | null
+    tipo?: $Enums.TipoRequisicao
+    status?: $Enums.StatusRequisicao
+    observacao?: string | null
+    total?: Decimal | DecimalJsLike | number | string | null
+    confirmedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutRequisicoesCriadasInput
+    confirmedBy?: UserCreateNestedOneWithoutRequisicoesConfirmadasInput
+    itens?: RequisicaoItemCreateNestedManyWithoutRequisicaoInput
+  }
+
+  export type RequisicaoUncheckedCreateWithoutFornecedorInput = {
+    id?: bigint | number
+    numeroDocumento: string
+    origem?: string | null
+    destino?: string | null
+    tipo?: $Enums.TipoRequisicao
+    status?: $Enums.StatusRequisicao
+    observacao?: string | null
+    total?: Decimal | DecimalJsLike | number | string | null
+    userId: bigint | number
+    confirmedAt?: Date | string | null
+    confirmedById?: bigint | number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    itens?: RequisicaoItemUncheckedCreateNestedManyWithoutRequisicaoInput
+  }
+
+  export type RequisicaoCreateOrConnectWithoutFornecedorInput = {
+    where: RequisicaoWhereUniqueInput
+    create: XOR<RequisicaoCreateWithoutFornecedorInput, RequisicaoUncheckedCreateWithoutFornecedorInput>
+  }
+
+  export type RequisicaoCreateManyFornecedorInputEnvelope = {
+    data: RequisicaoCreateManyFornecedorInput | RequisicaoCreateManyFornecedorInput[]
     skipDuplicates?: boolean
   }
 
@@ -91463,6 +95281,22 @@ export namespace Prisma {
     data: XOR<HistoricoPrecoUpdateManyMutationInput, HistoricoPrecoUncheckedUpdateManyWithoutFornecedorInput>
   }
 
+  export type RequisicaoUpsertWithWhereUniqueWithoutFornecedorInput = {
+    where: RequisicaoWhereUniqueInput
+    update: XOR<RequisicaoUpdateWithoutFornecedorInput, RequisicaoUncheckedUpdateWithoutFornecedorInput>
+    create: XOR<RequisicaoCreateWithoutFornecedorInput, RequisicaoUncheckedCreateWithoutFornecedorInput>
+  }
+
+  export type RequisicaoUpdateWithWhereUniqueWithoutFornecedorInput = {
+    where: RequisicaoWhereUniqueInput
+    data: XOR<RequisicaoUpdateWithoutFornecedorInput, RequisicaoUncheckedUpdateWithoutFornecedorInput>
+  }
+
+  export type RequisicaoUpdateManyWithWhereWithoutFornecedorInput = {
+    where: RequisicaoScalarWhereInput
+    data: XOR<RequisicaoUpdateManyMutationInput, RequisicaoUncheckedUpdateManyWithoutFornecedorInput>
+  }
+
   export type ProdutoCreateWithoutFornecedoresInput = {
     id?: bigint | number
     nome: string
@@ -91473,7 +95307,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -91495,6 +95328,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutProdutoInput
     taxRule?: TaxRuleCreateNestedOneWithoutProdutosInput
   }
 
@@ -91508,7 +95342,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     taxRuleId?: bigint | number | null
     version?: number
@@ -91531,6 +95364,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoCreateOrConnectWithoutFornecedoresInput = {
@@ -91560,6 +95394,7 @@ export namespace Prisma {
     lotes?: LoteCreateNestedManyWithoutFornecedorInput
     contasPagar?: ContaPagarCreateNestedManyWithoutFornecedorInput
     historicoPrecos?: HistoricoPrecoCreateNestedManyWithoutFornecedorInput
+    requisicoes?: RequisicaoCreateNestedManyWithoutFornecedorInput
   }
 
   export type FornecedorUncheckedCreateWithoutProdutosInput = {
@@ -91584,6 +95419,7 @@ export namespace Prisma {
     lotes?: LoteUncheckedCreateNestedManyWithoutFornecedorInput
     contasPagar?: ContaPagarUncheckedCreateNestedManyWithoutFornecedorInput
     historicoPrecos?: HistoricoPrecoUncheckedCreateNestedManyWithoutFornecedorInput
+    requisicoes?: RequisicaoUncheckedCreateNestedManyWithoutFornecedorInput
   }
 
   export type FornecedorCreateOrConnectWithoutProdutosInput = {
@@ -91612,7 +95448,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -91634,6 +95469,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutProdutoNestedInput
     taxRule?: TaxRuleUpdateOneWithoutProdutosNestedInput
   }
 
@@ -91647,7 +95483,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     version?: IntFieldUpdateOperationsInput | number
@@ -91670,6 +95505,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput
   }
 
   export type FornecedorUpsertWithoutProdutosInput = {
@@ -91705,6 +95541,7 @@ export namespace Prisma {
     lotes?: LoteUpdateManyWithoutFornecedorNestedInput
     contasPagar?: ContaPagarUpdateManyWithoutFornecedorNestedInput
     historicoPrecos?: HistoricoPrecoUpdateManyWithoutFornecedorNestedInput
+    requisicoes?: RequisicaoUpdateManyWithoutFornecedorNestedInput
   }
 
   export type FornecedorUncheckedUpdateWithoutProdutosInput = {
@@ -91729,6 +95566,7 @@ export namespace Prisma {
     lotes?: LoteUncheckedUpdateManyWithoutFornecedorNestedInput
     contasPagar?: ContaPagarUncheckedUpdateManyWithoutFornecedorNestedInput
     historicoPrecos?: HistoricoPrecoUncheckedUpdateManyWithoutFornecedorNestedInput
+    requisicoes?: RequisicaoUncheckedUpdateManyWithoutFornecedorNestedInput
   }
 
   export type FornecedorCreateWithoutComprasInput = {
@@ -91753,6 +95591,7 @@ export namespace Prisma {
     lotes?: LoteCreateNestedManyWithoutFornecedorInput
     contasPagar?: ContaPagarCreateNestedManyWithoutFornecedorInput
     historicoPrecos?: HistoricoPrecoCreateNestedManyWithoutFornecedorInput
+    requisicoes?: RequisicaoCreateNestedManyWithoutFornecedorInput
   }
 
   export type FornecedorUncheckedCreateWithoutComprasInput = {
@@ -91777,6 +95616,7 @@ export namespace Prisma {
     lotes?: LoteUncheckedCreateNestedManyWithoutFornecedorInput
     contasPagar?: ContaPagarUncheckedCreateNestedManyWithoutFornecedorInput
     historicoPrecos?: HistoricoPrecoUncheckedCreateNestedManyWithoutFornecedorInput
+    requisicoes?: RequisicaoUncheckedCreateNestedManyWithoutFornecedorInput
   }
 
   export type FornecedorCreateOrConnectWithoutComprasInput = {
@@ -91887,6 +95727,7 @@ export namespace Prisma {
     lotes?: LoteUpdateManyWithoutFornecedorNestedInput
     contasPagar?: ContaPagarUpdateManyWithoutFornecedorNestedInput
     historicoPrecos?: HistoricoPrecoUpdateManyWithoutFornecedorNestedInput
+    requisicoes?: RequisicaoUpdateManyWithoutFornecedorNestedInput
   }
 
   export type FornecedorUncheckedUpdateWithoutComprasInput = {
@@ -91911,6 +95752,7 @@ export namespace Prisma {
     lotes?: LoteUncheckedUpdateManyWithoutFornecedorNestedInput
     contasPagar?: ContaPagarUncheckedUpdateManyWithoutFornecedorNestedInput
     historicoPrecos?: HistoricoPrecoUncheckedUpdateManyWithoutFornecedorNestedInput
+    requisicoes?: RequisicaoUncheckedUpdateManyWithoutFornecedorNestedInput
   }
 
   export type CompraItemUpsertWithWhereUniqueWithoutCompraInput = {
@@ -91986,7 +95828,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -92008,6 +95849,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutProdutoInput
     taxRule?: TaxRuleCreateNestedOneWithoutProdutosInput
   }
 
@@ -92021,7 +95863,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     taxRuleId?: bigint | number | null
     version?: number
@@ -92044,6 +95885,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoCreateOrConnectWithoutCompraItensInput = {
@@ -92109,7 +95951,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -92131,6 +95972,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutProdutoNestedInput
     taxRule?: TaxRuleUpdateOneWithoutProdutosNestedInput
   }
 
@@ -92144,7 +95986,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     version?: IntFieldUpdateOperationsInput | number
@@ -92167,6 +96008,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput
   }
 
   export type ProdutoCreateWithoutLotesInput = {
@@ -92179,7 +96021,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -92201,6 +96042,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutProdutoInput
     taxRule?: TaxRuleCreateNestedOneWithoutProdutosInput
   }
 
@@ -92214,7 +96056,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     taxRuleId?: bigint | number | null
     version?: number
@@ -92237,6 +96078,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoCreateOrConnectWithoutLotesInput = {
@@ -92266,6 +96108,7 @@ export namespace Prisma {
     compras?: CompraCreateNestedManyWithoutFornecedorInput
     contasPagar?: ContaPagarCreateNestedManyWithoutFornecedorInput
     historicoPrecos?: HistoricoPrecoCreateNestedManyWithoutFornecedorInput
+    requisicoes?: RequisicaoCreateNestedManyWithoutFornecedorInput
   }
 
   export type FornecedorUncheckedCreateWithoutLotesInput = {
@@ -92290,6 +96133,7 @@ export namespace Prisma {
     compras?: CompraUncheckedCreateNestedManyWithoutFornecedorInput
     contasPagar?: ContaPagarUncheckedCreateNestedManyWithoutFornecedorInput
     historicoPrecos?: HistoricoPrecoUncheckedCreateNestedManyWithoutFornecedorInput
+    requisicoes?: RequisicaoUncheckedCreateNestedManyWithoutFornecedorInput
   }
 
   export type FornecedorCreateOrConnectWithoutLotesInput = {
@@ -92703,6 +96547,40 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type RequisicaoItemCreateWithoutLoteInput = {
+    id?: bigint | number
+    quantidadeSolicitada: Decimal | DecimalJsLike | number | string
+    numeroLote?: string | null
+    dataValidade?: Date | string | null
+    precoCompra?: Decimal | DecimalJsLike | number | string | null
+    precoVenda?: Decimal | DecimalJsLike | number | string | null
+    subtotal?: Decimal | DecimalJsLike | number | string | null
+    requisicao: RequisicaoCreateNestedOneWithoutItensInput
+    produto: ProdutoCreateNestedOneWithoutRequisicaoItensInput
+  }
+
+  export type RequisicaoItemUncheckedCreateWithoutLoteInput = {
+    id?: bigint | number
+    requisicaoId: bigint | number
+    produtoId: bigint | number
+    quantidadeSolicitada: Decimal | DecimalJsLike | number | string
+    numeroLote?: string | null
+    dataValidade?: Date | string | null
+    precoCompra?: Decimal | DecimalJsLike | number | string | null
+    precoVenda?: Decimal | DecimalJsLike | number | string | null
+    subtotal?: Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type RequisicaoItemCreateOrConnectWithoutLoteInput = {
+    where: RequisicaoItemWhereUniqueInput
+    create: XOR<RequisicaoItemCreateWithoutLoteInput, RequisicaoItemUncheckedCreateWithoutLoteInput>
+  }
+
+  export type RequisicaoItemCreateManyLoteInputEnvelope = {
+    data: RequisicaoItemCreateManyLoteInput | RequisicaoItemCreateManyLoteInput[]
+    skipDuplicates?: boolean
+  }
+
   export type ProdutoUpsertWithoutLotesInput = {
     update: XOR<ProdutoUpdateWithoutLotesInput, ProdutoUncheckedUpdateWithoutLotesInput>
     create: XOR<ProdutoCreateWithoutLotesInput, ProdutoUncheckedCreateWithoutLotesInput>
@@ -92724,7 +96602,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -92746,6 +96623,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutProdutoNestedInput
     taxRule?: TaxRuleUpdateOneWithoutProdutosNestedInput
   }
 
@@ -92759,7 +96637,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     version?: IntFieldUpdateOperationsInput | number
@@ -92782,6 +96659,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput
   }
 
   export type FornecedorUpsertWithoutLotesInput = {
@@ -92817,6 +96695,7 @@ export namespace Prisma {
     compras?: CompraUpdateManyWithoutFornecedorNestedInput
     contasPagar?: ContaPagarUpdateManyWithoutFornecedorNestedInput
     historicoPrecos?: HistoricoPrecoUpdateManyWithoutFornecedorNestedInput
+    requisicoes?: RequisicaoUpdateManyWithoutFornecedorNestedInput
   }
 
   export type FornecedorUncheckedUpdateWithoutLotesInput = {
@@ -92841,6 +96720,7 @@ export namespace Prisma {
     compras?: CompraUncheckedUpdateManyWithoutFornecedorNestedInput
     contasPagar?: ContaPagarUncheckedUpdateManyWithoutFornecedorNestedInput
     historicoPrecos?: HistoricoPrecoUncheckedUpdateManyWithoutFornecedorNestedInput
+    requisicoes?: RequisicaoUncheckedUpdateManyWithoutFornecedorNestedInput
   }
 
   export type EstoqueMovimentoUpsertWithWhereUniqueWithoutLoteInput = {
@@ -93014,6 +96894,22 @@ export namespace Prisma {
     data: XOR<InventarioItemUpdateManyMutationInput, InventarioItemUncheckedUpdateManyWithoutLoteInput>
   }
 
+  export type RequisicaoItemUpsertWithWhereUniqueWithoutLoteInput = {
+    where: RequisicaoItemWhereUniqueInput
+    update: XOR<RequisicaoItemUpdateWithoutLoteInput, RequisicaoItemUncheckedUpdateWithoutLoteInput>
+    create: XOR<RequisicaoItemCreateWithoutLoteInput, RequisicaoItemUncheckedCreateWithoutLoteInput>
+  }
+
+  export type RequisicaoItemUpdateWithWhereUniqueWithoutLoteInput = {
+    where: RequisicaoItemWhereUniqueInput
+    data: XOR<RequisicaoItemUpdateWithoutLoteInput, RequisicaoItemUncheckedUpdateWithoutLoteInput>
+  }
+
+  export type RequisicaoItemUpdateManyWithWhereWithoutLoteInput = {
+    where: RequisicaoItemScalarWhereInput
+    data: XOR<RequisicaoItemUpdateManyMutationInput, RequisicaoItemUncheckedUpdateManyWithoutLoteInput>
+  }
+
   export type LoteCreateWithoutMovimentosSanitariosInput = {
     id?: bigint | number
     numeroLote: string
@@ -93042,6 +96938,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutLoteInput
   }
 
   export type LoteUncheckedCreateWithoutMovimentosSanitariosInput = {
@@ -93072,6 +96969,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaUncheckedCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemUncheckedCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutLoteInput
   }
 
   export type LoteCreateOrConnectWithoutMovimentosSanitariosInput = {
@@ -93117,6 +97015,8 @@ export namespace Prisma {
     incineracoesAprovadas?: IncineracaoCreateNestedManyWithoutAprovadoPorInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutMovimentosSanitariosInput = {
@@ -93157,6 +97057,8 @@ export namespace Prisma {
     incineracoesAprovadas?: IncineracaoUncheckedCreateNestedManyWithoutAprovadoPorInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutMovimentosSanitariosInput = {
@@ -93203,6 +97105,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutLoteNestedInput
   }
 
   export type LoteUncheckedUpdateWithoutMovimentosSanitariosInput = {
@@ -93233,6 +97136,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaUncheckedUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUncheckedUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutLoteNestedInput
   }
 
   export type UserUpsertWithoutMovimentosSanitariosInput = {
@@ -93284,6 +97188,8 @@ export namespace Prisma {
     incineracoesAprovadas?: IncineracaoUpdateManyWithoutAprovadoPorNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutMovimentosSanitariosInput = {
@@ -93324,6 +97230,8 @@ export namespace Prisma {
     incineracoesAprovadas?: IncineracaoUncheckedUpdateManyWithoutAprovadoPorNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserCreateWithoutIncineracoesResponsavelInput = {
@@ -93364,6 +97272,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutIncineracoesResponsavelInput = {
@@ -93404,6 +97314,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutIncineracoesResponsavelInput = {
@@ -93449,6 +97361,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutIncineracoesAprovadasInput = {
@@ -93489,6 +97403,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutIncineracoesAprovadasInput = {
@@ -93569,6 +97485,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutIncineracoesResponsavelInput = {
@@ -93609,6 +97527,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUpsertWithoutIncineracoesAprovadasInput = {
@@ -93660,6 +97580,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutIncineracoesAprovadasInput = {
@@ -93700,6 +97622,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type IncineracaoItemUpsertWithWhereUniqueWithoutIncineracaoInput = {
@@ -93773,6 +97697,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaCreateNestedManyWithoutLoteInput
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutLoteInput
   }
 
   export type LoteUncheckedCreateWithoutIncineracaoItensInput = {
@@ -93803,6 +97728,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaUncheckedCreateNestedManyWithoutLoteInput
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutLoteInput
   }
 
   export type LoteCreateOrConnectWithoutIncineracaoItensInput = {
@@ -93882,6 +97808,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaUpdateManyWithoutLoteNestedInput
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutLoteNestedInput
   }
 
   export type LoteUncheckedUpdateWithoutIncineracaoItensInput = {
@@ -93912,6 +97839,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaUncheckedUpdateManyWithoutLoteNestedInput
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutLoteNestedInput
   }
 
   export type ProdutoCreateWithoutMovimentosInput = {
@@ -93924,7 +97852,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -93946,6 +97873,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutProdutoInput
     taxRule?: TaxRuleCreateNestedOneWithoutProdutosInput
   }
 
@@ -93959,7 +97887,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     taxRuleId?: bigint | number | null
     version?: number
@@ -93982,6 +97909,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoCreateOrConnectWithoutMovimentosInput = {
@@ -94017,6 +97945,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutLoteInput
   }
 
   export type LoteUncheckedCreateWithoutMovimentosInput = {
@@ -94047,6 +97976,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemUncheckedCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutLoteInput
   }
 
   export type LoteCreateOrConnectWithoutMovimentosInput = {
@@ -94092,6 +98022,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutEstoqueMovimentosInput = {
@@ -94132,6 +98064,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutEstoqueMovimentosInput = {
@@ -94160,7 +98094,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -94182,6 +98115,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutProdutoNestedInput
     taxRule?: TaxRuleUpdateOneWithoutProdutosNestedInput
   }
 
@@ -94195,7 +98129,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     version?: IntFieldUpdateOperationsInput | number
@@ -94218,6 +98151,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput
   }
 
   export type LoteUpsertWithoutMovimentosInput = {
@@ -94259,6 +98193,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutLoteNestedInput
   }
 
   export type LoteUncheckedUpdateWithoutMovimentosInput = {
@@ -94289,6 +98224,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUncheckedUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutLoteNestedInput
   }
 
   export type UserUpsertWithoutEstoqueMovimentosInput = {
@@ -94340,6 +98276,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutEstoqueMovimentosInput = {
@@ -94380,6 +98318,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type ProdutoCreateWithoutHistoricoPrecosInput = {
@@ -94392,7 +98332,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -94414,6 +98353,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutProdutoInput
     taxRule?: TaxRuleCreateNestedOneWithoutProdutosInput
   }
 
@@ -94427,7 +98367,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     taxRuleId?: bigint | number | null
     version?: number
@@ -94450,6 +98389,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoCreateOrConnectWithoutHistoricoPrecosInput = {
@@ -94479,6 +98419,7 @@ export namespace Prisma {
     compras?: CompraCreateNestedManyWithoutFornecedorInput
     lotes?: LoteCreateNestedManyWithoutFornecedorInput
     contasPagar?: ContaPagarCreateNestedManyWithoutFornecedorInput
+    requisicoes?: RequisicaoCreateNestedManyWithoutFornecedorInput
   }
 
   export type FornecedorUncheckedCreateWithoutHistoricoPrecosInput = {
@@ -94503,6 +98444,7 @@ export namespace Prisma {
     compras?: CompraUncheckedCreateNestedManyWithoutFornecedorInput
     lotes?: LoteUncheckedCreateNestedManyWithoutFornecedorInput
     contasPagar?: ContaPagarUncheckedCreateNestedManyWithoutFornecedorInput
+    requisicoes?: RequisicaoUncheckedCreateNestedManyWithoutFornecedorInput
   }
 
   export type FornecedorCreateOrConnectWithoutHistoricoPrecosInput = {
@@ -94531,7 +98473,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -94553,6 +98494,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutProdutoNestedInput
     taxRule?: TaxRuleUpdateOneWithoutProdutosNestedInput
   }
 
@@ -94566,7 +98508,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     version?: IntFieldUpdateOperationsInput | number
@@ -94589,6 +98530,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput
   }
 
   export type FornecedorUpsertWithoutHistoricoPrecosInput = {
@@ -94624,6 +98566,7 @@ export namespace Prisma {
     compras?: CompraUpdateManyWithoutFornecedorNestedInput
     lotes?: LoteUpdateManyWithoutFornecedorNestedInput
     contasPagar?: ContaPagarUpdateManyWithoutFornecedorNestedInput
+    requisicoes?: RequisicaoUpdateManyWithoutFornecedorNestedInput
   }
 
   export type FornecedorUncheckedUpdateWithoutHistoricoPrecosInput = {
@@ -94648,6 +98591,7 @@ export namespace Prisma {
     compras?: CompraUncheckedUpdateManyWithoutFornecedorNestedInput
     lotes?: LoteUncheckedUpdateManyWithoutFornecedorNestedInput
     contasPagar?: ContaPagarUncheckedUpdateManyWithoutFornecedorNestedInput
+    requisicoes?: RequisicaoUncheckedUpdateManyWithoutFornecedorNestedInput
   }
 
   export type ProdutoCreateWithoutAlertasEstoqueInput = {
@@ -94660,7 +98604,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -94682,6 +98625,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutProdutoInput
     taxRule?: TaxRuleCreateNestedOneWithoutProdutosInput
   }
 
@@ -94695,7 +98639,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     taxRuleId?: bigint | number | null
     version?: number
@@ -94718,6 +98661,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoCreateOrConnectWithoutAlertasEstoqueInput = {
@@ -94746,7 +98690,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -94768,6 +98711,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutProdutoNestedInput
     taxRule?: TaxRuleUpdateOneWithoutProdutosNestedInput
   }
 
@@ -94781,7 +98725,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     version?: IntFieldUpdateOperationsInput | number
@@ -94804,6 +98747,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput
   }
 
   export type ClienteCreateWithoutFaturasInput = {
@@ -94926,6 +98870,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutFaturasInput = {
@@ -94966,6 +98912,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutFaturasInput = {
@@ -95011,6 +98959,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutAuthorizedFaturasInput = {
@@ -95051,6 +99001,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutAuthorizedFaturasInput = {
@@ -95096,6 +99048,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutFaturasCanceladasInput = {
@@ -95136,6 +99090,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutFaturasCanceladasInput = {
@@ -95711,6 +99667,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutFaturasInput = {
@@ -95751,6 +99709,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUpsertWithoutAuthorizedFaturasInput = {
@@ -95802,6 +99762,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAuthorizedFaturasInput = {
@@ -95842,6 +99804,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUpsertWithoutFaturasCanceladasInput = {
@@ -95893,6 +99857,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutFaturasCanceladasInput = {
@@ -95933,6 +99899,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type FaturaItemUpsertWithWhereUniqueWithoutFaturaInput = {
@@ -96197,7 +100165,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -96219,6 +100186,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutProdutoInput
     taxRule?: TaxRuleCreateNestedOneWithoutProdutosInput
   }
 
@@ -96232,7 +100200,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     taxRuleId?: bigint | number | null
     version?: number
@@ -96255,6 +100222,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoCreateOrConnectWithoutFaturaItensInput = {
@@ -96317,6 +100285,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutLoteInput
   }
 
   export type LoteUncheckedCreateWithoutFaturaItensInput = {
@@ -96347,6 +100316,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemUncheckedCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutLoteInput
   }
 
   export type LoteCreateOrConnectWithoutFaturaItensInput = {
@@ -96637,7 +100607,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -96659,6 +100628,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutProdutoNestedInput
     taxRule?: TaxRuleUpdateOneWithoutProdutosNestedInput
   }
 
@@ -96672,7 +100642,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     version?: IntFieldUpdateOperationsInput | number
@@ -96695,6 +100664,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput
   }
 
   export type ServicoUpsertWithoutFaturaItensInput = {
@@ -96769,6 +100739,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutLoteNestedInput
   }
 
   export type LoteUncheckedUpdateWithoutFaturaItensInput = {
@@ -96799,6 +100770,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUncheckedUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutLoteNestedInput
   }
 
   export type DispensacaoUpsertWithoutFaturaItemInput = {
@@ -97086,6 +101058,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutContasReceberInput = {
@@ -97126,6 +101100,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutContasReceberInput = {
@@ -97171,6 +101147,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutAuthorizedContasReceberInput = {
@@ -97211,6 +101189,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutAuthorizedContasReceberInput = {
@@ -97479,6 +101459,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutContasReceberInput = {
@@ -97519,6 +101501,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUpsertWithoutAuthorizedContasReceberInput = {
@@ -97570,6 +101554,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAuthorizedContasReceberInput = {
@@ -97610,6 +101596,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type ContaReceberPagamentoUpsertWithWhereUniqueWithoutContaReceberInput = {
@@ -97719,6 +101707,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutContasReceberPagamentosInput = {
@@ -97759,6 +101749,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutContasReceberPagamentosInput = {
@@ -97891,6 +101883,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutContasReceberPagamentosInput = {
@@ -97931,6 +101925,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type CaixaUpsertWithoutContaReceberPagamentosInput = {
@@ -97994,6 +101990,7 @@ export namespace Prisma {
     compras?: CompraCreateNestedManyWithoutFornecedorInput
     lotes?: LoteCreateNestedManyWithoutFornecedorInput
     historicoPrecos?: HistoricoPrecoCreateNestedManyWithoutFornecedorInput
+    requisicoes?: RequisicaoCreateNestedManyWithoutFornecedorInput
   }
 
   export type FornecedorUncheckedCreateWithoutContasPagarInput = {
@@ -98018,6 +102015,7 @@ export namespace Prisma {
     compras?: CompraUncheckedCreateNestedManyWithoutFornecedorInput
     lotes?: LoteUncheckedCreateNestedManyWithoutFornecedorInput
     historicoPrecos?: HistoricoPrecoUncheckedCreateNestedManyWithoutFornecedorInput
+    requisicoes?: RequisicaoUncheckedCreateNestedManyWithoutFornecedorInput
   }
 
   export type FornecedorCreateOrConnectWithoutContasPagarInput = {
@@ -98094,6 +102092,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutContasPagarInput = {
@@ -98134,6 +102134,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutContasPagarInput = {
@@ -98212,6 +102214,7 @@ export namespace Prisma {
     compras?: CompraUpdateManyWithoutFornecedorNestedInput
     lotes?: LoteUpdateManyWithoutFornecedorNestedInput
     historicoPrecos?: HistoricoPrecoUpdateManyWithoutFornecedorNestedInput
+    requisicoes?: RequisicaoUpdateManyWithoutFornecedorNestedInput
   }
 
   export type FornecedorUncheckedUpdateWithoutContasPagarInput = {
@@ -98236,6 +102239,7 @@ export namespace Prisma {
     compras?: CompraUncheckedUpdateManyWithoutFornecedorNestedInput
     lotes?: LoteUncheckedUpdateManyWithoutFornecedorNestedInput
     historicoPrecos?: HistoricoPrecoUncheckedUpdateManyWithoutFornecedorNestedInput
+    requisicoes?: RequisicaoUncheckedUpdateManyWithoutFornecedorNestedInput
   }
 
   export type CompraUpsertWithoutContasPagarInput = {
@@ -98324,6 +102328,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutContasPagarInput = {
@@ -98364,6 +102370,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type FinancialMovementUpsertWithWhereUniqueWithoutContaPagarInput = {
@@ -98392,7 +102400,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -98414,6 +102421,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutProdutoInput
     taxRule?: TaxRuleCreateNestedOneWithoutProdutosInput
   }
 
@@ -98427,7 +102435,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     taxRuleId?: bigint | number | null
     version?: number
@@ -98450,6 +102457,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoCreateOrConnectWithoutReservasInput = {
@@ -98485,6 +102493,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutLoteInput
   }
 
   export type LoteUncheckedCreateWithoutReservasInput = {
@@ -98515,6 +102524,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemUncheckedCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutLoteInput
   }
 
   export type LoteCreateOrConnectWithoutReservasInput = {
@@ -98624,7 +102634,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -98646,6 +102655,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutProdutoNestedInput
     taxRule?: TaxRuleUpdateOneWithoutProdutosNestedInput
   }
 
@@ -98659,7 +102669,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     version?: IntFieldUpdateOperationsInput | number
@@ -98682,6 +102691,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput
   }
 
   export type LoteUpsertWithoutReservasInput = {
@@ -98723,6 +102733,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutLoteNestedInput
   }
 
   export type LoteUncheckedUpdateWithoutReservasInput = {
@@ -98753,6 +102764,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUncheckedUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutLoteNestedInput
   }
 
   export type FaturaUpsertWithoutReservasInput = {
@@ -98880,6 +102892,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutFinancialMovementsInput = {
@@ -98920,6 +102934,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutFinancialMovementsInput = {
@@ -99160,6 +103176,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutFinancialMovementsInput = {
@@ -99200,6 +103218,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type CaixaUpsertWithoutFinancialMovementsInput = {
@@ -99732,6 +103752,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutLivroPsicotropicosInput = {
@@ -99772,6 +103794,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutLivroPsicotropicosInput = {
@@ -99789,7 +103813,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -99811,6 +103834,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutProdutoInput
     taxRule?: TaxRuleCreateNestedOneWithoutProdutosInput
   }
 
@@ -99824,7 +103848,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     taxRuleId?: bigint | number | null
     version?: number
@@ -99847,6 +103870,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoCreateOrConnectWithoutLivroPsicotropicosInput = {
@@ -99882,6 +103906,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutLoteInput
   }
 
   export type LoteUncheckedCreateWithoutLivroPsicotropicosInput = {
@@ -99912,6 +103937,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemUncheckedCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutLoteInput
   }
 
   export type LoteCreateOrConnectWithoutLivroPsicotropicosInput = {
@@ -100027,6 +104053,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutLivroPsicotropicosInput = {
@@ -100067,6 +104095,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type ProdutoUpsertWithoutLivroPsicotropicosInput = {
@@ -100090,7 +104120,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -100112,6 +104141,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutProdutoNestedInput
     taxRule?: TaxRuleUpdateOneWithoutProdutosNestedInput
   }
 
@@ -100125,7 +104155,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     version?: IntFieldUpdateOperationsInput | number
@@ -100148,6 +104177,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput
   }
 
   export type LoteUpsertWithoutLivroPsicotropicosInput = {
@@ -100189,6 +104219,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutLoteNestedInput
   }
 
   export type LoteUncheckedUpdateWithoutLivroPsicotropicosInput = {
@@ -100219,6 +104250,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUncheckedUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutLoteNestedInput
   }
 
   export type DispensacaoUpsertWithoutMovimentoLivroInput = {
@@ -100296,7 +104328,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -100318,6 +104349,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutProdutoInput
     taxRule?: TaxRuleCreateNestedOneWithoutProdutosInput
   }
 
@@ -100331,7 +104363,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     taxRuleId?: bigint | number | null
     version?: number
@@ -100354,6 +104385,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoCreateOrConnectWithoutStockBalanceInput = {
@@ -100382,7 +104414,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -100404,6 +104435,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutProdutoNestedInput
     taxRule?: TaxRuleUpdateOneWithoutProdutosNestedInput
   }
 
@@ -100417,7 +104449,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     version?: IntFieldUpdateOperationsInput | number
@@ -100440,6 +104471,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput
   }
 
   export type InventarioItemCreateWithoutInventarioInput = {
@@ -100508,6 +104540,8 @@ export namespace Prisma {
     incineracoesAprovadas?: IncineracaoCreateNestedManyWithoutAprovadoPorInput
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutInventariosIniciadosInput = {
@@ -100548,6 +104582,8 @@ export namespace Prisma {
     incineracoesAprovadas?: IncineracaoUncheckedCreateNestedManyWithoutAprovadoPorInput
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutInventariosIniciadosInput = {
@@ -100593,6 +104629,8 @@ export namespace Prisma {
     incineracoesAprovadas?: IncineracaoCreateNestedManyWithoutAprovadoPorInput
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutInventariosReconciliadosInput = {
@@ -100633,6 +104671,8 @@ export namespace Prisma {
     incineracoesAprovadas?: IncineracaoUncheckedCreateNestedManyWithoutAprovadoPorInput
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutInventariosReconciliadosInput = {
@@ -100705,6 +104745,8 @@ export namespace Prisma {
     incineracoesAprovadas?: IncineracaoUpdateManyWithoutAprovadoPorNestedInput
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutInventariosIniciadosInput = {
@@ -100745,6 +104787,8 @@ export namespace Prisma {
     incineracoesAprovadas?: IncineracaoUncheckedUpdateManyWithoutAprovadoPorNestedInput
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUpsertWithoutInventariosReconciliadosInput = {
@@ -100796,6 +104840,8 @@ export namespace Prisma {
     incineracoesAprovadas?: IncineracaoUpdateManyWithoutAprovadoPorNestedInput
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutInventariosReconciliadosInput = {
@@ -100836,6 +104882,8 @@ export namespace Prisma {
     incineracoesAprovadas?: IncineracaoUncheckedUpdateManyWithoutAprovadoPorNestedInput
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type InventarioCreateWithoutItensInput = {
@@ -100879,7 +104927,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -100901,6 +104948,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaCreateNestedManyWithoutProdutoInput
     regulacao?: ProdutoRegulacaoCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutProdutoInput
     taxRule?: TaxRuleCreateNestedOneWithoutProdutosInput
   }
 
@@ -100914,7 +104962,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     taxRuleId?: bigint | number | null
     version?: number
@@ -100937,6 +104984,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaUncheckedCreateNestedManyWithoutProdutoInput
     regulacao?: ProdutoRegulacaoUncheckedCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoCreateOrConnectWithoutInventarioItensInput = {
@@ -100972,6 +105020,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaCreateNestedManyWithoutLoteInput
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutLoteInput
   }
 
   export type LoteUncheckedCreateWithoutInventarioItensInput = {
@@ -101002,6 +105051,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaUncheckedCreateNestedManyWithoutLoteInput
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemUncheckedCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutLoteInput
   }
 
   export type LoteCreateOrConnectWithoutInventarioItensInput = {
@@ -101067,7 +105117,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -101089,6 +105138,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaUpdateManyWithoutProdutoNestedInput
     regulacao?: ProdutoRegulacaoUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutProdutoNestedInput
     taxRule?: TaxRuleUpdateOneWithoutProdutosNestedInput
   }
 
@@ -101102,7 +105152,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     version?: IntFieldUpdateOperationsInput | number
@@ -101125,6 +105174,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaUncheckedUpdateManyWithoutProdutoNestedInput
     regulacao?: ProdutoRegulacaoUncheckedUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput
   }
 
   export type LoteUpsertWithoutInventarioItensInput = {
@@ -101166,6 +105216,7 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaUpdateManyWithoutLoteNestedInput
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutLoteNestedInput
   }
 
   export type LoteUncheckedUpdateWithoutInventarioItensInput = {
@@ -101196,6 +105247,921 @@ export namespace Prisma {
     livroReceitas?: LivroReceitaUncheckedUpdateManyWithoutLoteNestedInput
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUncheckedUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutLoteNestedInput
+  }
+
+  export type UserCreateWithoutRequisicoesCriadasInput = {
+    id?: bigint | number
+    name: string
+    email?: string | null
+    role?: $Enums.TenantUserRole
+    active?: boolean
+    centralUserId?: bigint | number | null
+    version?: number
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    caixaMovimentos?: CaixaMovimentoCreateNestedManyWithoutUserInput
+    estoqueMovimentos?: EstoqueMovimentoCreateNestedManyWithoutUserInput
+    faturas?: FaturaCreateNestedManyWithoutUserInput
+    dispensacoes?: DispensacaoCreateNestedManyWithoutUserInput
+    livroPsicotropicos?: LivroPsicotropicoCreateNestedManyWithoutResponsavelInput
+    livroReceitas?: LivroReceitaCreateNestedManyWithoutResponsavelInput
+    auditLogs?: AuditLogCreateNestedManyWithoutUserInput
+    userPermissions?: UserPermissionCreateNestedManyWithoutUserInput
+    faturaAnulacoes?: FaturaAnulacaoCreateNestedManyWithoutUserInput
+    faturasCanceladas?: FaturaCreateNestedManyWithoutCancelledByInput
+    sessoesFechadas?: CaixaSessaoCreateNestedManyWithoutFechadoPorInput
+    paymentRefunds?: PaymentRefundCreateNestedManyWithoutUserInput
+    businessEvents?: BusinessEventCreateNestedManyWithoutUserInput
+    caixaSessoes?: CaixaSessaoCreateNestedManyWithoutUserInput
+    stockReversals?: StockReversalCreateNestedManyWithoutUserInput
+    contasReceber?: ContaReceberCreateNestedManyWithoutUserInput
+    contasReceberPagamentos?: ContaReceberPagamentoCreateNestedManyWithoutUserInput
+    contasPagar?: ContaPagarCreateNestedManyWithoutUserInput
+    authorizedFaturas?: FaturaCreateNestedManyWithoutAuthorizedByInput
+    authorizedContasReceber?: ContaReceberCreateNestedManyWithoutAuthorizedByInput
+    financialMovements?: FinancialMovementCreateNestedManyWithoutUserInput
+    faturaItemCancelamentos?: FaturaItemCancelamentoCreateNestedManyWithoutUserInput
+    validacoesDispensacao?: DispensacaoCreateNestedManyWithoutValidadoPorInput
+    incineracoesResponsavel?: IncineracaoCreateNestedManyWithoutResponsavelInput
+    incineracoesAprovadas?: IncineracaoCreateNestedManyWithoutAprovadoPorInput
+    movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
+    inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
+    inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
+  }
+
+  export type UserUncheckedCreateWithoutRequisicoesCriadasInput = {
+    id?: bigint | number
+    name: string
+    email?: string | null
+    role?: $Enums.TenantUserRole
+    active?: boolean
+    centralUserId?: bigint | number | null
+    version?: number
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    caixaMovimentos?: CaixaMovimentoUncheckedCreateNestedManyWithoutUserInput
+    estoqueMovimentos?: EstoqueMovimentoUncheckedCreateNestedManyWithoutUserInput
+    faturas?: FaturaUncheckedCreateNestedManyWithoutUserInput
+    dispensacoes?: DispensacaoUncheckedCreateNestedManyWithoutUserInput
+    livroPsicotropicos?: LivroPsicotropicoUncheckedCreateNestedManyWithoutResponsavelInput
+    livroReceitas?: LivroReceitaUncheckedCreateNestedManyWithoutResponsavelInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
+    userPermissions?: UserPermissionUncheckedCreateNestedManyWithoutUserInput
+    faturaAnulacoes?: FaturaAnulacaoUncheckedCreateNestedManyWithoutUserInput
+    faturasCanceladas?: FaturaUncheckedCreateNestedManyWithoutCancelledByInput
+    sessoesFechadas?: CaixaSessaoUncheckedCreateNestedManyWithoutFechadoPorInput
+    paymentRefunds?: PaymentRefundUncheckedCreateNestedManyWithoutUserInput
+    businessEvents?: BusinessEventUncheckedCreateNestedManyWithoutUserInput
+    caixaSessoes?: CaixaSessaoUncheckedCreateNestedManyWithoutUserInput
+    stockReversals?: StockReversalUncheckedCreateNestedManyWithoutUserInput
+    contasReceber?: ContaReceberUncheckedCreateNestedManyWithoutUserInput
+    contasReceberPagamentos?: ContaReceberPagamentoUncheckedCreateNestedManyWithoutUserInput
+    contasPagar?: ContaPagarUncheckedCreateNestedManyWithoutUserInput
+    authorizedFaturas?: FaturaUncheckedCreateNestedManyWithoutAuthorizedByInput
+    authorizedContasReceber?: ContaReceberUncheckedCreateNestedManyWithoutAuthorizedByInput
+    financialMovements?: FinancialMovementUncheckedCreateNestedManyWithoutUserInput
+    faturaItemCancelamentos?: FaturaItemCancelamentoUncheckedCreateNestedManyWithoutUserInput
+    validacoesDispensacao?: DispensacaoUncheckedCreateNestedManyWithoutValidadoPorInput
+    incineracoesResponsavel?: IncineracaoUncheckedCreateNestedManyWithoutResponsavelInput
+    incineracoesAprovadas?: IncineracaoUncheckedCreateNestedManyWithoutAprovadoPorInput
+    movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
+    inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
+    inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
+  }
+
+  export type UserCreateOrConnectWithoutRequisicoesCriadasInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutRequisicoesCriadasInput, UserUncheckedCreateWithoutRequisicoesCriadasInput>
+  }
+
+  export type UserCreateWithoutRequisicoesConfirmadasInput = {
+    id?: bigint | number
+    name: string
+    email?: string | null
+    role?: $Enums.TenantUserRole
+    active?: boolean
+    centralUserId?: bigint | number | null
+    version?: number
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    caixaMovimentos?: CaixaMovimentoCreateNestedManyWithoutUserInput
+    estoqueMovimentos?: EstoqueMovimentoCreateNestedManyWithoutUserInput
+    faturas?: FaturaCreateNestedManyWithoutUserInput
+    dispensacoes?: DispensacaoCreateNestedManyWithoutUserInput
+    livroPsicotropicos?: LivroPsicotropicoCreateNestedManyWithoutResponsavelInput
+    livroReceitas?: LivroReceitaCreateNestedManyWithoutResponsavelInput
+    auditLogs?: AuditLogCreateNestedManyWithoutUserInput
+    userPermissions?: UserPermissionCreateNestedManyWithoutUserInput
+    faturaAnulacoes?: FaturaAnulacaoCreateNestedManyWithoutUserInput
+    faturasCanceladas?: FaturaCreateNestedManyWithoutCancelledByInput
+    sessoesFechadas?: CaixaSessaoCreateNestedManyWithoutFechadoPorInput
+    paymentRefunds?: PaymentRefundCreateNestedManyWithoutUserInput
+    businessEvents?: BusinessEventCreateNestedManyWithoutUserInput
+    caixaSessoes?: CaixaSessaoCreateNestedManyWithoutUserInput
+    stockReversals?: StockReversalCreateNestedManyWithoutUserInput
+    contasReceber?: ContaReceberCreateNestedManyWithoutUserInput
+    contasReceberPagamentos?: ContaReceberPagamentoCreateNestedManyWithoutUserInput
+    contasPagar?: ContaPagarCreateNestedManyWithoutUserInput
+    authorizedFaturas?: FaturaCreateNestedManyWithoutAuthorizedByInput
+    authorizedContasReceber?: ContaReceberCreateNestedManyWithoutAuthorizedByInput
+    financialMovements?: FinancialMovementCreateNestedManyWithoutUserInput
+    faturaItemCancelamentos?: FaturaItemCancelamentoCreateNestedManyWithoutUserInput
+    validacoesDispensacao?: DispensacaoCreateNestedManyWithoutValidadoPorInput
+    incineracoesResponsavel?: IncineracaoCreateNestedManyWithoutResponsavelInput
+    incineracoesAprovadas?: IncineracaoCreateNestedManyWithoutAprovadoPorInput
+    movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
+    inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
+    inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+  }
+
+  export type UserUncheckedCreateWithoutRequisicoesConfirmadasInput = {
+    id?: bigint | number
+    name: string
+    email?: string | null
+    role?: $Enums.TenantUserRole
+    active?: boolean
+    centralUserId?: bigint | number | null
+    version?: number
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    caixaMovimentos?: CaixaMovimentoUncheckedCreateNestedManyWithoutUserInput
+    estoqueMovimentos?: EstoqueMovimentoUncheckedCreateNestedManyWithoutUserInput
+    faturas?: FaturaUncheckedCreateNestedManyWithoutUserInput
+    dispensacoes?: DispensacaoUncheckedCreateNestedManyWithoutUserInput
+    livroPsicotropicos?: LivroPsicotropicoUncheckedCreateNestedManyWithoutResponsavelInput
+    livroReceitas?: LivroReceitaUncheckedCreateNestedManyWithoutResponsavelInput
+    auditLogs?: AuditLogUncheckedCreateNestedManyWithoutUserInput
+    userPermissions?: UserPermissionUncheckedCreateNestedManyWithoutUserInput
+    faturaAnulacoes?: FaturaAnulacaoUncheckedCreateNestedManyWithoutUserInput
+    faturasCanceladas?: FaturaUncheckedCreateNestedManyWithoutCancelledByInput
+    sessoesFechadas?: CaixaSessaoUncheckedCreateNestedManyWithoutFechadoPorInput
+    paymentRefunds?: PaymentRefundUncheckedCreateNestedManyWithoutUserInput
+    businessEvents?: BusinessEventUncheckedCreateNestedManyWithoutUserInput
+    caixaSessoes?: CaixaSessaoUncheckedCreateNestedManyWithoutUserInput
+    stockReversals?: StockReversalUncheckedCreateNestedManyWithoutUserInput
+    contasReceber?: ContaReceberUncheckedCreateNestedManyWithoutUserInput
+    contasReceberPagamentos?: ContaReceberPagamentoUncheckedCreateNestedManyWithoutUserInput
+    contasPagar?: ContaPagarUncheckedCreateNestedManyWithoutUserInput
+    authorizedFaturas?: FaturaUncheckedCreateNestedManyWithoutAuthorizedByInput
+    authorizedContasReceber?: ContaReceberUncheckedCreateNestedManyWithoutAuthorizedByInput
+    financialMovements?: FinancialMovementUncheckedCreateNestedManyWithoutUserInput
+    faturaItemCancelamentos?: FaturaItemCancelamentoUncheckedCreateNestedManyWithoutUserInput
+    validacoesDispensacao?: DispensacaoUncheckedCreateNestedManyWithoutValidadoPorInput
+    incineracoesResponsavel?: IncineracaoUncheckedCreateNestedManyWithoutResponsavelInput
+    incineracoesAprovadas?: IncineracaoUncheckedCreateNestedManyWithoutAprovadoPorInput
+    movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
+    inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
+    inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+  }
+
+  export type UserCreateOrConnectWithoutRequisicoesConfirmadasInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutRequisicoesConfirmadasInput, UserUncheckedCreateWithoutRequisicoesConfirmadasInput>
+  }
+
+  export type FornecedorCreateWithoutRequisicoesInput = {
+    id?: bigint | number
+    nome: string
+    tipo?: $Enums.TipoFornecedor | null
+    nuit?: string | null
+    email?: string | null
+    telefone?: string | null
+    telefoneAlt?: string | null
+    endereco?: string | null
+    cidade?: string | null
+    provincia?: string | null
+    pais?: string | null
+    contatoNome?: string | null
+    observacoes?: string | null
+    ativo?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    produtos?: ProdutoFornecedorCreateNestedManyWithoutFornecedorInput
+    compras?: CompraCreateNestedManyWithoutFornecedorInput
+    lotes?: LoteCreateNestedManyWithoutFornecedorInput
+    contasPagar?: ContaPagarCreateNestedManyWithoutFornecedorInput
+    historicoPrecos?: HistoricoPrecoCreateNestedManyWithoutFornecedorInput
+  }
+
+  export type FornecedorUncheckedCreateWithoutRequisicoesInput = {
+    id?: bigint | number
+    nome: string
+    tipo?: $Enums.TipoFornecedor | null
+    nuit?: string | null
+    email?: string | null
+    telefone?: string | null
+    telefoneAlt?: string | null
+    endereco?: string | null
+    cidade?: string | null
+    provincia?: string | null
+    pais?: string | null
+    contatoNome?: string | null
+    observacoes?: string | null
+    ativo?: boolean
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    produtos?: ProdutoFornecedorUncheckedCreateNestedManyWithoutFornecedorInput
+    compras?: CompraUncheckedCreateNestedManyWithoutFornecedorInput
+    lotes?: LoteUncheckedCreateNestedManyWithoutFornecedorInput
+    contasPagar?: ContaPagarUncheckedCreateNestedManyWithoutFornecedorInput
+    historicoPrecos?: HistoricoPrecoUncheckedCreateNestedManyWithoutFornecedorInput
+  }
+
+  export type FornecedorCreateOrConnectWithoutRequisicoesInput = {
+    where: FornecedorWhereUniqueInput
+    create: XOR<FornecedorCreateWithoutRequisicoesInput, FornecedorUncheckedCreateWithoutRequisicoesInput>
+  }
+
+  export type RequisicaoItemCreateWithoutRequisicaoInput = {
+    id?: bigint | number
+    quantidadeSolicitada: Decimal | DecimalJsLike | number | string
+    numeroLote?: string | null
+    dataValidade?: Date | string | null
+    precoCompra?: Decimal | DecimalJsLike | number | string | null
+    precoVenda?: Decimal | DecimalJsLike | number | string | null
+    subtotal?: Decimal | DecimalJsLike | number | string | null
+    produto: ProdutoCreateNestedOneWithoutRequisicaoItensInput
+    lote?: LoteCreateNestedOneWithoutRequisicaoItensInput
+  }
+
+  export type RequisicaoItemUncheckedCreateWithoutRequisicaoInput = {
+    id?: bigint | number
+    produtoId: bigint | number
+    loteId?: bigint | number | null
+    quantidadeSolicitada: Decimal | DecimalJsLike | number | string
+    numeroLote?: string | null
+    dataValidade?: Date | string | null
+    precoCompra?: Decimal | DecimalJsLike | number | string | null
+    precoVenda?: Decimal | DecimalJsLike | number | string | null
+    subtotal?: Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type RequisicaoItemCreateOrConnectWithoutRequisicaoInput = {
+    where: RequisicaoItemWhereUniqueInput
+    create: XOR<RequisicaoItemCreateWithoutRequisicaoInput, RequisicaoItemUncheckedCreateWithoutRequisicaoInput>
+  }
+
+  export type RequisicaoItemCreateManyRequisicaoInputEnvelope = {
+    data: RequisicaoItemCreateManyRequisicaoInput | RequisicaoItemCreateManyRequisicaoInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type UserUpsertWithoutRequisicoesCriadasInput = {
+    update: XOR<UserUpdateWithoutRequisicoesCriadasInput, UserUncheckedUpdateWithoutRequisicoesCriadasInput>
+    create: XOR<UserCreateWithoutRequisicoesCriadasInput, UserUncheckedCreateWithoutRequisicoesCriadasInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutRequisicoesCriadasInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutRequisicoesCriadasInput, UserUncheckedUpdateWithoutRequisicoesCriadasInput>
+  }
+
+  export type UserUpdateWithoutRequisicoesCriadasInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    name?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumTenantUserRoleFieldUpdateOperationsInput | $Enums.TenantUserRole
+    active?: BoolFieldUpdateOperationsInput | boolean
+    centralUserId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    caixaMovimentos?: CaixaMovimentoUpdateManyWithoutUserNestedInput
+    estoqueMovimentos?: EstoqueMovimentoUpdateManyWithoutUserNestedInput
+    faturas?: FaturaUpdateManyWithoutUserNestedInput
+    dispensacoes?: DispensacaoUpdateManyWithoutUserNestedInput
+    livroPsicotropicos?: LivroPsicotropicoUpdateManyWithoutResponsavelNestedInput
+    livroReceitas?: LivroReceitaUpdateManyWithoutResponsavelNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
+    userPermissions?: UserPermissionUpdateManyWithoutUserNestedInput
+    faturaAnulacoes?: FaturaAnulacaoUpdateManyWithoutUserNestedInput
+    faturasCanceladas?: FaturaUpdateManyWithoutCancelledByNestedInput
+    sessoesFechadas?: CaixaSessaoUpdateManyWithoutFechadoPorNestedInput
+    paymentRefunds?: PaymentRefundUpdateManyWithoutUserNestedInput
+    businessEvents?: BusinessEventUpdateManyWithoutUserNestedInput
+    caixaSessoes?: CaixaSessaoUpdateManyWithoutUserNestedInput
+    stockReversals?: StockReversalUpdateManyWithoutUserNestedInput
+    contasReceber?: ContaReceberUpdateManyWithoutUserNestedInput
+    contasReceberPagamentos?: ContaReceberPagamentoUpdateManyWithoutUserNestedInput
+    contasPagar?: ContaPagarUpdateManyWithoutUserNestedInput
+    authorizedFaturas?: FaturaUpdateManyWithoutAuthorizedByNestedInput
+    authorizedContasReceber?: ContaReceberUpdateManyWithoutAuthorizedByNestedInput
+    financialMovements?: FinancialMovementUpdateManyWithoutUserNestedInput
+    faturaItemCancelamentos?: FaturaItemCancelamentoUpdateManyWithoutUserNestedInput
+    validacoesDispensacao?: DispensacaoUpdateManyWithoutValidadoPorNestedInput
+    incineracoesResponsavel?: IncineracaoUpdateManyWithoutResponsavelNestedInput
+    incineracoesAprovadas?: IncineracaoUpdateManyWithoutAprovadoPorNestedInput
+    movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
+    inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
+    inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutRequisicoesCriadasInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    name?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumTenantUserRoleFieldUpdateOperationsInput | $Enums.TenantUserRole
+    active?: BoolFieldUpdateOperationsInput | boolean
+    centralUserId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    caixaMovimentos?: CaixaMovimentoUncheckedUpdateManyWithoutUserNestedInput
+    estoqueMovimentos?: EstoqueMovimentoUncheckedUpdateManyWithoutUserNestedInput
+    faturas?: FaturaUncheckedUpdateManyWithoutUserNestedInput
+    dispensacoes?: DispensacaoUncheckedUpdateManyWithoutUserNestedInput
+    livroPsicotropicos?: LivroPsicotropicoUncheckedUpdateManyWithoutResponsavelNestedInput
+    livroReceitas?: LivroReceitaUncheckedUpdateManyWithoutResponsavelNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
+    userPermissions?: UserPermissionUncheckedUpdateManyWithoutUserNestedInput
+    faturaAnulacoes?: FaturaAnulacaoUncheckedUpdateManyWithoutUserNestedInput
+    faturasCanceladas?: FaturaUncheckedUpdateManyWithoutCancelledByNestedInput
+    sessoesFechadas?: CaixaSessaoUncheckedUpdateManyWithoutFechadoPorNestedInput
+    paymentRefunds?: PaymentRefundUncheckedUpdateManyWithoutUserNestedInput
+    businessEvents?: BusinessEventUncheckedUpdateManyWithoutUserNestedInput
+    caixaSessoes?: CaixaSessaoUncheckedUpdateManyWithoutUserNestedInput
+    stockReversals?: StockReversalUncheckedUpdateManyWithoutUserNestedInput
+    contasReceber?: ContaReceberUncheckedUpdateManyWithoutUserNestedInput
+    contasReceberPagamentos?: ContaReceberPagamentoUncheckedUpdateManyWithoutUserNestedInput
+    contasPagar?: ContaPagarUncheckedUpdateManyWithoutUserNestedInput
+    authorizedFaturas?: FaturaUncheckedUpdateManyWithoutAuthorizedByNestedInput
+    authorizedContasReceber?: ContaReceberUncheckedUpdateManyWithoutAuthorizedByNestedInput
+    financialMovements?: FinancialMovementUncheckedUpdateManyWithoutUserNestedInput
+    faturaItemCancelamentos?: FaturaItemCancelamentoUncheckedUpdateManyWithoutUserNestedInput
+    validacoesDispensacao?: DispensacaoUncheckedUpdateManyWithoutValidadoPorNestedInput
+    incineracoesResponsavel?: IncineracaoUncheckedUpdateManyWithoutResponsavelNestedInput
+    incineracoesAprovadas?: IncineracaoUncheckedUpdateManyWithoutAprovadoPorNestedInput
+    movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
+    inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
+    inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
+  }
+
+  export type UserUpsertWithoutRequisicoesConfirmadasInput = {
+    update: XOR<UserUpdateWithoutRequisicoesConfirmadasInput, UserUncheckedUpdateWithoutRequisicoesConfirmadasInput>
+    create: XOR<UserCreateWithoutRequisicoesConfirmadasInput, UserUncheckedCreateWithoutRequisicoesConfirmadasInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutRequisicoesConfirmadasInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutRequisicoesConfirmadasInput, UserUncheckedUpdateWithoutRequisicoesConfirmadasInput>
+  }
+
+  export type UserUpdateWithoutRequisicoesConfirmadasInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    name?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumTenantUserRoleFieldUpdateOperationsInput | $Enums.TenantUserRole
+    active?: BoolFieldUpdateOperationsInput | boolean
+    centralUserId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    caixaMovimentos?: CaixaMovimentoUpdateManyWithoutUserNestedInput
+    estoqueMovimentos?: EstoqueMovimentoUpdateManyWithoutUserNestedInput
+    faturas?: FaturaUpdateManyWithoutUserNestedInput
+    dispensacoes?: DispensacaoUpdateManyWithoutUserNestedInput
+    livroPsicotropicos?: LivroPsicotropicoUpdateManyWithoutResponsavelNestedInput
+    livroReceitas?: LivroReceitaUpdateManyWithoutResponsavelNestedInput
+    auditLogs?: AuditLogUpdateManyWithoutUserNestedInput
+    userPermissions?: UserPermissionUpdateManyWithoutUserNestedInput
+    faturaAnulacoes?: FaturaAnulacaoUpdateManyWithoutUserNestedInput
+    faturasCanceladas?: FaturaUpdateManyWithoutCancelledByNestedInput
+    sessoesFechadas?: CaixaSessaoUpdateManyWithoutFechadoPorNestedInput
+    paymentRefunds?: PaymentRefundUpdateManyWithoutUserNestedInput
+    businessEvents?: BusinessEventUpdateManyWithoutUserNestedInput
+    caixaSessoes?: CaixaSessaoUpdateManyWithoutUserNestedInput
+    stockReversals?: StockReversalUpdateManyWithoutUserNestedInput
+    contasReceber?: ContaReceberUpdateManyWithoutUserNestedInput
+    contasReceberPagamentos?: ContaReceberPagamentoUpdateManyWithoutUserNestedInput
+    contasPagar?: ContaPagarUpdateManyWithoutUserNestedInput
+    authorizedFaturas?: FaturaUpdateManyWithoutAuthorizedByNestedInput
+    authorizedContasReceber?: ContaReceberUpdateManyWithoutAuthorizedByNestedInput
+    financialMovements?: FinancialMovementUpdateManyWithoutUserNestedInput
+    faturaItemCancelamentos?: FaturaItemCancelamentoUpdateManyWithoutUserNestedInput
+    validacoesDispensacao?: DispensacaoUpdateManyWithoutValidadoPorNestedInput
+    incineracoesResponsavel?: IncineracaoUpdateManyWithoutResponsavelNestedInput
+    incineracoesAprovadas?: IncineracaoUpdateManyWithoutAprovadoPorNestedInput
+    movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
+    inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
+    inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutRequisicoesConfirmadasInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    name?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    role?: EnumTenantUserRoleFieldUpdateOperationsInput | $Enums.TenantUserRole
+    active?: BoolFieldUpdateOperationsInput | boolean
+    centralUserId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    caixaMovimentos?: CaixaMovimentoUncheckedUpdateManyWithoutUserNestedInput
+    estoqueMovimentos?: EstoqueMovimentoUncheckedUpdateManyWithoutUserNestedInput
+    faturas?: FaturaUncheckedUpdateManyWithoutUserNestedInput
+    dispensacoes?: DispensacaoUncheckedUpdateManyWithoutUserNestedInput
+    livroPsicotropicos?: LivroPsicotropicoUncheckedUpdateManyWithoutResponsavelNestedInput
+    livroReceitas?: LivroReceitaUncheckedUpdateManyWithoutResponsavelNestedInput
+    auditLogs?: AuditLogUncheckedUpdateManyWithoutUserNestedInput
+    userPermissions?: UserPermissionUncheckedUpdateManyWithoutUserNestedInput
+    faturaAnulacoes?: FaturaAnulacaoUncheckedUpdateManyWithoutUserNestedInput
+    faturasCanceladas?: FaturaUncheckedUpdateManyWithoutCancelledByNestedInput
+    sessoesFechadas?: CaixaSessaoUncheckedUpdateManyWithoutFechadoPorNestedInput
+    paymentRefunds?: PaymentRefundUncheckedUpdateManyWithoutUserNestedInput
+    businessEvents?: BusinessEventUncheckedUpdateManyWithoutUserNestedInput
+    caixaSessoes?: CaixaSessaoUncheckedUpdateManyWithoutUserNestedInput
+    stockReversals?: StockReversalUncheckedUpdateManyWithoutUserNestedInput
+    contasReceber?: ContaReceberUncheckedUpdateManyWithoutUserNestedInput
+    contasReceberPagamentos?: ContaReceberPagamentoUncheckedUpdateManyWithoutUserNestedInput
+    contasPagar?: ContaPagarUncheckedUpdateManyWithoutUserNestedInput
+    authorizedFaturas?: FaturaUncheckedUpdateManyWithoutAuthorizedByNestedInput
+    authorizedContasReceber?: ContaReceberUncheckedUpdateManyWithoutAuthorizedByNestedInput
+    financialMovements?: FinancialMovementUncheckedUpdateManyWithoutUserNestedInput
+    faturaItemCancelamentos?: FaturaItemCancelamentoUncheckedUpdateManyWithoutUserNestedInput
+    validacoesDispensacao?: DispensacaoUncheckedUpdateManyWithoutValidadoPorNestedInput
+    incineracoesResponsavel?: IncineracaoUncheckedUpdateManyWithoutResponsavelNestedInput
+    incineracoesAprovadas?: IncineracaoUncheckedUpdateManyWithoutAprovadoPorNestedInput
+    movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
+    inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
+    inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+  }
+
+  export type FornecedorUpsertWithoutRequisicoesInput = {
+    update: XOR<FornecedorUpdateWithoutRequisicoesInput, FornecedorUncheckedUpdateWithoutRequisicoesInput>
+    create: XOR<FornecedorCreateWithoutRequisicoesInput, FornecedorUncheckedCreateWithoutRequisicoesInput>
+    where?: FornecedorWhereInput
+  }
+
+  export type FornecedorUpdateToOneWithWhereWithoutRequisicoesInput = {
+    where?: FornecedorWhereInput
+    data: XOR<FornecedorUpdateWithoutRequisicoesInput, FornecedorUncheckedUpdateWithoutRequisicoesInput>
+  }
+
+  export type FornecedorUpdateWithoutRequisicoesInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    nome?: StringFieldUpdateOperationsInput | string
+    tipo?: NullableEnumTipoFornecedorFieldUpdateOperationsInput | $Enums.TipoFornecedor | null
+    nuit?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefone?: NullableStringFieldUpdateOperationsInput | string | null
+    telefoneAlt?: NullableStringFieldUpdateOperationsInput | string | null
+    endereco?: NullableStringFieldUpdateOperationsInput | string | null
+    cidade?: NullableStringFieldUpdateOperationsInput | string | null
+    provincia?: NullableStringFieldUpdateOperationsInput | string | null
+    pais?: NullableStringFieldUpdateOperationsInput | string | null
+    contatoNome?: NullableStringFieldUpdateOperationsInput | string | null
+    observacoes?: NullableStringFieldUpdateOperationsInput | string | null
+    ativo?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    produtos?: ProdutoFornecedorUpdateManyWithoutFornecedorNestedInput
+    compras?: CompraUpdateManyWithoutFornecedorNestedInput
+    lotes?: LoteUpdateManyWithoutFornecedorNestedInput
+    contasPagar?: ContaPagarUpdateManyWithoutFornecedorNestedInput
+    historicoPrecos?: HistoricoPrecoUpdateManyWithoutFornecedorNestedInput
+  }
+
+  export type FornecedorUncheckedUpdateWithoutRequisicoesInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    nome?: StringFieldUpdateOperationsInput | string
+    tipo?: NullableEnumTipoFornecedorFieldUpdateOperationsInput | $Enums.TipoFornecedor | null
+    nuit?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    telefone?: NullableStringFieldUpdateOperationsInput | string | null
+    telefoneAlt?: NullableStringFieldUpdateOperationsInput | string | null
+    endereco?: NullableStringFieldUpdateOperationsInput | string | null
+    cidade?: NullableStringFieldUpdateOperationsInput | string | null
+    provincia?: NullableStringFieldUpdateOperationsInput | string | null
+    pais?: NullableStringFieldUpdateOperationsInput | string | null
+    contatoNome?: NullableStringFieldUpdateOperationsInput | string | null
+    observacoes?: NullableStringFieldUpdateOperationsInput | string | null
+    ativo?: BoolFieldUpdateOperationsInput | boolean
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    produtos?: ProdutoFornecedorUncheckedUpdateManyWithoutFornecedorNestedInput
+    compras?: CompraUncheckedUpdateManyWithoutFornecedorNestedInput
+    lotes?: LoteUncheckedUpdateManyWithoutFornecedorNestedInput
+    contasPagar?: ContaPagarUncheckedUpdateManyWithoutFornecedorNestedInput
+    historicoPrecos?: HistoricoPrecoUncheckedUpdateManyWithoutFornecedorNestedInput
+  }
+
+  export type RequisicaoItemUpsertWithWhereUniqueWithoutRequisicaoInput = {
+    where: RequisicaoItemWhereUniqueInput
+    update: XOR<RequisicaoItemUpdateWithoutRequisicaoInput, RequisicaoItemUncheckedUpdateWithoutRequisicaoInput>
+    create: XOR<RequisicaoItemCreateWithoutRequisicaoInput, RequisicaoItemUncheckedCreateWithoutRequisicaoInput>
+  }
+
+  export type RequisicaoItemUpdateWithWhereUniqueWithoutRequisicaoInput = {
+    where: RequisicaoItemWhereUniqueInput
+    data: XOR<RequisicaoItemUpdateWithoutRequisicaoInput, RequisicaoItemUncheckedUpdateWithoutRequisicaoInput>
+  }
+
+  export type RequisicaoItemUpdateManyWithWhereWithoutRequisicaoInput = {
+    where: RequisicaoItemScalarWhereInput
+    data: XOR<RequisicaoItemUpdateManyMutationInput, RequisicaoItemUncheckedUpdateManyWithoutRequisicaoInput>
+  }
+
+  export type RequisicaoCreateWithoutItensInput = {
+    id?: bigint | number
+    numeroDocumento: string
+    origem?: string | null
+    destino?: string | null
+    tipo?: $Enums.TipoRequisicao
+    status?: $Enums.StatusRequisicao
+    observacao?: string | null
+    total?: Decimal | DecimalJsLike | number | string | null
+    confirmedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    user: UserCreateNestedOneWithoutRequisicoesCriadasInput
+    confirmedBy?: UserCreateNestedOneWithoutRequisicoesConfirmadasInput
+    fornecedor?: FornecedorCreateNestedOneWithoutRequisicoesInput
+  }
+
+  export type RequisicaoUncheckedCreateWithoutItensInput = {
+    id?: bigint | number
+    numeroDocumento: string
+    origem?: string | null
+    destino?: string | null
+    tipo?: $Enums.TipoRequisicao
+    status?: $Enums.StatusRequisicao
+    observacao?: string | null
+    fornecedorId?: bigint | number | null
+    total?: Decimal | DecimalJsLike | number | string | null
+    userId: bigint | number
+    confirmedAt?: Date | string | null
+    confirmedById?: bigint | number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RequisicaoCreateOrConnectWithoutItensInput = {
+    where: RequisicaoWhereUniqueInput
+    create: XOR<RequisicaoCreateWithoutItensInput, RequisicaoUncheckedCreateWithoutItensInput>
+  }
+
+  export type ProdutoCreateWithoutRequisicaoItensInput = {
+    id?: bigint | number
+    nome: string
+    substanciaActiva?: string | null
+    dosagem?: string | null
+    forma?: string | null
+    apresentacao?: string | null
+    ativo?: boolean
+    barcode?: string | null
+    precoVenda: Decimal | DecimalJsLike | number | string
+    estoqueMinimo?: Decimal | DecimalJsLike | number | string
+    version?: number
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    fornecedores?: ProdutoFornecedorCreateNestedManyWithoutProdutoInput
+    compraItens?: CompraItemCreateNestedManyWithoutProdutoInput
+    lotes?: LoteCreateNestedManyWithoutProdutoInput
+    movimentos?: EstoqueMovimentoCreateNestedManyWithoutProdutoInput
+    reservas?: EstoqueReservaCreateNestedManyWithoutProdutoInput
+    historicoPrecos?: HistoricoPrecoCreateNestedManyWithoutProdutoInput
+    alertasEstoque?: AlertaEstoqueCreateNestedManyWithoutProdutoInput
+    livroPsicotropicos?: LivroPsicotropicoCreateNestedManyWithoutProdutoInput
+    stockValuation?: StockValuationCreateNestedOneWithoutProdutoInput
+    stockBalance?: StockBalanceCreateNestedOneWithoutProdutoInput
+    dispensacoes?: DispensacaoCreateNestedManyWithoutProdutoInput
+    faturaItens?: FaturaItemCreateNestedManyWithoutProdutoInput
+    stockReversals?: StockReversalCreateNestedManyWithoutProdutoInput
+    livroReceitas?: LivroReceitaCreateNestedManyWithoutProdutoInput
+    regulacao?: ProdutoRegulacaoCreateNestedOneWithoutProdutoInput
+    classificacaoEventos?: ProdutoClassificacaoEventoCreateNestedManyWithoutProdutoInput
+    inventarioItens?: InventarioItemCreateNestedManyWithoutProdutoInput
+    taxRule?: TaxRuleCreateNestedOneWithoutProdutosInput
+  }
+
+  export type ProdutoUncheckedCreateWithoutRequisicaoItensInput = {
+    id?: bigint | number
+    nome: string
+    substanciaActiva?: string | null
+    dosagem?: string | null
+    forma?: string | null
+    apresentacao?: string | null
+    ativo?: boolean
+    barcode?: string | null
+    precoVenda: Decimal | DecimalJsLike | number | string
+    estoqueMinimo?: Decimal | DecimalJsLike | number | string
+    taxRuleId?: bigint | number | null
+    version?: number
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    fornecedores?: ProdutoFornecedorUncheckedCreateNestedManyWithoutProdutoInput
+    compraItens?: CompraItemUncheckedCreateNestedManyWithoutProdutoInput
+    lotes?: LoteUncheckedCreateNestedManyWithoutProdutoInput
+    movimentos?: EstoqueMovimentoUncheckedCreateNestedManyWithoutProdutoInput
+    reservas?: EstoqueReservaUncheckedCreateNestedManyWithoutProdutoInput
+    historicoPrecos?: HistoricoPrecoUncheckedCreateNestedManyWithoutProdutoInput
+    alertasEstoque?: AlertaEstoqueUncheckedCreateNestedManyWithoutProdutoInput
+    livroPsicotropicos?: LivroPsicotropicoUncheckedCreateNestedManyWithoutProdutoInput
+    stockValuation?: StockValuationUncheckedCreateNestedOneWithoutProdutoInput
+    stockBalance?: StockBalanceUncheckedCreateNestedOneWithoutProdutoInput
+    dispensacoes?: DispensacaoUncheckedCreateNestedManyWithoutProdutoInput
+    faturaItens?: FaturaItemUncheckedCreateNestedManyWithoutProdutoInput
+    stockReversals?: StockReversalUncheckedCreateNestedManyWithoutProdutoInput
+    livroReceitas?: LivroReceitaUncheckedCreateNestedManyWithoutProdutoInput
+    regulacao?: ProdutoRegulacaoUncheckedCreateNestedOneWithoutProdutoInput
+    classificacaoEventos?: ProdutoClassificacaoEventoUncheckedCreateNestedManyWithoutProdutoInput
+    inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutProdutoInput
+  }
+
+  export type ProdutoCreateOrConnectWithoutRequisicaoItensInput = {
+    where: ProdutoWhereUniqueInput
+    create: XOR<ProdutoCreateWithoutRequisicaoItensInput, ProdutoUncheckedCreateWithoutRequisicaoItensInput>
+  }
+
+  export type LoteCreateWithoutRequisicaoItensInput = {
+    id?: bigint | number
+    numeroLote: string
+    dataValidade: Date | string
+    dataFabricacao?: Date | string | null
+    quantidadeInicial: Decimal | DecimalJsLike | number | string
+    quantidadeAtual: Decimal | DecimalJsLike | number | string
+    quantidadeQuarentena?: Decimal | DecimalJsLike | number | string
+    quantidadeIncinerada?: Decimal | DecimalJsLike | number | string
+    precoCompra: Decimal | DecimalJsLike | number | string
+    precoVenda?: Decimal | DecimalJsLike | number | string | null
+    ativo?: boolean
+    estadoSanitario?: $Enums.EstadoSanitarioLote
+    disponibilidade?: $Enums.DisponibilidadeLote
+    version?: number
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    produto: ProdutoCreateNestedOneWithoutLotesInput
+    fornecedor?: FornecedorCreateNestedOneWithoutLotesInput
+    movimentos?: EstoqueMovimentoCreateNestedManyWithoutLoteInput
+    reservas?: EstoqueReservaCreateNestedManyWithoutLoteInput
+    faturaItens?: FaturaItemCreateNestedManyWithoutLoteInput
+    dispensacoes?: DispensacaoCreateNestedManyWithoutLoteInput
+    stockReversals?: StockReversalCreateNestedManyWithoutLoteInput
+    livroPsicotropicos?: LivroPsicotropicoCreateNestedManyWithoutLoteInput
+    livroReceitas?: LivroReceitaCreateNestedManyWithoutLoteInput
+    movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutLoteInput
+    incineracaoItens?: IncineracaoItemCreateNestedManyWithoutLoteInput
+    inventarioItens?: InventarioItemCreateNestedManyWithoutLoteInput
+  }
+
+  export type LoteUncheckedCreateWithoutRequisicaoItensInput = {
+    id?: bigint | number
+    produtoId: bigint | number
+    fornecedorId?: bigint | number | null
+    numeroLote: string
+    dataValidade: Date | string
+    dataFabricacao?: Date | string | null
+    quantidadeInicial: Decimal | DecimalJsLike | number | string
+    quantidadeAtual: Decimal | DecimalJsLike | number | string
+    quantidadeQuarentena?: Decimal | DecimalJsLike | number | string
+    quantidadeIncinerada?: Decimal | DecimalJsLike | number | string
+    precoCompra: Decimal | DecimalJsLike | number | string
+    precoVenda?: Decimal | DecimalJsLike | number | string | null
+    ativo?: boolean
+    estadoSanitario?: $Enums.EstadoSanitarioLote
+    disponibilidade?: $Enums.DisponibilidadeLote
+    version?: number
+    deletedAt?: Date | string | null
+    createdAt?: Date | string
+    movimentos?: EstoqueMovimentoUncheckedCreateNestedManyWithoutLoteInput
+    reservas?: EstoqueReservaUncheckedCreateNestedManyWithoutLoteInput
+    faturaItens?: FaturaItemUncheckedCreateNestedManyWithoutLoteInput
+    dispensacoes?: DispensacaoUncheckedCreateNestedManyWithoutLoteInput
+    stockReversals?: StockReversalUncheckedCreateNestedManyWithoutLoteInput
+    livroPsicotropicos?: LivroPsicotropicoUncheckedCreateNestedManyWithoutLoteInput
+    livroReceitas?: LivroReceitaUncheckedCreateNestedManyWithoutLoteInput
+    movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutLoteInput
+    incineracaoItens?: IncineracaoItemUncheckedCreateNestedManyWithoutLoteInput
+    inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutLoteInput
+  }
+
+  export type LoteCreateOrConnectWithoutRequisicaoItensInput = {
+    where: LoteWhereUniqueInput
+    create: XOR<LoteCreateWithoutRequisicaoItensInput, LoteUncheckedCreateWithoutRequisicaoItensInput>
+  }
+
+  export type RequisicaoUpsertWithoutItensInput = {
+    update: XOR<RequisicaoUpdateWithoutItensInput, RequisicaoUncheckedUpdateWithoutItensInput>
+    create: XOR<RequisicaoCreateWithoutItensInput, RequisicaoUncheckedCreateWithoutItensInput>
+    where?: RequisicaoWhereInput
+  }
+
+  export type RequisicaoUpdateToOneWithWhereWithoutItensInput = {
+    where?: RequisicaoWhereInput
+    data: XOR<RequisicaoUpdateWithoutItensInput, RequisicaoUncheckedUpdateWithoutItensInput>
+  }
+
+  export type RequisicaoUpdateWithoutItensInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    numeroDocumento?: StringFieldUpdateOperationsInput | string
+    origem?: NullableStringFieldUpdateOperationsInput | string | null
+    destino?: NullableStringFieldUpdateOperationsInput | string | null
+    tipo?: EnumTipoRequisicaoFieldUpdateOperationsInput | $Enums.TipoRequisicao
+    status?: EnumStatusRequisicaoFieldUpdateOperationsInput | $Enums.StatusRequisicao
+    observacao?: NullableStringFieldUpdateOperationsInput | string | null
+    total?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutRequisicoesCriadasNestedInput
+    confirmedBy?: UserUpdateOneWithoutRequisicoesConfirmadasNestedInput
+    fornecedor?: FornecedorUpdateOneWithoutRequisicoesNestedInput
+  }
+
+  export type RequisicaoUncheckedUpdateWithoutItensInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    numeroDocumento?: StringFieldUpdateOperationsInput | string
+    origem?: NullableStringFieldUpdateOperationsInput | string | null
+    destino?: NullableStringFieldUpdateOperationsInput | string | null
+    tipo?: EnumTipoRequisicaoFieldUpdateOperationsInput | $Enums.TipoRequisicao
+    status?: EnumStatusRequisicaoFieldUpdateOperationsInput | $Enums.StatusRequisicao
+    observacao?: NullableStringFieldUpdateOperationsInput | string | null
+    fornecedorId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    total?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    userId?: BigIntFieldUpdateOperationsInput | bigint | number
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ProdutoUpsertWithoutRequisicaoItensInput = {
+    update: XOR<ProdutoUpdateWithoutRequisicaoItensInput, ProdutoUncheckedUpdateWithoutRequisicaoItensInput>
+    create: XOR<ProdutoCreateWithoutRequisicaoItensInput, ProdutoUncheckedCreateWithoutRequisicaoItensInput>
+    where?: ProdutoWhereInput
+  }
+
+  export type ProdutoUpdateToOneWithWhereWithoutRequisicaoItensInput = {
+    where?: ProdutoWhereInput
+    data: XOR<ProdutoUpdateWithoutRequisicaoItensInput, ProdutoUncheckedUpdateWithoutRequisicaoItensInput>
+  }
+
+  export type ProdutoUpdateWithoutRequisicaoItensInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    nome?: StringFieldUpdateOperationsInput | string
+    substanciaActiva?: NullableStringFieldUpdateOperationsInput | string | null
+    dosagem?: NullableStringFieldUpdateOperationsInput | string | null
+    forma?: NullableStringFieldUpdateOperationsInput | string | null
+    apresentacao?: NullableStringFieldUpdateOperationsInput | string | null
+    ativo?: BoolFieldUpdateOperationsInput | boolean
+    barcode?: NullableStringFieldUpdateOperationsInput | string | null
+    precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    fornecedores?: ProdutoFornecedorUpdateManyWithoutProdutoNestedInput
+    compraItens?: CompraItemUpdateManyWithoutProdutoNestedInput
+    lotes?: LoteUpdateManyWithoutProdutoNestedInput
+    movimentos?: EstoqueMovimentoUpdateManyWithoutProdutoNestedInput
+    reservas?: EstoqueReservaUpdateManyWithoutProdutoNestedInput
+    historicoPrecos?: HistoricoPrecoUpdateManyWithoutProdutoNestedInput
+    alertasEstoque?: AlertaEstoqueUpdateManyWithoutProdutoNestedInput
+    livroPsicotropicos?: LivroPsicotropicoUpdateManyWithoutProdutoNestedInput
+    stockValuation?: StockValuationUpdateOneWithoutProdutoNestedInput
+    stockBalance?: StockBalanceUpdateOneWithoutProdutoNestedInput
+    dispensacoes?: DispensacaoUpdateManyWithoutProdutoNestedInput
+    faturaItens?: FaturaItemUpdateManyWithoutProdutoNestedInput
+    stockReversals?: StockReversalUpdateManyWithoutProdutoNestedInput
+    livroReceitas?: LivroReceitaUpdateManyWithoutProdutoNestedInput
+    regulacao?: ProdutoRegulacaoUpdateOneWithoutProdutoNestedInput
+    classificacaoEventos?: ProdutoClassificacaoEventoUpdateManyWithoutProdutoNestedInput
+    inventarioItens?: InventarioItemUpdateManyWithoutProdutoNestedInput
+    taxRule?: TaxRuleUpdateOneWithoutProdutosNestedInput
+  }
+
+  export type ProdutoUncheckedUpdateWithoutRequisicaoItensInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    nome?: StringFieldUpdateOperationsInput | string
+    substanciaActiva?: NullableStringFieldUpdateOperationsInput | string | null
+    dosagem?: NullableStringFieldUpdateOperationsInput | string | null
+    forma?: NullableStringFieldUpdateOperationsInput | string | null
+    apresentacao?: NullableStringFieldUpdateOperationsInput | string | null
+    ativo?: BoolFieldUpdateOperationsInput | boolean
+    barcode?: NullableStringFieldUpdateOperationsInput | string | null
+    precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    fornecedores?: ProdutoFornecedorUncheckedUpdateManyWithoutProdutoNestedInput
+    compraItens?: CompraItemUncheckedUpdateManyWithoutProdutoNestedInput
+    lotes?: LoteUncheckedUpdateManyWithoutProdutoNestedInput
+    movimentos?: EstoqueMovimentoUncheckedUpdateManyWithoutProdutoNestedInput
+    reservas?: EstoqueReservaUncheckedUpdateManyWithoutProdutoNestedInput
+    historicoPrecos?: HistoricoPrecoUncheckedUpdateManyWithoutProdutoNestedInput
+    alertasEstoque?: AlertaEstoqueUncheckedUpdateManyWithoutProdutoNestedInput
+    livroPsicotropicos?: LivroPsicotropicoUncheckedUpdateManyWithoutProdutoNestedInput
+    stockValuation?: StockValuationUncheckedUpdateOneWithoutProdutoNestedInput
+    stockBalance?: StockBalanceUncheckedUpdateOneWithoutProdutoNestedInput
+    dispensacoes?: DispensacaoUncheckedUpdateManyWithoutProdutoNestedInput
+    faturaItens?: FaturaItemUncheckedUpdateManyWithoutProdutoNestedInput
+    stockReversals?: StockReversalUncheckedUpdateManyWithoutProdutoNestedInput
+    livroReceitas?: LivroReceitaUncheckedUpdateManyWithoutProdutoNestedInput
+    regulacao?: ProdutoRegulacaoUncheckedUpdateOneWithoutProdutoNestedInput
+    classificacaoEventos?: ProdutoClassificacaoEventoUncheckedUpdateManyWithoutProdutoNestedInput
+    inventarioItens?: InventarioItemUncheckedUpdateManyWithoutProdutoNestedInput
+  }
+
+  export type LoteUpsertWithoutRequisicaoItensInput = {
+    update: XOR<LoteUpdateWithoutRequisicaoItensInput, LoteUncheckedUpdateWithoutRequisicaoItensInput>
+    create: XOR<LoteCreateWithoutRequisicaoItensInput, LoteUncheckedCreateWithoutRequisicaoItensInput>
+    where?: LoteWhereInput
+  }
+
+  export type LoteUpdateToOneWithWhereWithoutRequisicaoItensInput = {
+    where?: LoteWhereInput
+    data: XOR<LoteUpdateWithoutRequisicaoItensInput, LoteUncheckedUpdateWithoutRequisicaoItensInput>
+  }
+
+  export type LoteUpdateWithoutRequisicaoItensInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    numeroLote?: StringFieldUpdateOperationsInput | string
+    dataValidade?: DateTimeFieldUpdateOperationsInput | Date | string
+    dataFabricacao?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    quantidadeInicial?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantidadeAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantidadeQuarentena?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantidadeIncinerada?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    precoCompra?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    precoVenda?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    ativo?: BoolFieldUpdateOperationsInput | boolean
+    estadoSanitario?: EnumEstadoSanitarioLoteFieldUpdateOperationsInput | $Enums.EstadoSanitarioLote
+    disponibilidade?: EnumDisponibilidadeLoteFieldUpdateOperationsInput | $Enums.DisponibilidadeLote
+    version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    produto?: ProdutoUpdateOneRequiredWithoutLotesNestedInput
+    fornecedor?: FornecedorUpdateOneWithoutLotesNestedInput
+    movimentos?: EstoqueMovimentoUpdateManyWithoutLoteNestedInput
+    reservas?: EstoqueReservaUpdateManyWithoutLoteNestedInput
+    faturaItens?: FaturaItemUpdateManyWithoutLoteNestedInput
+    dispensacoes?: DispensacaoUpdateManyWithoutLoteNestedInput
+    stockReversals?: StockReversalUpdateManyWithoutLoteNestedInput
+    livroPsicotropicos?: LivroPsicotropicoUpdateManyWithoutLoteNestedInput
+    livroReceitas?: LivroReceitaUpdateManyWithoutLoteNestedInput
+    movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutLoteNestedInput
+    incineracaoItens?: IncineracaoItemUpdateManyWithoutLoteNestedInput
+    inventarioItens?: InventarioItemUpdateManyWithoutLoteNestedInput
+  }
+
+  export type LoteUncheckedUpdateWithoutRequisicaoItensInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    produtoId?: BigIntFieldUpdateOperationsInput | bigint | number
+    fornecedorId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    numeroLote?: StringFieldUpdateOperationsInput | string
+    dataValidade?: DateTimeFieldUpdateOperationsInput | Date | string
+    dataFabricacao?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    quantidadeInicial?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantidadeAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantidadeQuarentena?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    quantidadeIncinerada?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    precoCompra?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    precoVenda?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    ativo?: BoolFieldUpdateOperationsInput | boolean
+    estadoSanitario?: EnumEstadoSanitarioLoteFieldUpdateOperationsInput | $Enums.EstadoSanitarioLote
+    disponibilidade?: EnumDisponibilidadeLoteFieldUpdateOperationsInput | $Enums.DisponibilidadeLote
+    version?: IntFieldUpdateOperationsInput | number
+    deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    movimentos?: EstoqueMovimentoUncheckedUpdateManyWithoutLoteNestedInput
+    reservas?: EstoqueReservaUncheckedUpdateManyWithoutLoteNestedInput
+    faturaItens?: FaturaItemUncheckedUpdateManyWithoutLoteNestedInput
+    dispensacoes?: DispensacaoUncheckedUpdateManyWithoutLoteNestedInput
+    stockReversals?: StockReversalUncheckedUpdateManyWithoutLoteNestedInput
+    livroPsicotropicos?: LivroPsicotropicoUncheckedUpdateManyWithoutLoteNestedInput
+    livroReceitas?: LivroReceitaUncheckedUpdateManyWithoutLoteNestedInput
+    movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutLoteNestedInput
+    incineracaoItens?: IncineracaoItemUncheckedUpdateManyWithoutLoteNestedInput
+    inventarioItens?: InventarioItemUncheckedUpdateManyWithoutLoteNestedInput
   }
 
   export type CaixaCreateWithoutCashBalanceInput = {
@@ -101308,6 +106274,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutAuditLogsInput = {
@@ -101348,6 +106316,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutAuditLogsInput = {
@@ -101404,6 +106374,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutAuditLogsInput = {
@@ -101444,6 +106416,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserCreateWithoutUserPermissionsInput = {
@@ -101484,6 +106458,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutUserPermissionsInput = {
@@ -101524,6 +106500,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutUserPermissionsInput = {
@@ -101580,6 +106558,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutUserPermissionsInput = {
@@ -101620,6 +106600,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type ProdutoCreateWithoutStockValuationInput = {
@@ -101632,7 +106614,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -101654,6 +106635,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutProdutoInput
     taxRule?: TaxRuleCreateNestedOneWithoutProdutosInput
   }
 
@@ -101667,7 +106649,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     taxRuleId?: bigint | number | null
     version?: number
@@ -101690,6 +106671,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoCreateOrConnectWithoutStockValuationInput = {
@@ -101718,7 +106700,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -101740,6 +106721,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutProdutoNestedInput
     taxRule?: TaxRuleUpdateOneWithoutProdutosNestedInput
   }
 
@@ -101753,7 +106735,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     version?: IntFieldUpdateOperationsInput | number
@@ -101776,6 +106757,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput
   }
 
   export type ProdutoCreateWithoutDispensacoesInput = {
@@ -101788,7 +106770,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -101810,6 +106791,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutProdutoInput
     taxRule?: TaxRuleCreateNestedOneWithoutProdutosInput
   }
 
@@ -101823,7 +106805,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     taxRuleId?: bigint | number | null
     version?: number
@@ -101846,6 +106827,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoCreateOrConnectWithoutDispensacoesInput = {
@@ -101881,6 +106863,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutLoteInput
   }
 
   export type LoteUncheckedCreateWithoutDispensacoesInput = {
@@ -101911,6 +106894,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemUncheckedCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutLoteInput
   }
 
   export type LoteCreateOrConnectWithoutDispensacoesInput = {
@@ -101956,6 +106940,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutDispensacoesInput = {
@@ -101996,6 +106982,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutDispensacoesInput = {
@@ -102041,6 +107029,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutValidacoesDispensacaoInput = {
@@ -102081,6 +107071,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutValidacoesDispensacaoInput = {
@@ -102362,7 +107354,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -102384,6 +107375,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutProdutoNestedInput
     taxRule?: TaxRuleUpdateOneWithoutProdutosNestedInput
   }
 
@@ -102397,7 +107389,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     version?: IntFieldUpdateOperationsInput | number
@@ -102420,6 +107411,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput
   }
 
   export type LoteUpsertWithoutDispensacoesInput = {
@@ -102461,6 +107453,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutLoteNestedInput
   }
 
   export type LoteUncheckedUpdateWithoutDispensacoesInput = {
@@ -102491,6 +107484,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUncheckedUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutLoteNestedInput
   }
 
   export type UserUpsertWithoutDispensacoesInput = {
@@ -102542,6 +107536,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutDispensacoesInput = {
@@ -102582,6 +107578,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUpsertWithoutValidacoesDispensacaoInput = {
@@ -102633,6 +107631,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutValidacoesDispensacaoInput = {
@@ -102673,6 +107673,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type FaturaItemUpsertWithoutDispensacaoInput = {
@@ -103077,6 +108079,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutFaturaAnulacoesInput = {
@@ -103117,6 +108121,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutFaturaAnulacoesInput = {
@@ -103260,6 +108266,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutFaturaAnulacoesInput = {
@@ -103300,6 +108308,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type FaturaItemCreateWithoutCancelamentosInput = {
@@ -103395,6 +108405,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutFaturaItemCancelamentosInput = {
@@ -103435,6 +108447,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutFaturaItemCancelamentosInput = {
@@ -103552,6 +108566,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutFaturaItemCancelamentosInput = {
@@ -103592,6 +108608,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type PagamentoCreateWithoutRefundsInput = {
@@ -103665,6 +108683,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutPaymentRefundsInput = {
@@ -103705,6 +108725,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutPaymentRefundsInput = {
@@ -103800,6 +108822,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutPaymentRefundsInput = {
@@ -103840,6 +108864,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserCreateWithoutBusinessEventsInput = {
@@ -103880,6 +108906,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutBusinessEventsInput = {
@@ -103920,6 +108948,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutBusinessEventsInput = {
@@ -103976,6 +109006,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutBusinessEventsInput = {
@@ -104016,6 +109048,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type CaixaCreateWithoutSessoesInput = {
@@ -104089,6 +109123,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutCaixaSessoesInput = {
@@ -104129,6 +109165,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutCaixaSessoesInput = {
@@ -104174,6 +109212,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutSessoesFechadasInput = {
@@ -104214,6 +109254,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutSessoesFechadasInput = {
@@ -104309,6 +109351,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutCaixaSessoesInput = {
@@ -104349,6 +109393,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUpsertWithoutSessoesFechadasInput = {
@@ -104400,6 +109446,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutSessoesFechadasInput = {
@@ -104440,6 +109488,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type FaturaCreateWithoutStockReversalsInput = {
@@ -104588,7 +109638,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -104610,6 +109659,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutProdutoInput
     taxRule?: TaxRuleCreateNestedOneWithoutProdutosInput
   }
 
@@ -104623,7 +109673,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     taxRuleId?: bigint | number | null
     version?: number
@@ -104646,6 +109695,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoCreateOrConnectWithoutStockReversalsInput = {
@@ -104681,6 +109731,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutLoteInput
   }
 
   export type LoteUncheckedCreateWithoutStockReversalsInput = {
@@ -104711,6 +109762,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemUncheckedCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutLoteInput
   }
 
   export type LoteCreateOrConnectWithoutStockReversalsInput = {
@@ -104756,6 +109808,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutStockReversalsInput = {
@@ -104796,6 +109850,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutStockReversalsInput = {
@@ -104972,7 +110028,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -104994,6 +110049,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutProdutoNestedInput
     taxRule?: TaxRuleUpdateOneWithoutProdutosNestedInput
   }
 
@@ -105007,7 +110063,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     version?: IntFieldUpdateOperationsInput | number
@@ -105030,6 +110085,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput
   }
 
   export type LoteUpsertWithoutStockReversalsInput = {
@@ -105071,6 +110127,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutLoteNestedInput
   }
 
   export type LoteUncheckedUpdateWithoutStockReversalsInput = {
@@ -105101,6 +110158,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUncheckedUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutLoteNestedInput
   }
 
   export type UserUpsertWithoutStockReversalsInput = {
@@ -105152,6 +110210,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutStockReversalsInput = {
@@ -105192,6 +110252,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type ClienteCreateWithoutReceitasInput = {
@@ -105498,6 +110560,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserUncheckedCreateWithoutLivroReceitasInput = {
@@ -105538,6 +110602,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutResponsavelInput
     inventariosIniciados?: InventarioUncheckedCreateNestedManyWithoutIniciadoPorInput
     inventariosReconciliados?: InventarioUncheckedCreateNestedManyWithoutReconciliadoPorInput
+    requisicoesCriadas?: RequisicaoUncheckedCreateNestedManyWithoutUserInput
+    requisicoesConfirmadas?: RequisicaoUncheckedCreateNestedManyWithoutConfirmedByInput
   }
 
   export type UserCreateOrConnectWithoutLivroReceitasInput = {
@@ -105637,7 +110703,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -105659,6 +110724,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutProdutoInput
     taxRule?: TaxRuleCreateNestedOneWithoutProdutosInput
   }
 
@@ -105672,7 +110738,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     taxRuleId?: bigint | number | null
     version?: number
@@ -105695,6 +110760,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoCreateOrConnectWithoutLivroReceitasInput = {
@@ -105730,6 +110796,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutLoteInput
   }
 
   export type LoteUncheckedCreateWithoutLivroReceitasInput = {
@@ -105760,6 +110827,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedCreateNestedManyWithoutLoteInput
     incineracaoItens?: IncineracaoItemUncheckedCreateNestedManyWithoutLoteInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutLoteInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutLoteInput
   }
 
   export type LoteCreateOrConnectWithoutLivroReceitasInput = {
@@ -106011,6 +111079,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type UserUncheckedUpdateWithoutLivroReceitasInput = {
@@ -106051,6 +111121,8 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutResponsavelNestedInput
     inventariosIniciados?: InventarioUncheckedUpdateManyWithoutIniciadoPorNestedInput
     inventariosReconciliados?: InventarioUncheckedUpdateManyWithoutReconciliadoPorNestedInput
+    requisicoesCriadas?: RequisicaoUncheckedUpdateManyWithoutUserNestedInput
+    requisicoesConfirmadas?: RequisicaoUncheckedUpdateManyWithoutConfirmedByNestedInput
   }
 
   export type ReceitaUpsertWithoutLivroReceitasInput = {
@@ -106168,7 +111240,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -106190,6 +111261,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutProdutoNestedInput
     taxRule?: TaxRuleUpdateOneWithoutProdutosNestedInput
   }
 
@@ -106203,7 +111275,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     taxRuleId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     version?: IntFieldUpdateOperationsInput | number
@@ -106226,6 +111297,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput
   }
 
   export type LoteUpsertWithoutLivroReceitasInput = {
@@ -106267,6 +111339,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutLoteNestedInput
   }
 
   export type LoteUncheckedUpdateWithoutLivroReceitasInput = {
@@ -106297,6 +111370,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUncheckedUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutLoteNestedInput
   }
 
   export type FaturaUpsertWithoutLivroReceitasInput = {
@@ -106522,7 +111596,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -106545,6 +111618,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoUncheckedCreateWithoutTaxRuleInput = {
@@ -106557,7 +111631,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -106580,6 +111653,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedCreateNestedOneWithoutProdutoInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedCreateNestedManyWithoutProdutoInput
     inventarioItens?: InventarioItemUncheckedCreateNestedManyWithoutProdutoInput
+    requisicaoItens?: RequisicaoItemUncheckedCreateNestedManyWithoutProdutoInput
   }
 
   export type ProdutoCreateOrConnectWithoutTaxRuleInput = {
@@ -106653,7 +111727,6 @@ export namespace Prisma {
     ativo?: BoolFilter<"Produto"> | boolean
     barcode?: StringNullableFilter<"Produto"> | string | null
     precoVenda?: DecimalFilter<"Produto"> | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFilter<"Produto"> | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFilter<"Produto"> | Decimal | DecimalJsLike | number | string
     taxRuleId?: BigIntNullableFilter<"Produto"> | bigint | number | null
     version?: IntFilter<"Produto"> | number
@@ -107106,6 +112179,38 @@ export namespace Prisma {
     iniciadoPorId: bigint | number
     iniciadoEm?: Date | string
     reconciliadoEm?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RequisicaoCreateManyUserInput = {
+    id?: bigint | number
+    numeroDocumento: string
+    origem?: string | null
+    destino?: string | null
+    tipo?: $Enums.TipoRequisicao
+    status?: $Enums.StatusRequisicao
+    observacao?: string | null
+    fornecedorId?: bigint | number | null
+    total?: Decimal | DecimalJsLike | number | string | null
+    confirmedAt?: Date | string | null
+    confirmedById?: bigint | number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type RequisicaoCreateManyConfirmedByInput = {
+    id?: bigint | number
+    numeroDocumento: string
+    origem?: string | null
+    destino?: string | null
+    tipo?: $Enums.TipoRequisicao
+    status?: $Enums.StatusRequisicao
+    observacao?: string | null
+    fornecedorId?: bigint | number | null
+    total?: Decimal | DecimalJsLike | number | string | null
+    userId: bigint | number
+    confirmedAt?: Date | string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -108450,6 +113555,106 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type RequisicaoUpdateWithoutUserInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    numeroDocumento?: StringFieldUpdateOperationsInput | string
+    origem?: NullableStringFieldUpdateOperationsInput | string | null
+    destino?: NullableStringFieldUpdateOperationsInput | string | null
+    tipo?: EnumTipoRequisicaoFieldUpdateOperationsInput | $Enums.TipoRequisicao
+    status?: EnumStatusRequisicaoFieldUpdateOperationsInput | $Enums.StatusRequisicao
+    observacao?: NullableStringFieldUpdateOperationsInput | string | null
+    total?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    confirmedBy?: UserUpdateOneWithoutRequisicoesConfirmadasNestedInput
+    fornecedor?: FornecedorUpdateOneWithoutRequisicoesNestedInput
+    itens?: RequisicaoItemUpdateManyWithoutRequisicaoNestedInput
+  }
+
+  export type RequisicaoUncheckedUpdateWithoutUserInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    numeroDocumento?: StringFieldUpdateOperationsInput | string
+    origem?: NullableStringFieldUpdateOperationsInput | string | null
+    destino?: NullableStringFieldUpdateOperationsInput | string | null
+    tipo?: EnumTipoRequisicaoFieldUpdateOperationsInput | $Enums.TipoRequisicao
+    status?: EnumStatusRequisicaoFieldUpdateOperationsInput | $Enums.StatusRequisicao
+    observacao?: NullableStringFieldUpdateOperationsInput | string | null
+    fornecedorId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    total?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    itens?: RequisicaoItemUncheckedUpdateManyWithoutRequisicaoNestedInput
+  }
+
+  export type RequisicaoUncheckedUpdateManyWithoutUserInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    numeroDocumento?: StringFieldUpdateOperationsInput | string
+    origem?: NullableStringFieldUpdateOperationsInput | string | null
+    destino?: NullableStringFieldUpdateOperationsInput | string | null
+    tipo?: EnumTipoRequisicaoFieldUpdateOperationsInput | $Enums.TipoRequisicao
+    status?: EnumStatusRequisicaoFieldUpdateOperationsInput | $Enums.StatusRequisicao
+    observacao?: NullableStringFieldUpdateOperationsInput | string | null
+    fornecedorId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    total?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RequisicaoUpdateWithoutConfirmedByInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    numeroDocumento?: StringFieldUpdateOperationsInput | string
+    origem?: NullableStringFieldUpdateOperationsInput | string | null
+    destino?: NullableStringFieldUpdateOperationsInput | string | null
+    tipo?: EnumTipoRequisicaoFieldUpdateOperationsInput | $Enums.TipoRequisicao
+    status?: EnumStatusRequisicaoFieldUpdateOperationsInput | $Enums.StatusRequisicao
+    observacao?: NullableStringFieldUpdateOperationsInput | string | null
+    total?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutRequisicoesCriadasNestedInput
+    fornecedor?: FornecedorUpdateOneWithoutRequisicoesNestedInput
+    itens?: RequisicaoItemUpdateManyWithoutRequisicaoNestedInput
+  }
+
+  export type RequisicaoUncheckedUpdateWithoutConfirmedByInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    numeroDocumento?: StringFieldUpdateOperationsInput | string
+    origem?: NullableStringFieldUpdateOperationsInput | string | null
+    destino?: NullableStringFieldUpdateOperationsInput | string | null
+    tipo?: EnumTipoRequisicaoFieldUpdateOperationsInput | $Enums.TipoRequisicao
+    status?: EnumStatusRequisicaoFieldUpdateOperationsInput | $Enums.StatusRequisicao
+    observacao?: NullableStringFieldUpdateOperationsInput | string | null
+    fornecedorId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    total?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    userId?: BigIntFieldUpdateOperationsInput | bigint | number
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    itens?: RequisicaoItemUncheckedUpdateManyWithoutRequisicaoNestedInput
+  }
+
+  export type RequisicaoUncheckedUpdateManyWithoutConfirmedByInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    numeroDocumento?: StringFieldUpdateOperationsInput | string
+    origem?: NullableStringFieldUpdateOperationsInput | string | null
+    destino?: NullableStringFieldUpdateOperationsInput | string | null
+    tipo?: EnumTipoRequisicaoFieldUpdateOperationsInput | $Enums.TipoRequisicao
+    status?: EnumStatusRequisicaoFieldUpdateOperationsInput | $Enums.StatusRequisicao
+    observacao?: NullableStringFieldUpdateOperationsInput | string | null
+    fornecedorId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    total?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    userId?: BigIntFieldUpdateOperationsInput | bigint | number
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type FaturaCreateManyTerminalInput = {
     id?: bigint | number
     numero: string
@@ -109497,6 +114702,18 @@ export namespace Prisma {
     divergencia: Decimal | DecimalJsLike | number | string
   }
 
+  export type RequisicaoItemCreateManyProdutoInput = {
+    id?: bigint | number
+    requisicaoId: bigint | number
+    loteId?: bigint | number | null
+    quantidadeSolicitada: Decimal | DecimalJsLike | number | string
+    numeroLote?: string | null
+    dataValidade?: Date | string | null
+    precoCompra?: Decimal | DecimalJsLike | number | string | null
+    precoVenda?: Decimal | DecimalJsLike | number | string | null
+    subtotal?: Decimal | DecimalJsLike | number | string | null
+  }
+
   export type ProdutoFornecedorUpdateWithoutProdutoInput = {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
     precoCompra?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -109585,6 +114802,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutLoteNestedInput
   }
 
   export type LoteUncheckedUpdateWithoutProdutoInput = {
@@ -109615,6 +114833,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUncheckedUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutLoteNestedInput
   }
 
   export type LoteUncheckedUpdateManyWithoutProdutoInput = {
@@ -110120,6 +115339,42 @@ export namespace Prisma {
     divergencia?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
+  export type RequisicaoItemUpdateWithoutProdutoInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    quantidadeSolicitada?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    numeroLote?: NullableStringFieldUpdateOperationsInput | string | null
+    dataValidade?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precoCompra?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    precoVenda?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subtotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    requisicao?: RequisicaoUpdateOneRequiredWithoutItensNestedInput
+    lote?: LoteUpdateOneWithoutRequisicaoItensNestedInput
+  }
+
+  export type RequisicaoItemUncheckedUpdateWithoutProdutoInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    requisicaoId?: BigIntFieldUpdateOperationsInput | bigint | number
+    loteId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    quantidadeSolicitada?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    numeroLote?: NullableStringFieldUpdateOperationsInput | string | null
+    dataValidade?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precoCompra?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    precoVenda?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subtotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type RequisicaoItemUncheckedUpdateManyWithoutProdutoInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    requisicaoId?: BigIntFieldUpdateOperationsInput | bigint | number
+    loteId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    quantidadeSolicitada?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    numeroLote?: NullableStringFieldUpdateOperationsInput | string | null
+    dataValidade?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precoCompra?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    precoVenda?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subtotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+  }
+
   export type FaturaItemCreateManyServicoInput = {
     id?: bigint | number
     faturaId: bigint | number
@@ -110274,6 +115529,22 @@ export namespace Prisma {
     data?: Date | string
   }
 
+  export type RequisicaoCreateManyFornecedorInput = {
+    id?: bigint | number
+    numeroDocumento: string
+    origem?: string | null
+    destino?: string | null
+    tipo?: $Enums.TipoRequisicao
+    status?: $Enums.StatusRequisicao
+    observacao?: string | null
+    total?: Decimal | DecimalJsLike | number | string | null
+    userId: bigint | number
+    confirmedAt?: Date | string | null
+    confirmedById?: bigint | number | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
   export type ProdutoFornecedorUpdateWithoutFornecedorInput = {
     id?: BigIntFieldUpdateOperationsInput | bigint | number
     precoCompra?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
@@ -110366,6 +115637,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutLoteNestedInput
   }
 
   export type LoteUncheckedUpdateWithoutFornecedorInput = {
@@ -110396,6 +115668,7 @@ export namespace Prisma {
     movimentosSanitarios?: LoteMovimentoSanitarioUncheckedUpdateManyWithoutLoteNestedInput
     incineracaoItens?: IncineracaoItemUncheckedUpdateManyWithoutLoteNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutLoteNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutLoteNestedInput
   }
 
   export type LoteUncheckedUpdateManyWithoutFornecedorInput = {
@@ -110484,6 +115757,56 @@ export namespace Prisma {
     precoNovo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     variacao?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     data?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type RequisicaoUpdateWithoutFornecedorInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    numeroDocumento?: StringFieldUpdateOperationsInput | string
+    origem?: NullableStringFieldUpdateOperationsInput | string | null
+    destino?: NullableStringFieldUpdateOperationsInput | string | null
+    tipo?: EnumTipoRequisicaoFieldUpdateOperationsInput | $Enums.TipoRequisicao
+    status?: EnumStatusRequisicaoFieldUpdateOperationsInput | $Enums.StatusRequisicao
+    observacao?: NullableStringFieldUpdateOperationsInput | string | null
+    total?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    user?: UserUpdateOneRequiredWithoutRequisicoesCriadasNestedInput
+    confirmedBy?: UserUpdateOneWithoutRequisicoesConfirmadasNestedInput
+    itens?: RequisicaoItemUpdateManyWithoutRequisicaoNestedInput
+  }
+
+  export type RequisicaoUncheckedUpdateWithoutFornecedorInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    numeroDocumento?: StringFieldUpdateOperationsInput | string
+    origem?: NullableStringFieldUpdateOperationsInput | string | null
+    destino?: NullableStringFieldUpdateOperationsInput | string | null
+    tipo?: EnumTipoRequisicaoFieldUpdateOperationsInput | $Enums.TipoRequisicao
+    status?: EnumStatusRequisicaoFieldUpdateOperationsInput | $Enums.StatusRequisicao
+    observacao?: NullableStringFieldUpdateOperationsInput | string | null
+    total?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    userId?: BigIntFieldUpdateOperationsInput | bigint | number
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    itens?: RequisicaoItemUncheckedUpdateManyWithoutRequisicaoNestedInput
+  }
+
+  export type RequisicaoUncheckedUpdateManyWithoutFornecedorInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    numeroDocumento?: StringFieldUpdateOperationsInput | string
+    origem?: NullableStringFieldUpdateOperationsInput | string | null
+    destino?: NullableStringFieldUpdateOperationsInput | string | null
+    tipo?: EnumTipoRequisicaoFieldUpdateOperationsInput | $Enums.TipoRequisicao
+    status?: EnumStatusRequisicaoFieldUpdateOperationsInput | $Enums.StatusRequisicao
+    observacao?: NullableStringFieldUpdateOperationsInput | string | null
+    total?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    userId?: BigIntFieldUpdateOperationsInput | bigint | number
+    confirmedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    confirmedById?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type CompraItemCreateManyCompraInput = {
@@ -110729,6 +116052,18 @@ export namespace Prisma {
     estoqueSistema: Decimal | DecimalJsLike | number | string
     estoqueContado: Decimal | DecimalJsLike | number | string
     divergencia: Decimal | DecimalJsLike | number | string
+  }
+
+  export type RequisicaoItemCreateManyLoteInput = {
+    id?: bigint | number
+    requisicaoId: bigint | number
+    produtoId: bigint | number
+    quantidadeSolicitada: Decimal | DecimalJsLike | number | string
+    numeroLote?: string | null
+    dataValidade?: Date | string | null
+    precoCompra?: Decimal | DecimalJsLike | number | string | null
+    precoVenda?: Decimal | DecimalJsLike | number | string | null
+    subtotal?: Decimal | DecimalJsLike | number | string | null
   }
 
   export type EstoqueMovimentoUpdateWithoutLoteInput = {
@@ -111182,6 +116517,42 @@ export namespace Prisma {
     estoqueSistema?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueContado?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     divergencia?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+  }
+
+  export type RequisicaoItemUpdateWithoutLoteInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    quantidadeSolicitada?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    numeroLote?: NullableStringFieldUpdateOperationsInput | string | null
+    dataValidade?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precoCompra?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    precoVenda?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subtotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    requisicao?: RequisicaoUpdateOneRequiredWithoutItensNestedInput
+    produto?: ProdutoUpdateOneRequiredWithoutRequisicaoItensNestedInput
+  }
+
+  export type RequisicaoItemUncheckedUpdateWithoutLoteInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    requisicaoId?: BigIntFieldUpdateOperationsInput | bigint | number
+    produtoId?: BigIntFieldUpdateOperationsInput | bigint | number
+    quantidadeSolicitada?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    numeroLote?: NullableStringFieldUpdateOperationsInput | string | null
+    dataValidade?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precoCompra?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    precoVenda?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subtotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type RequisicaoItemUncheckedUpdateManyWithoutLoteInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    requisicaoId?: BigIntFieldUpdateOperationsInput | bigint | number
+    produtoId?: BigIntFieldUpdateOperationsInput | bigint | number
+    quantidadeSolicitada?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    numeroLote?: NullableStringFieldUpdateOperationsInput | string | null
+    dataValidade?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precoCompra?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    precoVenda?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subtotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
   }
 
   export type IncineracaoItemCreateManyIncineracaoInput = {
@@ -112214,6 +117585,54 @@ export namespace Prisma {
     divergencia?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
   }
 
+  export type RequisicaoItemCreateManyRequisicaoInput = {
+    id?: bigint | number
+    produtoId: bigint | number
+    loteId?: bigint | number | null
+    quantidadeSolicitada: Decimal | DecimalJsLike | number | string
+    numeroLote?: string | null
+    dataValidade?: Date | string | null
+    precoCompra?: Decimal | DecimalJsLike | number | string | null
+    precoVenda?: Decimal | DecimalJsLike | number | string | null
+    subtotal?: Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type RequisicaoItemUpdateWithoutRequisicaoInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    quantidadeSolicitada?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    numeroLote?: NullableStringFieldUpdateOperationsInput | string | null
+    dataValidade?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precoCompra?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    precoVenda?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subtotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    produto?: ProdutoUpdateOneRequiredWithoutRequisicaoItensNestedInput
+    lote?: LoteUpdateOneWithoutRequisicaoItensNestedInput
+  }
+
+  export type RequisicaoItemUncheckedUpdateWithoutRequisicaoInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    produtoId?: BigIntFieldUpdateOperationsInput | bigint | number
+    loteId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    quantidadeSolicitada?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    numeroLote?: NullableStringFieldUpdateOperationsInput | string | null
+    dataValidade?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precoCompra?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    precoVenda?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subtotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+  }
+
+  export type RequisicaoItemUncheckedUpdateManyWithoutRequisicaoInput = {
+    id?: BigIntFieldUpdateOperationsInput | bigint | number
+    produtoId?: BigIntFieldUpdateOperationsInput | bigint | number
+    loteId?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    quantidadeSolicitada?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
+    numeroLote?: NullableStringFieldUpdateOperationsInput | string | null
+    dataValidade?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    precoCompra?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    precoVenda?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+    subtotal?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
+  }
+
   export type LivroReceitaCreateManyReceitaInput = {
     id?: bigint | number
     clienteId: bigint | number
@@ -112424,7 +117843,6 @@ export namespace Prisma {
     ativo?: boolean
     barcode?: string | null
     precoVenda: Decimal | DecimalJsLike | number | string
-    estoqueAtual?: Decimal | DecimalJsLike | number | string
     estoqueMinimo?: Decimal | DecimalJsLike | number | string
     version?: number
     deletedAt?: Date | string | null
@@ -112452,7 +117870,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -112475,6 +117892,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUpdateManyWithoutProdutoNestedInput
   }
 
   export type ProdutoUncheckedUpdateWithoutTaxRuleInput = {
@@ -112487,7 +117905,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -112510,6 +117927,7 @@ export namespace Prisma {
     regulacao?: ProdutoRegulacaoUncheckedUpdateOneWithoutProdutoNestedInput
     classificacaoEventos?: ProdutoClassificacaoEventoUncheckedUpdateManyWithoutProdutoNestedInput
     inventarioItens?: InventarioItemUncheckedUpdateManyWithoutProdutoNestedInput
+    requisicaoItens?: RequisicaoItemUncheckedUpdateManyWithoutProdutoNestedInput
   }
 
   export type ProdutoUncheckedUpdateManyWithoutTaxRuleInput = {
@@ -112522,7 +117940,6 @@ export namespace Prisma {
     ativo?: BoolFieldUpdateOperationsInput | boolean
     barcode?: NullableStringFieldUpdateOperationsInput | string | null
     precoVenda?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
-    estoqueAtual?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     estoqueMinimo?: DecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string
     version?: IntFieldUpdateOperationsInput | number
     deletedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -112635,6 +118052,10 @@ export namespace Prisma {
      * @deprecated Use InventarioCountOutputTypeDefaultArgs instead
      */
     export type InventarioCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = InventarioCountOutputTypeDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use RequisicaoCountOutputTypeDefaultArgs instead
+     */
+    export type RequisicaoCountOutputTypeArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RequisicaoCountOutputTypeDefaultArgs<ExtArgs>
     /**
      * @deprecated Use ReceitaCountOutputTypeDefaultArgs instead
      */
@@ -112783,6 +118204,14 @@ export namespace Prisma {
      * @deprecated Use InventarioItemDefaultArgs instead
      */
     export type InventarioItemArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = InventarioItemDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use RequisicaoDefaultArgs instead
+     */
+    export type RequisicaoArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RequisicaoDefaultArgs<ExtArgs>
+    /**
+     * @deprecated Use RequisicaoItemDefaultArgs instead
+     */
+    export type RequisicaoItemArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RequisicaoItemDefaultArgs<ExtArgs>
     /**
      * @deprecated Use CashBalanceDefaultArgs instead
      */

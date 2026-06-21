@@ -70,8 +70,10 @@ async function main() {
       }
     });
 
-    // Criar movimento de entrada no estoque
-    const estoqueAnterior = Number(produto.estoqueAtual);
+    const balance = await prisma.stockBalance.findUnique({
+      where: { produtoId: produto.id },
+    });
+    const estoqueAnterior = Number(balance?.quantidadeTotal ?? 0);
     const estoqueFinal = estoqueAnterior + 50;
 
     await prisma.estoqueMovimento.create({
@@ -87,12 +89,18 @@ async function main() {
       }
     });
 
-    // Atualizar estoque atual do produto
-    await prisma.produto.update({
-      where: { id: produto.id },
-      data: {
-        estoqueAtual: estoqueFinal
-      }
+    await prisma.stockBalance.upsert({
+      where: { produtoId: produto.id },
+      create: {
+        produtoId: produto.id,
+        quantidadeTotal: estoqueFinal,
+        quantidadeReservada: 0,
+        quantidadeDisponivel: estoqueFinal,
+      },
+      update: {
+        quantidadeTotal: estoqueFinal,
+        quantidadeDisponivel: estoqueFinal,
+      },
     });
 
     count++;

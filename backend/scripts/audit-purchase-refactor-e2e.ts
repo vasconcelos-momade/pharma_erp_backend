@@ -115,7 +115,7 @@ async function main() {
   ok("produtos", `Produto teste: ${produtoId} (${produto.nome ?? "?"})`);
 
   const baseline = await readStockState(produtoId);
-  ok("baseline", `Stock inicial produto ${produtoId}: lotes=${baseline.loteSum} balance=${baseline.balanceTotal} cache=${baseline.cache}`);
+  ok("baseline", `Stock inicial produto ${produtoId}: lotes=${baseline.loteSum} balance=${baseline.balanceTotal}`);
 
   const suffix = Date.now();
   const loteReuse = `AUDIT-REUSE-${suffix}`;
@@ -390,9 +390,6 @@ async function readStockState(
     SELECT quantidadeTotal, quantidadeDisponivel
     FROM stock_balances WHERE produtoId=${produtoId}
   `);
-  const cache = Number(
-    await queryScalar(`SELECT COALESCE(estoqueAtual,0) AS v FROM produtos WHERE id=${produtoId}`),
-  );
 
   let lote: { id: string; qty: string } | null = null;
   if (numeroLote && dataValidade) {
@@ -415,7 +412,6 @@ async function readStockState(
     loteSum,
     balanceTotal: Number(balance?.quantidadeTotal ?? 0),
     balanceDisp: Number(balance?.quantidadeDisponivel ?? 0),
-    cache,
     lote,
   };
 }
@@ -427,10 +423,8 @@ function validateStockConsistency(
 ) {
   if (!near(state.loteSum, state.balanceTotal)) {
     fail("consistencia", `${label}: soma lotes=${state.loteSum} ≠ StockBalance=${state.balanceTotal}`);
-  } else if (!near(state.loteSum, state.cache)) {
-    fail("consistencia", `${label}: soma lotes=${state.loteSum} ≠ estoqueAtual=${state.cache}`);
   } else {
-    ok("consistencia", `${label}: lotes=balance=cache=${state.loteSum}`);
+    ok("consistencia", `${label}: lotes=balance=${state.loteSum}`);
   }
 }
 

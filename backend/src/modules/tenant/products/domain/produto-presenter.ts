@@ -14,21 +14,27 @@ export type ProdutoRegulacaoRow = {
   classificadoPor?: string | null;
 };
 
-/** API/POS: campos regulatórios flat a partir de `produto.regulacao`. */
+/** API: campos regulatórios flat + `estoqueAtual` calculado de StockBalance. */
 export function flattenProdutoForApi<T extends Record<string, unknown>>(
-  produto: T & { regulacao?: ProdutoRegulacaoRow | null },
-): T & ResolvedProdutoPolicy {
+  produto: T & {
+    regulacao?: ProdutoRegulacaoRow | null;
+    stockBalance?: { quantidadeDisponivel?: unknown } | null;
+  },
+): T & ResolvedProdutoPolicy & { estoqueAtual: number } {
   const policy = produto.regulacao
     ? regulacaoToPolicyInput(produto.regulacao)
     : {};
   const resolved = resolveProdutoPolicy(policy);
 
   const { regulacao: _regulacao, ...base } = produto;
+  const disponivel = Number(produto.stockBalance?.quantidadeDisponivel ?? 0);
+
   return {
     ...base,
     ...resolved,
+    estoqueAtual: disponivel,
     regulacao: produto.regulacao ?? null,
-  } as unknown as T & ResolvedProdutoPolicy;
+  } as unknown as T & ResolvedProdutoPolicy & { estoqueAtual: number };
 }
 
 export function regulacaoToPolicyInput(
@@ -48,6 +54,13 @@ export function regulacaoToPolicyInput(
 export const produtoWithRegulacaoInclude = {
   regulacao: true,
   taxRule: true,
+  stockBalance: {
+    select: {
+      quantidadeDisponivel: true,
+      quantidadeTotal: true,
+      quantidadeReservada: true,
+    },
+  },
 } as const;
 
 export const produtoPosSelect = {
@@ -55,7 +68,6 @@ export const produtoPosSelect = {
   nome: true,
   barcode: true,
   precoVenda: true,
-  estoqueAtual: true,
   substanciaActiva: true,
   dosagem: true,
   forma: true,
@@ -92,7 +104,6 @@ export const produtoRequisicaoSelect = {
   nome: true,
   barcode: true,
   precoVenda: true,
-  estoqueAtual: true,
   estoqueMinimo: true,
   substanciaActiva: true,
   dosagem: true,
@@ -136,7 +147,7 @@ export function mapRequisicaoProduto<T extends Record<string, unknown>>(
   const flat = flattenProdutoForApi(row);
   const disponivel = Number(
     (row as { stockBalance?: { quantidadeDisponivel?: unknown } }).stockBalance
-      ?.quantidadeDisponivel ?? flat.estoqueAtual ?? 0,
+      ?.quantidadeDisponivel ?? 0,
   );
   const lotes = (row as { lotes?: Array<{ numeroLote?: string; dataValidade?: Date }> }).lotes;
   const primeiroLote = lotes?.[0];
@@ -154,7 +165,7 @@ export function mapPosProduto<T extends Record<string, unknown>>(row: T): T & Re
   const flat = flattenProdutoForApi(row);
   const disponivel = Number(
     (row as { stockBalance?: { quantidadeDisponivel?: unknown } }).stockBalance
-      ?.quantidadeDisponivel ?? flat.estoqueAtual ?? 0,
+      ?.quantidadeDisponivel ?? 0,
   );
   const lotes = (row as { lotes?: Array<{ numeroLote?: string; dataValidade?: Date }> }).lotes;
   const primeiroLote = lotes?.[0];

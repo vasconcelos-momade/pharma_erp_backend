@@ -14,18 +14,8 @@ function createTx(overrides: Partial<any> = {}) {
       findUnique: mock(async () => ({
         id: 10n,
         nome: "Produto Teste",
-        estoqueAtual: stockBalance.quantidadeTotal,
       })),
-      update: mock(async ({ data }: { data: any }) => {
-        if (typeof data?.estoqueAtual === "number") {
-          stockBalance = {
-            ...stockBalance,
-            quantidadeTotal: data.estoqueAtual,
-            quantidadeDisponivel: data.estoqueAtual,
-          };
-        }
-        return {};
-      }),
+      update: mock(async () => ({})),
       ...(overrides.produto ?? {}),
     },
     stockBalance: {

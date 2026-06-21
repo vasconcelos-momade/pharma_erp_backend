@@ -52,10 +52,6 @@ async function readStock(produtoId: string, loteId?: string) {
   const balance = await prisma.stockBalance.findUnique({
     where: { produtoId: BigInt(produtoId) },
   });
-  const produto = await prisma.produto.findUnique({
-    where: { id: BigInt(produtoId) },
-    select: { estoqueAtual: true },
-  });
   const loteSum = await prisma.lote.aggregate({
     where: { produtoId: BigInt(produtoId), deletedAt: null, ativo: true },
     _sum: { quantidadeAtual: true },
@@ -70,7 +66,7 @@ async function readStock(produtoId: string, loteId?: string) {
   }
   return {
     balance: Number(balance?.quantidadeTotal ?? 0),
-    cache: Number(produto?.estoqueAtual ?? 0),
+    disponivel: Number(balance?.quantidadeDisponivel ?? 0),
     loteSum: Number(loteSum._sum.quantidadeAtual ?? 0),
     loteQty,
   };

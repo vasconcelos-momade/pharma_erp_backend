@@ -670,7 +670,6 @@ async function main() {
           const produto = await tx.produto.create({
             data: {
               ...catalogData,
-              estoqueAtual: 0,
               estoqueMinimo: 10,
             } as any,
           });

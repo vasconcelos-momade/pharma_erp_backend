@@ -1,18 +1,9 @@
 /**
- * Stock operacional: StockBalance é a fonte de leitura; estoqueAtual é cache reconciliado.
+ * Stock operacional: EstoqueMovimento é a fonte de verdade;
+ * StockBalance é projeção de leitura (total, reservado, disponível).
  */
 
 export type StockTx = {
-  produto: {
-    findUnique: (args: {
-      where: { id: bigint };
-      select?: { estoqueAtual?: boolean; nome?: boolean };
-    }) => Promise<{ estoqueAtual?: unknown; nome?: string } | null>;
-    update: (args: {
-      where: { id: bigint };
-      data: { estoqueAtual: number | { increment?: number; decrement?: number } };
-    }) => Promise<unknown>;
-  };
   stockBalance: {
     findUnique: (args: {
       where: { produtoId: bigint };
@@ -31,6 +22,13 @@ export type StockTx = {
       data: Record<string, unknown>;
     }) => Promise<unknown>;
   };
+  estoqueMovimento?: {
+    findFirst: (args: {
+      where: Record<string, unknown>;
+      orderBy: Record<string, "asc" | "desc"> | Array<Record<string, "asc" | "desc">>;
+      select?: Record<string, boolean>;
+    }) => Promise<{ estoqueFinal?: unknown } | null>;
+  };
   lote?: {
     findMany: (args: {
       where: Record<string, unknown>;
@@ -39,22 +37,32 @@ export type StockTx = {
   };
 };
 
-export async function getQuantidadeDisponivel(
+function toNumber(value: unknown): number {
+  if (value == null) {
+    return 0;
+  }
+  if (typeof value === "number") {
+    return value;
+  }
+  return Number(value) || 0;
+}
+
+/** Total físico a partir do último movimento registado (fonte de verdade). */
+export async function getQuantidadeTotalFromMovements(
   tx: StockTx,
   produtoId: bigint,
 ): Promise<number> {
-  const balance = await tx.stockBalance.findUnique({
-    where: { produtoId },
-  });
-  if (balance) {
-    return Number(balance.quantidadeDisponivel);
+  if (!tx.estoqueMovimento?.findFirst) {
+    return 0;
   }
 
-  const produto = await tx.produto.findUnique({
-    where: { id: produtoId },
-    select: { estoqueAtual: true },
+  const latest = await tx.estoqueMovimento.findFirst({
+    where: { produtoId, deletedAt: null },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    select: { estoqueFinal: true },
   });
-  return Number(produto?.estoqueAtual ?? 0);
+
+  return toNumber(latest?.estoqueFinal);
 }
 
 export async function getQuantidadeTotal(
@@ -65,26 +73,24 @@ export async function getQuantidadeTotal(
     where: { produtoId },
   });
   if (balance) {
-    return Number(balance.quantidadeTotal);
+    return toNumber(balance.quantidadeTotal);
   }
 
-  const produto = await tx.produto.findUnique({
-    where: { id: produtoId },
-    select: { estoqueAtual: true },
-  });
-  return Number(produto?.estoqueAtual ?? 0);
+  return getQuantidadeTotalFromMovements(tx, produtoId);
 }
 
-/** Atualiza cache `produtos.estoqueAtual` a partir do total físico. */
-export async function reconcileEstoqueAtualCache(
+export async function getQuantidadeDisponivel(
   tx: StockTx,
   produtoId: bigint,
-  quantidadeTotal: number,
-): Promise<void> {
-  await tx.produto.update({
-    where: { id: produtoId },
-    data: { estoqueAtual: quantidadeTotal },
+): Promise<number> {
+  const balance = await tx.stockBalance.findUnique({
+    where: { produtoId },
   });
+  if (balance) {
+    return toNumber(balance.quantidadeDisponivel);
+  }
+
+  return getQuantidadeTotalFromMovements(tx, produtoId);
 }
 
 /** Baixa física na venda (total e disponível). */
@@ -109,8 +115,6 @@ export async function applyStockSaleDelta(
       quantidadeDisponivel: { decrement: quantidade },
     },
   });
-
-  await reconcileEstoqueAtualCache(tx, produtoId, totalAfter);
 }
 
 /** Ajuste de inventário (+/-). */
@@ -150,11 +154,10 @@ export async function applyStockReturnDelta(
     },
   });
 
-  await reconcileEstoqueAtualCache(tx, produtoId, totalAfter);
   return totalAfter;
 }
 
-/** Sincroniza StockBalance e cache do produto a partir da soma dos lotes activos. */
+/** Sincroniza StockBalance a partir da soma dos lotes activos. */
 export async function syncProductStockFromLotes(
   tx: StockTx & {
     lote: {
@@ -176,14 +179,14 @@ export async function syncProductStockFromLotes(
   });
 
   const total = lotes.reduce(
-    (sum, lote) => sum + Number(lote.quantidadeAtual ?? 0),
+    (sum, lote) => sum + toNumber(lote.quantidadeAtual),
     0,
   );
 
   const balance = await tx.stockBalance.findUnique({
     where: { produtoId },
   });
-  const reservada = Number(balance?.quantidadeReservada ?? 0);
+  const reservada = toNumber(balance?.quantidadeReservada);
   const disponivel = Math.max(0, total - reservada);
 
   await tx.stockBalance.upsert({
@@ -200,6 +203,5 @@ export async function syncProductStockFromLotes(
     },
   });
 
-  await reconcileEstoqueAtualCache(tx, produtoId, total);
   return total;
 }

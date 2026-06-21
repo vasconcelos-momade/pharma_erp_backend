@@ -751,14 +751,6 @@ export class FinalizarVendaUseCase {
       },
     });
 
-    await tx.produto.update({
-      where: { id: produtoId },
-      data: {
-        estoqueAtual: quantidadeTotal,
-        version: { increment: 1 },
-      },
-    });
-
     return {
       total: quantidadeTotal,
       disponivel: quantidadeDisponivel,

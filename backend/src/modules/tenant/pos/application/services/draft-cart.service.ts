@@ -208,7 +208,6 @@ export class DraftCartService {
       );
     }
 
-    const estoqueAtual = Number(produto.estoqueAtual ?? produto.estoque_atual ?? 0);
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
     const key = this.reservaKey(idempotencyKey, produto.id, loteId);
 
@@ -237,9 +236,9 @@ export class DraftCartService {
       },
       create: {
         produtoId: produto.id,
-        quantidadeTotal: estoqueAtual,
+        quantidadeTotal: disponivel + delta,
         quantidadeReservada: delta,
-        quantidadeDisponivel: estoqueAtual - delta,
+        quantidadeDisponivel: disponivel - delta,
       },
     });
   }
@@ -713,9 +712,14 @@ export class DraftCartService {
         select: {
           id: true,
           nome: true,
-          estoqueAtual: true,
           regulacao: true,
           taxRule: { select: { tipo: true, taxa: true, codigo: true } },
+          stockBalance: {
+            select: {
+              quantidadeDisponivel: true,
+              quantidadeTotal: true,
+            },
+          },
         },
       });
       const produto = produtoRow

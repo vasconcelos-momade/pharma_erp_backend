@@ -12,7 +12,6 @@ function createTx(overrides: Partial<any> = {}) {
       findUnique: mock(async () => ({
         id: 101n,
         precoVenda: 50,
-        estoqueAtual: 0,
       })),
       update: mock(async () => ({})),
       ...(overrides.produto ?? {}),
@@ -171,7 +170,6 @@ describe("receivePurchaseItemStock", () => {
     let produto = {
       id: 101n,
       precoVenda: 50,
-      estoqueAtual: 0,
     };
     let stockBalance: {
       quantidadeTotal: number;
@@ -312,7 +310,7 @@ describe("receivePurchaseItemStock", () => {
       { salePriceMode: "truthy" },
     );
 
-    expect(tx.produto.update).toHaveBeenCalledTimes(2);
+    expect(tx.produto.update).not.toHaveBeenCalled();
     const priceUpdatePayload = tx.produto.update.mock.calls.find(
       (call) => call[0].data.precoVenda !== undefined,
     )?.[0].data;

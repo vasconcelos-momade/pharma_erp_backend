@@ -1,4 +1,4 @@
-/** Campos persistidos apenas em `produtos` (catálogo, preço, stock cache). */
+/** Campos persistidos apenas em `produtos` (catálogo e preço). */
 
 const CATALOG_KEYS = new Set([
   "nome",

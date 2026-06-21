@@ -16,19 +16,17 @@ type RequisitionConfirmationTx = StockTx & {
     query: TemplateStringsArray,
     ...values: unknown[]
   ) => Promise<unknown>;
-  produto: StockTx["produto"] & {
+  produto: {
     findUnique: (args: {
       where: { id: bigint };
       select?: {
         id?: boolean;
         nome?: boolean;
-        estoqueAtual?: boolean;
       };
     }) => Promise<
       | {
           id?: bigint;
           nome?: string;
-          estoqueAtual?: unknown;
         }
       | null
     >;
@@ -264,7 +262,7 @@ export async function confirmRequisitionStockMovements(
 
     const produto = await tx.produto.findUnique({
       where: { id: item.produtoId },
-      select: { id: true, nome: true, estoqueAtual: true },
+      select: { id: true, nome: true },
     });
 
     if (!produto?.id) {

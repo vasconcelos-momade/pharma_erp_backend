@@ -223,7 +223,6 @@ exports.Prisma.ProdutoScalarFieldEnum = {
   ativo: 'ativo',
   barcode: 'barcode',
   precoVenda: 'precoVenda',
-  estoqueAtual: 'estoqueAtual',
   estoqueMinimo: 'estoqueMinimo',
   taxRuleId: 'taxRuleId',
   version: 'version',
@@ -594,6 +593,36 @@ exports.Prisma.InventarioItemScalarFieldEnum = {
   estoqueSistema: 'estoqueSistema',
   estoqueContado: 'estoqueContado',
   divergencia: 'divergencia'
+};
+
+exports.Prisma.RequisicaoScalarFieldEnum = {
+  id: 'id',
+  numeroDocumento: 'numeroDocumento',
+  origem: 'origem',
+  destino: 'destino',
+  tipo: 'tipo',
+  status: 'status',
+  observacao: 'observacao',
+  fornecedorId: 'fornecedorId',
+  total: 'total',
+  userId: 'userId',
+  confirmedAt: 'confirmedAt',
+  confirmedById: 'confirmedById',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.RequisicaoItemScalarFieldEnum = {
+  id: 'id',
+  requisicaoId: 'requisicaoId',
+  produtoId: 'produtoId',
+  loteId: 'loteId',
+  quantidadeSolicitada: 'quantidadeSolicitada',
+  numeroLote: 'numeroLote',
+  dataValidade: 'dataValidade',
+  precoCompra: 'precoCompra',
+  precoVenda: 'precoVenda',
+  subtotal: 'subtotal'
 };
 
 exports.Prisma.CashBalanceScalarFieldEnum = {
@@ -1061,24 +1090,37 @@ exports.TipoMovimentoPsicotropico = exports.$Enums.TipoMovimentoPsicotropico = {
 };
 
 exports.SystemModule = exports.$Enums.SystemModule = {
+  REQUISICOES: 'REQUISICOES',
+  COMPRAS: 'COMPRAS',
   PRODUTOS: 'PRODUTOS',
+  LOTES: 'LOTES',
+  INVENTARIO: 'INVENTARIO',
+  FORNECEDORES: 'FORNECEDORES',
+  CLIENTES: 'CLIENTES',
+  POS: 'POS',
+  RELATORIOS: 'RELATORIOS',
+  UTILIZADORES: 'UTILIZADORES',
+  CONFIGURACOES: 'CONFIGURACOES',
   FATURAS: 'FATURAS',
   CAIXA: 'CAIXA',
   ESTOQUE: 'ESTOQUE',
   PSICOTROPICOS: 'PSICOTROPICOS',
-  FORNECEDORES: 'FORNECEDORES',
-  COMPRAS: 'COMPRAS',
-  CLIENTES: 'CLIENTES',
-  CONFIGURACOES: 'CONFIGURACOES',
   AUDITORIA: 'AUDITORIA'
 };
 
 exports.PermissionAction = exports.$Enums.PermissionAction = {
   VIEW: 'VIEW',
   CREATE: 'CREATE',
+  UPDATE: 'UPDATE',
   EDIT: 'EDIT',
   DELETE: 'DELETE',
-  APPROVE: 'APPROVE'
+  APPROVE: 'APPROVE',
+  REJECT: 'REJECT',
+  CANCEL: 'CANCEL',
+  EXPORT: 'EXPORT',
+  CREATE_LOTE: 'CREATE_LOTE',
+  ADJUST_STOCK: 'ADJUST_STOCK',
+  CLOSE_SHIFT: 'CLOSE_SHIFT'
 };
 
 exports.StatusInventario = exports.$Enums.StatusInventario = {
@@ -1086,6 +1128,20 @@ exports.StatusInventario = exports.$Enums.StatusInventario = {
   EM_CONTAGEM: 'EM_CONTAGEM',
   RECONCILIADO: 'RECONCILIADO',
   CANCELADO: 'CANCELADO'
+};
+
+exports.TipoRequisicao = exports.$Enums.TipoRequisicao = {
+  COMPRA: 'COMPRA',
+  ENTRADA: 'ENTRADA',
+  SAIDA: 'SAIDA'
+};
+
+exports.StatusRequisicao = exports.$Enums.StatusRequisicao = {
+  PENDENTE: 'PENDENTE',
+  APROVADA: 'APROVADA',
+  REJEITADA: 'REJEITADA',
+  CONCLUIDA: 'CONCLUIDA',
+  CANCELADA: 'CANCELADA'
 };
 
 exports.TipoRelatorioSanitario = exports.$Enums.TipoRelatorioSanitario = {
@@ -1151,6 +1207,8 @@ exports.Prisma.ModelName = {
   StockBalance: 'StockBalance',
   Inventario: 'Inventario',
   InventarioItem: 'InventarioItem',
+  Requisicao: 'Requisicao',
+  RequisicaoItem: 'RequisicaoItem',
   CashBalance: 'CashBalance',
   AuditLog: 'AuditLog',
   SanitarioReport: 'SanitarioReport',

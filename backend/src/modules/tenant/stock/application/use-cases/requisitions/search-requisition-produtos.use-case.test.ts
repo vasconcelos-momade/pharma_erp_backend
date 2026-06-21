@@ -16,7 +16,6 @@ describe("SearchRequisitionProdutosUseCase", () => {
         nome: "Paracetamol 500mg",
         barcode: "7891234567890",
         precoVenda: 120,
-        estoqueAtual: 15,
         estoqueMinimo: 2,
         substanciaActiva: "Paracetamol",
         dosagem: "500mg",
@@ -85,7 +84,6 @@ describe("SearchRequisitionProdutosUseCase", () => {
         nome: "Produto com lote",
         barcode: "111",
         precoVenda: 10,
-        estoqueAtual: 5,
         estoqueMinimo: 1,
         substanciaActiva: "Activa A",
         dosagem: null,
@@ -110,7 +108,6 @@ describe("SearchRequisitionProdutosUseCase", () => {
         nome: "Produto sem lote",
         barcode: "222",
         precoVenda: 15,
-        estoqueAtual: 8,
         estoqueMinimo: 1,
         substanciaActiva: "Activa B",
         dosagem: null,
@@ -127,7 +124,6 @@ describe("SearchRequisitionProdutosUseCase", () => {
         nome: "Produto extra",
         barcode: "333",
         precoVenda: 20,
-        estoqueAtual: 2,
         estoqueMinimo: 1,
         substanciaActiva: "Activa C",
         dosagem: null,
@@ -170,7 +166,7 @@ describe("SearchRequisitionProdutosUseCase", () => {
     });
     expect(result.items[1]).toMatchObject({
       id: 2n,
-      estoqueAtual: 8,
+      estoqueAtual: 0,
       lote: null,
       dataValidade: null,
     });

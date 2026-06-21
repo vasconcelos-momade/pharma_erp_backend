@@ -1,5 +1,5 @@
 /**
- * Reconcilia StockBalance e cache do produto com a soma dos lotes activos.
+ * Reconcilia StockBalance com a soma dos lotes activos.
  * Uso:
  *   bun scripts/reconcile-stock-balance.ts                    # todos os tenants (central)
  *   bun scripts/reconcile-stock-balance.ts tenant_farmacia_X  # um tenant

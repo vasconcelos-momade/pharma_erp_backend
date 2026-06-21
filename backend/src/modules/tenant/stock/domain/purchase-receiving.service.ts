@@ -3,7 +3,6 @@ import { syncProductStockFromLotes, type StockTx } from "./produto-stock.service
 type PurchaseProductRecord = {
   id: bigint;
   precoVenda: unknown;
-  estoqueAtual?: unknown;
   nome?: string;
 };
 
@@ -14,7 +13,7 @@ type PurchaseLotRecord = {
   quantidadeAtual: unknown;
 };
 
-type PurchaseReceivingTx = Omit<StockTx, "produto" | "lote"> & {
+type PurchaseReceivingTx = StockTx & {
   produto: {
     findUnique: (args: {
       where: { id: bigint };
