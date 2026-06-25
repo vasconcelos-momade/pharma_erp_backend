@@ -1,5 +1,4 @@
 import { getPrisma } from "../../../../../../infrastructure/prisma/tenant-prisma.factory";
-import type { CategoriaProdutoValue } from "../../../../products/application/dto/produto.dto";
 import {
   mapRequisicaoProduto,
   produtoRequisicaoSelect,
@@ -8,7 +7,7 @@ import {
 export class SearchRequisitionProdutosUseCase {
   async execute(params?: {
     q?: string;
-    categoria?: CategoriaProdutoValue;
+    categoriaId?: bigint;
     page?: number;
     pageSize?: number;
   }) {
@@ -20,7 +19,7 @@ export class SearchRequisitionProdutosUseCase {
     const baseWhere = {
       ativo: true,
       deletedAt: null,
-      ...(params?.categoria ? { categoria: params.categoria } : {}),
+      ...(params?.categoriaId ? { categoriaId: params.categoriaId } : {}),
     };
 
     const queryFilters = searchTerm
@@ -29,6 +28,14 @@ export class SearchRequisitionProdutosUseCase {
             { nome: { contains: searchTerm } },
             { substanciaActiva: { contains: searchTerm } },
             { barcode: { contains: searchTerm } },
+            {
+              categoria: {
+                is: {
+                  nome: { contains: searchTerm },
+                  deletedAt: null,
+                },
+              },
+            },
             {
               lotes: {
                 some: {

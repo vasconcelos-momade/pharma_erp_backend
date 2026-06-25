@@ -21,7 +21,7 @@ import { ListFaturasUseCase } from "../../application/use-cases/list-faturas.use
 import { GetFaturaDetalheUseCase } from "../../application/use-cases/get-fatura-detalhe.use-case";
 import { FaturaDocumentService } from "../../application/services/fatura-document.service";
 import { z } from "zod";
-import { categoriaProdutoSchema } from "../../../products/application/dto/produto.dto";
+import { searchProdutosQuerySchema } from "../../../products/application/dto/produto.dto";
 import {
   parseJsonBody,
   parseSearchParams,
@@ -141,14 +141,6 @@ const liquidarConvenioSchema = z.object({
   referencia: z.string().trim().min(1).optional(),
 });
 
-const searchProdutosQuerySchema = z.object({
-  q: z.string().trim().min(1).optional(),
-  barcode: z.string().trim().min(1).optional(),
-  categoria: categoriaProdutoSchema.optional(),
-  page: z.coerce.number().int().positive().optional(),
-  pageSize: z.coerce.number().int().positive().max(100).optional(),
-});
-
 const searchServicosQuerySchema = z.object({
   q: z.string().trim().min(1).optional(),
 });
@@ -193,7 +185,7 @@ export class POSController {
 
   async searchProdutos(req: Request) {
     const url = new URL(req.url);
-    const { q, barcode, categoria, page = 1, pageSize = 20 } = parseSearchParams(
+    const { q, barcode, categoriaId, page = 1, pageSize = 20 } = parseSearchParams(
       url,
       searchProdutosQuerySchema,
     );
@@ -201,7 +193,7 @@ export class POSController {
     const result = await this.searchProdutosUseCase.execute({
       query: q,
       barcode,
-      categoria,
+      categoriaId: categoriaId ? BigInt(categoriaId) : undefined,
       page,
       pageSize,
     });

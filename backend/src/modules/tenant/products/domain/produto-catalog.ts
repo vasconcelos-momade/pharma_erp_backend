@@ -8,7 +8,7 @@ const CATALOG_KEYS = new Set([
   "apresentacao",
   "ativo",
   "barcode",
-  "categoria",
+  "categoriaId",
   "estoqueMinimo",
   "taxRuleId",
 ]);

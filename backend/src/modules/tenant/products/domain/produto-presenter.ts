@@ -24,8 +24,17 @@ type FefoLotePreview = {
   numeroLote?: string;
   dataValidade?: Date;
   precoVenda?: unknown | null;
-  quantidadeAtual?: unknown;
+  quantidadeAtual: unknown;
   quantidadeQuarentena?: unknown;
+};
+
+type CategoriaPreview = {
+  id?: bigint;
+  nome?: string;
+  descricao?: string | null;
+  ativo?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 };
 
 function pickFefoLote(lotes?: FefoLotePreview[]): FefoLotePreview | null {
@@ -57,6 +66,7 @@ export function flattenProdutoForApi<T extends Record<string, unknown>>(
     regulacao?: ProdutoRegulacaoRow | null;
     stockBalance?: { quantidadeDisponivel?: unknown } | null;
     lotes?: FefoLotePreview[];
+    categoria?: CategoriaPreview | null;
   },
 ): T & ResolvedProdutoPolicy & { estoqueAtual: number; precoVenda: number } {
   const policy = produto.regulacao
@@ -68,9 +78,22 @@ export function flattenProdutoForApi<T extends Record<string, unknown>>(
   const disponivel = Number(produto.stockBalance?.quantidadeDisponivel ?? 0);
   const fefoLote = pickFefoLote(produto.lotes);
   const nome = typeof produto.nome === "string" ? produto.nome : undefined;
+  const categoria =
+    produto.categoria && produto.categoria.id !== undefined
+      ? {
+          id: produto.categoria.id,
+          nome: produto.categoria.nome ?? "",
+          descricao: produto.categoria.descricao ?? null,
+          ativo: produto.categoria.ativo ?? true,
+          createdAt: produto.categoria.createdAt,
+          updatedAt: produto.categoria.updatedAt,
+        }
+      : null;
 
   return {
     ...base,
+    categoria,
+    categoriaNome: categoria?.nome ?? null,
     ...resolved,
     estoqueAtual: disponivel,
     precoVenda: resolveApiPrecoVenda(fefoLote, nome),
@@ -93,6 +116,7 @@ export function regulacaoToPolicyInput(
 }
 
 export const produtoWithRegulacaoInclude = {
+  categoria: true,
   regulacao: true,
   taxRule: true,
   stockBalance: {
@@ -123,7 +147,17 @@ export const produtoPosSelect = {
   id: true,
   nome: true,
   barcode: true,
-  categoria: true,
+  categoriaId: true,
+  categoria: {
+    select: {
+      id: true,
+      nome: true,
+      descricao: true,
+      ativo: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  },
   substanciaActiva: true,
   dosagem: true,
   forma: true,
@@ -151,7 +185,17 @@ export const produtoRequisicaoSelect = {
   id: true,
   nome: true,
   barcode: true,
-  categoria: true,
+  categoriaId: true,
+  categoria: {
+    select: {
+      id: true,
+      nome: true,
+      descricao: true,
+      ativo: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  },
   estoqueMinimo: true,
   substanciaActiva: true,
   dosagem: true,

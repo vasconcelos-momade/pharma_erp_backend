@@ -1,21 +1,18 @@
 import { z } from "zod";
 
-export enum CategoriaProduto {
-  MEDICAMENTO = "MEDICAMENTO",
-  CONSUMIVEL = "CONSUMIVEL",
-  EQUIPAMENTO = "EQUIPAMENTO",
-  HIGIENE = "HIGIENE",
-  SUPLEMENTO = "SUPLEMENTO",
-  OUTRO = "OUTRO",
-}
+export const categoriaIdSchema = z
+  .string()
+  .trim()
+  .regex(/^\d+$/, "categoriaId inválido");
 
-export const categoriaProdutoSchema = z.nativeEnum(CategoriaProduto);
-export type CategoriaProdutoValue = z.infer<typeof categoriaProdutoSchema>;
+const ativoSchema = z.coerce.boolean().optional();
 
 const produtoBaseSchema = z.looseObject({
   nome: z.string().trim().min(1),
   barcode: z.string().trim().min(1).optional(),
-  categoria: categoriaProdutoSchema.optional(),
+  categoriaId: categoriaIdSchema.optional(),
+  ativo: ativoSchema,
+  activo: ativoSchema,
   substanciaActiva: z.string().trim().min(1).optional(),
   dosagem: z.string().trim().min(1).optional(),
   forma: z.string().trim().min(1).optional(),
@@ -35,13 +32,14 @@ export const updateProdutoSchema = produtoBaseSchema.partial().refine(
 export const searchProdutosQuerySchema = z.object({
   q: z.string().trim().min(1).optional(),
   barcode: z.string().trim().min(1).optional(),
-  categoria: categoriaProdutoSchema.optional(),
+  categoriaId: categoriaIdSchema.optional(),
+  includeInactive: z.coerce.boolean().optional(),
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().max(100).optional(),
 });
 
 export const searchProdutosCategoriaQuerySchema = z.object({
-  categoria: categoriaProdutoSchema.optional(),
+  categoriaId: categoriaIdSchema.optional(),
 });
 
 export type CreateProdutoDTO = z.infer<typeof createProdutoSchema>;

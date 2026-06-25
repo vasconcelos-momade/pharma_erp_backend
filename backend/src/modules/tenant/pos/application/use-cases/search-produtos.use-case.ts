@@ -1,12 +1,11 @@
 import { getPrisma } from "../../../../../infrastructure/prisma/tenant-prisma.factory";
-import type { CategoriaProdutoValue } from "../../../products/application/dto/produto.dto";
 import { mapPosProduto, produtoPosSelect } from "../../../products/domain/produto-presenter";
 
 export class SearchProdutosUseCase {
   async execute(params?: {
     query?: string;
     barcode?: string;
-    categoria?: CategoriaProdutoValue;
+    categoriaId?: bigint;
     page?: number;
     pageSize?: number;
   }) {
@@ -19,7 +18,7 @@ export class SearchProdutosUseCase {
     const baseWhere = {
       ativo: true,
       deletedAt: null,
-      ...(params?.categoria ? { categoria: params.categoria } : {}),
+      ...(params?.categoriaId ? { categoriaId: params.categoriaId } : {}),
     };
 
     if (barcode) {
@@ -41,6 +40,14 @@ export class SearchProdutosUseCase {
             { nome: { contains: query } },
             { substanciaActiva: { contains: query } },
             { barcode: { contains: query } },
+            {
+              categoria: {
+                is: {
+                  nome: { contains: query },
+                  deletedAt: null,
+                },
+              },
+            },
             ...( /^\d+$/.test(query) ? [{ id: BigInt(query) }] : [] ),
           ],
         }

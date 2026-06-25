@@ -16,12 +16,11 @@ import {
   toProdutoRegulacaoTx,
 } from "../../domain/produto-regulacao.persistence";
 
-import type { CategoriaProdutoValue } from "../../application/dto/produto.dto";
-
 type ProdutoSearchFilters = {
   query?: string;
   barcode?: string;
-  categoria?: CategoriaProdutoValue;
+  categoriaId?: bigint;
+  includeInactive?: boolean;
   page?: number;
   pageSize?: number;
 };
@@ -76,9 +75,9 @@ export class ProdutoRepository {
     const pageSize = Math.min(100, Math.max(1, filters.pageSize ?? 20));
 
     const baseWhere = {
-      ativo: true,
       deletedAt: null,
-      ...(filters.categoria ? { categoria: filters.categoria } : {}),
+      ...(filters.includeInactive ? {} : { ativo: true }),
+      ...(filters.categoriaId ? { categoriaId: filters.categoriaId } : {}),
     };
 
     if (barcode) {
@@ -103,6 +102,14 @@ export class ProdutoRepository {
             { nome: { contains: query } },
             { substanciaActiva: { contains: query } },
             { barcode: { contains: query } },
+            {
+              categoria: {
+                is: {
+                  nome: { contains: query },
+                  deletedAt: null,
+                },
+              },
+            },
             {
               lotes: {
                 some: {
@@ -143,7 +150,7 @@ export class ProdutoRepository {
   }
 
   async findById(id: bigint) {
-    const row = await this.prisma.produto.findUnique({
+    const row = await this.prisma.produto.findFirst({
       where: { id },
       include: produtoWithRegulacaoInclude,
     });
@@ -152,8 +159,11 @@ export class ProdutoRepository {
   }
 
   async findByBarcode(barcode: string) {
-    const row = await this.prisma.produto.findUnique({
-      where: { barcode },
+    const row = await this.prisma.produto.findFirst({
+      where: {
+        barcode,
+        deletedAt: null,
+      },
       include: produtoWithRegulacaoInclude,
     });
     if (!row) return null;
@@ -161,7 +171,7 @@ export class ProdutoRepository {
   }
 
   async update(id: bigint, data: any, userId: bigint) {
-    const existing = await this.prisma.produto.findUnique({
+    const existing = await this.prisma.produto.findFirst({
       where: { id },
       include: produtoWithRegulacaoInclude,
     });

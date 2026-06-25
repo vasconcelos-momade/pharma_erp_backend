@@ -1,21 +1,21 @@
-import { ProdutoService } from "../../application/services/produto.service";
+import { CategoriaService } from "../../application/services/categoria.service";
 import {
-  createProdutoSchema,
-  searchProdutosQuerySchema,
-  updateProdutoSchema,
-} from "../../application/dto/produto.dto";
+  createCategoriaSchema,
+  searchCategoriasQuerySchema,
+  updateCategoriaSchema,
+} from "../../application/dto/categoria.dto";
 import {
   parseJsonBody,
   parseSearchParams,
 } from "../../../../../shared/http/request-validation";
 import { controllerErrorResponse } from "../../../../../shared/http/controller-error";
 
-export class ProdutoController {
-  private service = new ProdutoService();
+export class CategoriaController {
+  private service = new CategoriaService();
 
   async create(req: Request, userId: string) {
     try {
-      const body = await parseJsonBody(req, createProdutoSchema);
+      const body = await parseJsonBody(req, createCategoriaSchema);
       const result = await this.service.create(body, userId);
       return Response.json(this.serialize(result), { status: 201 });
     } catch (error: any) {
@@ -26,25 +26,25 @@ export class ProdutoController {
   async search(req: Request) {
     try {
       const url = new URL(req.url);
-      const {
-        q,
-        barcode,
-        categoriaId,
-        includeInactive = false,
-        page = 1,
-        pageSize = 20,
-      } =
-        parseSearchParams(url, searchProdutosQuerySchema);
+      const { q, includeInactive = false, page = 1, pageSize = 20 } =
+        parseSearchParams(url, searchCategoriasQuerySchema);
 
       const result = await this.service.search({
         query: q,
-        barcode,
-        categoriaId,
         includeInactive,
         page,
         pageSize,
       });
 
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error, 500);
+    }
+  }
+
+  async listActive() {
+    try {
+      const result = await this.service.listActive();
       return Response.json(this.serialize(result));
     } catch (error: any) {
       return controllerErrorResponse(error, 500);
@@ -62,7 +62,7 @@ export class ProdutoController {
 
   async update(id: string, req: Request, userId: string) {
     try {
-      const body = await parseJsonBody(req, updateProdutoSchema);
+      const body = await parseJsonBody(req, updateCategoriaSchema);
       const result = await this.service.update(BigInt(id), body, userId);
       return Response.json(this.serialize(result));
     } catch (error: any) {
@@ -73,18 +73,17 @@ export class ProdutoController {
   async delete(id: string, userId: string) {
     try {
       await this.service.delete(BigInt(id), userId);
-      return Response.json({ message: "Produto desativado com sucesso" });
+      return Response.json({ message: "Categoria excluída com sucesso" });
     } catch (error: any) {
       return controllerErrorResponse(error);
     }
   }
 
-  /**
-   * Helper to convert BigInt to String for JSON serialization
-   */
   private serialize(data: any) {
-    return JSON.parse(JSON.stringify(data, (_key, value) =>
-      typeof value === 'bigint' ? value.toString() : value
-    ));
+    return JSON.parse(
+      JSON.stringify(data, (_key, value) =>
+        typeof value === "bigint" ? value.toString() : value,
+      ),
+    );
   }
 }

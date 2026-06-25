@@ -1,44 +1,46 @@
 import { describe, expect, test } from "bun:test";
 import {
-  categoriaProdutoSchema,
+  categoriaIdSchema,
   createProdutoSchema,
   searchProdutosQuerySchema,
   updateProdutoSchema,
 } from "./produto.dto";
 
 describe("produto.dto", () => {
-  test("aceita todas as categorias válidas", () => {
-    for (const categoria of [
-      "MEDICAMENTO",
-      "CONSUMIVEL",
-      "EQUIPAMENTO",
-      "HIGIENE",
-      "SUPLEMENTO",
-      "OUTRO",
-    ] as const) {
-      expect(categoriaProdutoSchema.parse(categoria)).toBe(categoria);
-    }
-  });
-
-  test("rejeita categoria inválida", () => {
-    expect(() => categoriaProdutoSchema.parse("INVALIDA")).toThrow();
-  });
-
-  test("create aceita categoria opcional", () => {
+  test("create mantém campos extra para compatibilidade transitória", () => {
     const parsed = createProdutoSchema.parse({
       nome: "Sabonete",
-      categoria: "HIGIENE",
+      categoria: "MEDICAMENTO",
     });
-    expect(parsed.categoria).toBe("HIGIENE");
+    expect(parsed.categoria).toBe("MEDICAMENTO");
   });
 
-  test("update aceita apenas categoria", () => {
-    const parsed = updateProdutoSchema.parse({ categoria: "OUTRO" });
-    expect(parsed.categoria).toBe("OUTRO");
+  test("create aceita apenas categoriaId", () => {
+    const parsed = createProdutoSchema.parse({
+      nome: "Sabonete",
+      categoriaId: "12",
+    });
+    expect(parsed.categoriaId).toBe("12");
   });
 
-  test("search aceita filtro categoria opcional", () => {
-    const parsed = searchProdutosQuerySchema.parse({ categoria: "CONSUMIVEL" });
-    expect(parsed.categoria).toBe("CONSUMIVEL");
+  test("update aceita apenas categoriaId", () => {
+    const parsed = updateProdutoSchema.parse({ categoriaId: "45" });
+    expect(parsed.categoriaId).toBe("45");
+  });
+
+  test("search aceita filtro categoriaId opcional", () => {
+    const parsed = searchProdutosQuerySchema.parse({ categoriaId: "9" });
+    expect(parsed.categoriaId).toBe("9");
+  });
+
+  test("search ignora categoria legada fora do contrato", () => {
+    const parsed = searchProdutosQuerySchema.parse({
+      categoria: "MEDICAMENTO",
+    });
+    expect("categoria" in parsed).toBe(false);
+  });
+
+  test("schema de categoriaId rejeita valor inválido", () => {
+    expect(() => categoriaIdSchema.parse("abc")).toThrow();
   });
 });

@@ -93,13 +93,19 @@ export class RequisitionsController {
   async searchProdutos(req: Request) {
     try {
       const url = new URL(req.url);
-      const { q, barcode, categoria, page = 1, pageSize = 20 } = parseSearchParams(
+      const {
+        q,
+        barcode,
+        categoriaId,
+        page = 1,
+        pageSize = 20,
+      } = parseSearchParams(
         url,
         searchRequisitionProdutosQuerySchema,
       );
       const data = await this.searchProdutosUseCase.execute({
         q: q ?? barcode,
-        categoria,
+        categoriaId: categoriaId ? BigInt(categoriaId) : undefined,
         page,
         pageSize,
       });
