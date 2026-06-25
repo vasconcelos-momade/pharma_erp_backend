@@ -6,6 +6,11 @@ import type { TaxRuleSnapshot } from "../../../../../shared/utils/fiscal-calcula
 import { serializeForJson } from "../../../../../shared/http/serialize-json";
 import { draftCartService } from "../services/draft-cart.service";
 import { flattenProdutoForApi } from "../../../products/domain/produto-presenter";
+import {
+  getQuantidadeTotalFromMovements,
+  syncStockBalanceCache,
+} from "../../../stock/domain/produto-stock.service";
+import { resolveLotePrecoVenda } from "../../../stock/domain/fefo-lote.service";
 
 export interface FinalizarVendaDTO {
   clienteId?: string;
@@ -253,7 +258,9 @@ export class FinalizarVendaUseCase {
               throw new Error(`Stock insuficiente para o produto ${produto.nome}`);
             }
 
-            const precoFinal = item.precoUnit || Number(produto.precoVenda);
+            const precoFinal =
+              item.precoUnit ??
+              resolveLotePrecoVenda(lotes[0], String(produto.nome ?? ""));
 
             // Cálculo fiscal usando utilitário
             const fiscalCalc = FiscalCalculatorUtil.calcularIVA({
@@ -265,7 +272,7 @@ export class FinalizarVendaUseCase {
 
             totalGeral += fiscalCalc.baseCalculo;
 
-            // Baixa de Lotes (FEFO) - Source of Truth no Cache
+            let runningProductStock = await getQuantidadeTotalFromMovements(tx, produtoId);
             let totalCustoItem = 0;
             let qtdRestante = item.quantidade;
             const lotesUtilizados: Array<{ loteId: bigint; quantidade: number }> = [];
@@ -274,16 +281,18 @@ export class FinalizarVendaUseCase {
               const disponivelNoLote = Number(lote.qtdDisponivelReal);
               const qtdATirar = Math.min(disponivelNoLote, qtdRestante);
               totalCustoItem += Number(lote.precoCompra) * qtdATirar;
-              
+
+              const estoqueAnteriorLote = runningProductStock;
+              runningProductStock -= qtdATirar;
+
               await tx.lote.update({
                 where: { id: lote.id },
-                data: { 
+                data: {
                   quantidadeAtual: { decrement: qtdATirar },
-                  version: { increment: 1 }
-                }
+                  version: { increment: 1 },
+                },
               });
 
-              // 2.2 Registrar Movimento de Estoque por Lote (STOCK LEDGER) com Idempotência
               await tx.estoqueMovimento.create({
                 data: {
                   produtoId: produto.id,
@@ -291,12 +300,12 @@ export class FinalizarVendaUseCase {
                   userId: BigInt(data.userId),
                   tipo: "SAIDA",
                   quantidade: qtdATirar,
-                  estoqueAnterior: lote.quantidadeAtual,
-                  estoqueFinal: Number(lote.quantidadeAtual) - qtdATirar,
+                  estoqueAnterior: estoqueAnteriorLote,
+                  estoqueFinal: runningProductStock,
                   origem: "POS_VENDA",
                   idempotencyKey: `EM-FAT-${faturaNumero}-LOTE-${lote.id}`,
-                  observacoes: `Venda no Terminal ${terminal.nome}`
-                }
+                  observacoes: `Venda no Terminal ${terminal.nome}`,
+                },
               });
 
               lotesUtilizados.push({
@@ -312,7 +321,7 @@ export class FinalizarVendaUseCase {
               );
             }
 
-            const stockSnapshotDepois = await this.syncStockFromLots(tx, produtoId);
+            const stockSnapshotDepois = await syncStockBalanceCache(tx, produtoId);
             this.logStockCheckpoint("POS_CHECKOUT_STOCK_SYNC", {
               faturaNumero,
               produtoId: produtoId.toString(),
@@ -708,53 +717,6 @@ export class FinalizarVendaUseCase {
       return "NAO_SUJEITA" as const;
     }
     return "ISENTA" as const;
-  }
-
-  private async syncStockFromLots(tx: any, produtoId: bigint) {
-    await tx.$executeRaw`SELECT id FROM lotes WHERE produtoId = ${produtoId} FOR UPDATE`;
-    const snapshotRows: any[] = await tx.$queryRaw`
-      SELECT
-        COALESCE(SUM(quantidadeAtual), 0) AS totalFisico,
-        COALESCE(
-          SUM(
-            CASE
-              WHEN ativo = true
-                AND estadoSanitario = 'VALIDO'
-                AND disponibilidade = 'DISPONIVEL'
-                AND dataValidade > NOW()
-              THEN GREATEST(quantidadeAtual - quantidadeQuarentena, 0)
-              ELSE 0
-            END
-          ),
-          0
-        ) AS disponivelReal
-      FROM lotes
-      WHERE produtoId = ${produtoId}
-    `;
-    const snapshot = snapshotRows[0] ?? {};
-    const quantidadeTotal = Number(snapshot.totalFisico ?? 0);
-    const quantidadeDisponivel = Number(snapshot.disponivelReal ?? 0);
-    const quantidadeReservada = Math.max(0, quantidadeTotal - quantidadeDisponivel);
-
-    await tx.stockBalance.upsert({
-      where: { produtoId },
-      create: {
-        produtoId,
-        quantidadeTotal,
-        quantidadeReservada,
-        quantidadeDisponivel,
-      },
-      update: {
-        quantidadeTotal,
-        quantidadeReservada,
-        quantidadeDisponivel,
-      },
-    });
-
-    return {
-      total: quantidadeTotal,
-      disponivel: quantidadeDisponivel,
-    };
   }
 
   private logStockCheckpoint(label: string, payload: Record<string, unknown>) {

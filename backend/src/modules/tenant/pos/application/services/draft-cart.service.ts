@@ -14,6 +14,7 @@ import type {
 import { isDraftCartServicoItem } from "./draft-cart.types";
 import { mapPosProduto } from "../../../products/domain/produto-presenter";
 import { getQuantidadeDisponivel } from "../../../stock/domain/produto-stock.service";
+import { selectFefoLoteForSale } from "../../../stock/domain/fefo-lote.service";
 
 export class DraftCartService {
   async assertCaixaAberta(tx: any, userId: string) {
@@ -107,17 +108,6 @@ export class DraftCartService {
       throw new Error(`Produto ${produtoId} não encontrado`);
     }
     return produto;
-  }
-
-  /** PDV: produto só entra no carrinho com preço de venda configurado (> 0). */
-  assertProdutoPrecoVendaVendavel(produto: { nome?: string; precoVenda?: unknown; preco_venda?: unknown }) {
-    const precoVenda = Number(produto.precoVenda ?? produto.preco_venda ?? 0);
-    if (!Number.isFinite(precoVenda) || precoVenda <= 0) {
-      const nome = produto.nome?.trim() || "Produto";
-      throw new Error(
-        `O produto «${nome}» não pode ser adicionado ao carrinho: o preço de venda (precoVenda) deve ser superior a zero.`,
-      );
-    }
   }
 
   async loadTaxRuleSnapshot(tx: any, entity: { taxRuleId?: bigint | null }): Promise<TaxRuleSnapshot | null> {
@@ -304,9 +294,15 @@ export class DraftCartService {
     }
 
     const produto = await this.loadProdutoForUpdate(tx, item.produtoId);
-    this.assertProdutoPrecoVendaVendavel(produto);
+    const loteIdInput = item.loteId ? BigInt(item.loteId) : null;
+    const { lote, precoVenda } = await selectFefoLoteForSale(
+      tx,
+      produto.id,
+      loteIdInput,
+      produto.nome,
+    );
 
-    const preco = item.precoUnit ?? Number(produto.precoVenda ?? produto.preco_venda ?? 0);
+    const preco = item.precoUnit ?? precoVenda;
     if (!Number.isFinite(preco) || preco <= 0) {
       throw new Error(
         `Preço inválido para o produto ${produto.nome}. O preço unitário deve ser superior a zero.`,
@@ -321,7 +317,7 @@ export class DraftCartService {
       descricao: produto.nome,
     });
 
-    const loteId = item.loteId ? BigInt(item.loteId) : null;
+    const loteId = lote.id;
 
     await this.reserveStock(tx, {
       faturaId,

@@ -640,7 +640,6 @@ async function main() {
         classificacaoRule: truncateField(effectiveAuditRule, 100),
         classificacaoReason: effectiveAuditReason,
         classificacaoMatchedTerm: toNullable(truncateField(effectiveMatchedTerm, 191)),
-        precoVenda,
         taxRuleId: taxRule.id,
         riskLevel: riskLevel as any,
       };

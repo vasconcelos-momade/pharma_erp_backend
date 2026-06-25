@@ -1,10 +1,15 @@
 import { getPrisma } from "../../../../../infrastructure/prisma/tenant-prisma.factory";
 import { flattenProdutoForApi } from "../../../products/domain/produto-presenter";
 import {
-  applyStockSaleDelta,
   getQuantidadeDisponivel,
-  getQuantidadeTotal,
+  getQuantidadeTotalFromMovements,
+  syncStockBalanceCache,
 } from "../../../stock/domain/produto-stock.service";
+import {
+  FEFO_LOTE_FILTER,
+  loteQuantidadeDisponivel,
+  resolveLotePrecoVenda,
+} from "../../../stock/domain/fefo-lote.service";
 
 export interface CreateSaleDTO {
   clienteId: string;
@@ -36,8 +41,7 @@ export class CreateSaleUseCase {
             regulacao: true,
             lotes: {
               where: {
-                ativo: true,
-                quantidadeAtual: { gt: 0 },
+                ...FEFO_LOTE_FILTER,
                 dataValidade: { gt: new Date() },
               },
               orderBy: { dataValidade: "asc" },
@@ -59,19 +63,56 @@ export class CreateSaleUseCase {
         }
 
         let quantidadeRestante = item.quantidade;
-        const lotesUtilizados = [];
+        const lotesUtilizados: Array<{
+          loteId: bigint;
+          quantidade: number;
+          precoUnit: number;
+          custoUnitario: number;
+        }> = [];
+
+        let runningProductStock = await getQuantidadeTotalFromMovements(tx, produtoId);
+        let totalItem = 0;
+        let totalCustoItem = 0;
 
         for (const lote of produtoRow.lotes) {
           if (quantidadeRestante <= 0) break;
 
-          const qtdATirar = Math.min(Number(lote.quantidadeAtual), quantidadeRestante);
+          const disponivelNoLote = loteQuantidadeDisponivel(lote);
+          if (disponivelNoLote <= 0) continue;
+
+          const qtdATirar = Math.min(disponivelNoLote, quantidadeRestante);
+          const precoUnit = resolveLotePrecoVenda(lote, produtoRow.nome);
+          const custoUnitario = Number(lote.precoCompra);
 
           await tx.lote.update({
             where: { id: lote.id },
             data: { quantidadeAtual: { decrement: qtdATirar } },
           });
 
-          lotesUtilizados.push({ loteId: lote.id, quantidade: qtdATirar });
+          const estoqueAnterior = runningProductStock;
+          runningProductStock -= qtdATirar;
+
+          await tx.estoqueMovimento.create({
+            data: {
+              produtoId: produtoRow.id,
+              loteId: lote.id,
+              userId: BigInt(data.userId),
+              tipo: "SAIDA",
+              quantidade: qtdATirar,
+              estoqueAnterior,
+              estoqueFinal: runningProductStock,
+              origem: "VENDA",
+            },
+          });
+
+          lotesUtilizados.push({
+            loteId: lote.id,
+            quantidade: qtdATirar,
+            precoUnit,
+            custoUnitario,
+          });
+          totalItem += precoUnit * qtdATirar;
+          totalCustoItem += custoUnitario * qtdATirar;
           quantidadeRestante -= qtdATirar;
         }
 
@@ -81,21 +122,12 @@ export class CreateSaleUseCase {
           );
         }
 
-        const estoqueAnterior = await getQuantidadeTotal(tx, produtoId);
-        await applyStockSaleDelta(tx, produtoId, item.quantidade);
-        const estoqueFinal = estoqueAnterior - item.quantidade;
+        await syncStockBalanceCache(tx, produtoId);
 
-        await tx.estoqueMovimento.create({
-          data: {
-            produtoId: produtoRow.id,
-            userId: BigInt(data.userId),
-            tipo: "SAIDA",
-            quantidade: item.quantidade,
-            estoqueAnterior,
-            estoqueFinal,
-            origem: "VENDA",
-          },
-        });
+        const precoMedio =
+          item.quantidade > 0 ? totalItem / item.quantidade : 0;
+        const custoMedio =
+          item.quantidade > 0 ? totalCustoItem / item.quantidade : 0;
 
         if (produto.tipoDispensacao !== "VENDA_LIVRE") {
           await tx.dispensacao.create({
@@ -126,12 +158,14 @@ export class CreateSaleUseCase {
           }
         }
 
-        totalGeral += Number(produtoRow.precoVenda) * item.quantidade;
+        totalGeral += totalItem;
         results.push({
           produtoId: produtoRow.id.toString(),
           nome: produtoRow.nome,
           quantidade: item.quantidade,
-          preco: produtoRow.precoVenda,
+          preco: precoMedio,
+          custoUnitario: custoMedio,
+          loteId: lotesUtilizados[0]?.loteId.toString(),
         });
       }
 
@@ -148,9 +182,12 @@ export class CreateSaleUseCase {
           items: {
             create: results.map((r) => ({
               produtoId: BigInt(r.produtoId),
+              loteId: r.loteId ? BigInt(r.loteId) : null,
               descricao: r.nome,
               quantidade: r.quantidade,
               precoUnit: r.preco,
+              custoUnitario: r.custoUnitario,
+              lucroUnitario: Number(r.preco) - Number(r.custoUnitario),
               iva: 16,
               total: Number(r.preco) * r.quantidade * 1.16,
             })),

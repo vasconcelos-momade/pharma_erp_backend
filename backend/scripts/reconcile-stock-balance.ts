@@ -1,12 +1,12 @@
 /**
- * Reconcilia StockBalance com a soma dos lotes activos.
+ * Reconcilia StockBalance (cache) com EstoqueMovimento (fonte de verdade).
  * Uso:
  *   bun scripts/reconcile-stock-balance.ts                    # todos os tenants (central)
  *   bun scripts/reconcile-stock-balance.ts tenant_farmacia_X  # um tenant
  */
 import { PrismaClient as PrismaCentralClient } from "../src/infrastructure/prisma/central/generated/central";
 import { PrismaClient as PrismaTenantClient } from "../src/infrastructure/prisma/tenant/generated/tenant";
-import { syncProductStockFromLotes } from "../src/modules/tenant/stock/domain/produto-stock.service";
+import { syncStockBalanceCache } from "../src/modules/tenant/stock/domain/produto-stock.service";
 
 const TENANT_DB_HOST = process.env.TENANT_DB_HOST || "mysql_central";
 const TENANT_DB_PORT = process.env.TENANT_DB_PORT || "3306";
@@ -57,7 +57,7 @@ async function reconcileTenant(dbName: string): Promise<{ corrected: number; che
         });
         const totalBefore = balanceBefore ? Number(balanceBefore.quantidadeTotal) : null;
 
-        const totalAfter = await syncProductStockFromLotes(tx, produtoId);
+        const { total: totalAfter } = await syncStockBalanceCache(tx, produtoId);
 
         if (totalBefore === null || totalBefore !== totalAfter) {
           corrected += 1;

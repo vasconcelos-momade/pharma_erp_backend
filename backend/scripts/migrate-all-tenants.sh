@@ -33,16 +33,16 @@ while IFS= read -r db; do
 done <<< "$dbs"
 
 echo ""
-echo "==> Validar tabelas transferencias..."
+echo "==> Validar tabelas requisicoes..."
 while IFS= read -r db; do
   [[ -z "${db:-}" ]] && continue
   count="$(
     docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" --batch --skip-column-names \
-      -e "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='${db}' AND TABLE_NAME IN ('transferencias','transferencia_itens');" \
+      -e "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='${db}' AND TABLE_NAME IN ('requisicoes','requisicao_itens');" \
       2>/dev/null
   )"
   if [[ "${count:-0}" == "2" ]]; then
-    echo "  ✓ ${db}: transferencias + transferencia_itens OK"
+    echo "  ✓ ${db}: requisicoes + requisicao_itens OK"
   else
     echo "  ✗ ${db}: tabelas de transferência em falta (${count}/2)"
     failed=$((failed + 1))

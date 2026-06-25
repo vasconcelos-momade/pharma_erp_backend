@@ -21,7 +21,7 @@ function registerProductResource(router: Router, path: string): void {
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
     requirePermission("PRODUTOS", "VIEW"),
-    async (context) => produtoController.list(context.req),
+    async (context) => produtoController.search(context.req),
   );
 
   router.post(

@@ -5,6 +5,8 @@ import {
 } from "../../../../../infrastructure/sync/tenant-sync-outbox.service";
 import {
   flattenProdutoForApi,
+  mapRequisicaoProduto,
+  produtoRequisicaoSelect,
   produtoWithRegulacaoInclude,
 } from "../../domain/produto-presenter";
 import {
@@ -14,8 +16,14 @@ import {
   toProdutoRegulacaoTx,
 } from "../../domain/produto-regulacao.persistence";
 
-type ProdutoListFilters = {
-  requiresManualReview?: boolean;
+import type { CategoriaProdutoValue } from "../../application/dto/produto.dto";
+
+type ProdutoSearchFilters = {
+  query?: string;
+  barcode?: string;
+  categoria?: CategoriaProdutoValue;
+  page?: number;
+  pageSize?: number;
 };
 
 export class ProdutoRepository {
@@ -61,19 +69,77 @@ export class ProdutoRepository {
     return flat;
   }
 
-  async findAll(filters: ProdutoListFilters = {}) {
-    const where: Record<string, unknown> = { ativo: true };
+  async search(filters: ProdutoSearchFilters = {}) {
+    const query = filters.query?.trim() || undefined;
+    const barcode = filters.barcode?.trim() || undefined;
+    const page = Math.max(1, filters.page ?? 1);
+    const pageSize = Math.min(100, Math.max(1, filters.pageSize ?? 20));
 
-    if (typeof filters.requiresManualReview === "boolean") {
-      where.regulacao = { requiresManualReview: filters.requiresManualReview };
+    const baseWhere = {
+      ativo: true,
+      deletedAt: null,
+      ...(filters.categoria ? { categoria: filters.categoria } : {}),
+    };
+
+    if (barcode) {
+      const produto = await this.prisma.produto.findFirst({
+        where: { ...baseWhere, barcode },
+        select: produtoRequisicaoSelect,
+      });
+
+      return {
+        items: produto
+            ? [mapRequisicaoProduto(produto as Record<string, unknown>)]
+            : [],
+        page: 1,
+        pageSize: 1,
+        hasMore: false,
+      };
     }
+
+    const queryFilters = query
+      ? {
+          OR: [
+            { nome: { contains: query } },
+            { substanciaActiva: { contains: query } },
+            { barcode: { contains: query } },
+            {
+              lotes: {
+                some: {
+                  numeroLote: { contains: query },
+                  ativo: true,
+                  deletedAt: null,
+                },
+              },
+            },
+            ...(/^\d+$/.test(query) ? [{ id: BigInt(query) }] : []),
+          ],
+        }
+      : {};
+
+    const where = {
+      ...baseWhere,
+      ...(query ? queryFilters : {}),
+    };
 
     const rows = await this.prisma.produto.findMany({
       where,
-      include: produtoWithRegulacaoInclude,
+      select: produtoRequisicaoSelect,
+      orderBy: [{ nome: "asc" }, { id: "asc" }],
+      skip: (page - 1) * pageSize,
+      take: pageSize + 1,
     });
 
-    return rows.map((row: Record<string, unknown>) => flattenProdutoForApi(row));
+    const items = rows.map((row: Record<string, unknown>) =>
+      mapRequisicaoProduto(row),
+    );
+
+    return {
+      items: items.slice(0, pageSize),
+      page,
+      pageSize,
+      hasMore: rows.length > pageSize,
+    };
   }
 
   async findById(id: bigint) {

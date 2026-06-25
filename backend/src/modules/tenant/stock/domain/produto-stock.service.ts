@@ -1,9 +1,15 @@
 /**
  * Stock operacional: EstoqueMovimento é a fonte de verdade;
- * StockBalance é projeção de leitura (total, reservado, disponível).
+ * StockBalance é projeção/cache de leitura (total, reservado, disponível).
  */
 
-export type StockTx = {
+import {
+  FEFO_LOTE_FILTER,
+  loteQuantidadeDisponivel,
+  type FefoLoteTx,
+} from "./fefo-lote.service";
+
+export type StockTx = FefoLoteTx & {
   stockBalance: {
     findUnique: (args: {
       where: { produtoId: bigint };
@@ -28,12 +34,6 @@ export type StockTx = {
       orderBy: Record<string, "asc" | "desc"> | Array<Record<string, "asc" | "desc">>;
       select?: Record<string, boolean>;
     }) => Promise<{ estoqueFinal?: unknown } | null>;
-  };
-  lote?: {
-    findMany: (args: {
-      where: Record<string, unknown>;
-      select?: Record<string, boolean>;
-    }) => Promise<Array<{ quantidadeAtual: unknown }>>;
   };
 };
 
@@ -65,10 +65,42 @@ export async function getQuantidadeTotalFromMovements(
   return toNumber(latest?.estoqueFinal);
 }
 
+/** Quantidade vendável (FEFO) — projeção a partir dos lotes. */
+export async function getSellableQuantityFromLotes(
+  tx: StockTx,
+  produtoId: bigint,
+): Promise<number> {
+  if (!tx.lote?.findMany) {
+    return 0;
+  }
+
+  const lotes = await tx.lote.findMany({
+    where: {
+      produtoId,
+      ...FEFO_LOTE_FILTER,
+      dataValidade: { gt: new Date() },
+    },
+    select: {
+      quantidadeAtual: true,
+      quantidadeQuarentena: true,
+    },
+  });
+
+  return lotes.reduce(
+    (sum, lote) => sum + loteQuantidadeDisponivel(lote),
+    0,
+  );
+}
+
 export async function getQuantidadeTotal(
   tx: StockTx,
   produtoId: bigint,
 ): Promise<number> {
+  const fromMovements = await getQuantidadeTotalFromMovements(tx, produtoId);
+  if (fromMovements > 0) {
+    return fromMovements;
+  }
+
   const balance = await tx.stockBalance.findUnique({
     where: { produtoId },
   });
@@ -76,7 +108,7 @@ export async function getQuantidadeTotal(
     return toNumber(balance.quantidadeTotal);
   }
 
-  return getQuantidadeTotalFromMovements(tx, produtoId);
+  return 0;
 }
 
 export async function getQuantidadeDisponivel(
@@ -90,104 +122,24 @@ export async function getQuantidadeDisponivel(
     return toNumber(balance.quantidadeDisponivel);
   }
 
-  return getQuantidadeTotalFromMovements(tx, produtoId);
+  const sellable = await getSellableQuantityFromLotes(tx, produtoId);
+  return Math.min(await getQuantidadeTotal(tx, produtoId), sellable);
 }
 
-/** Baixa física na venda (total e disponível). */
-export async function applyStockSaleDelta(
+/**
+ * Actualiza StockBalance (cache) a partir de EstoqueMovimento + projeção FEFO.
+ */
+export async function syncStockBalanceCache(
   tx: StockTx,
   produtoId: bigint,
-  quantidade: number,
-): Promise<void> {
-  const totalBefore = await getQuantidadeTotal(tx, produtoId);
-  const totalAfter = Math.max(0, totalBefore - quantidade);
-
-  await tx.stockBalance.upsert({
-    where: { produtoId },
-    create: {
-      produtoId,
-      quantidadeTotal: totalAfter,
-      quantidadeReservada: 0,
-      quantidadeDisponivel: totalAfter,
-    },
-    update: {
-      quantidadeTotal: { decrement: quantidade },
-      quantidadeDisponivel: { decrement: quantidade },
-    },
-  });
-}
-
-/** Ajuste de inventário (+/-). */
-export async function applyStockAdjustDelta(
-  tx: StockTx,
-  produtoId: bigint,
-  delta: number,
-): Promise<number> {
-  if (delta >= 0) {
-    await applyStockReturnDelta(tx, produtoId, delta);
-    return getQuantidadeTotal(tx, produtoId);
-  }
-  await applyStockSaleDelta(tx, produtoId, Math.abs(delta));
-  return getQuantidadeTotal(tx, produtoId);
-}
-
-/** Repõe stock na anulação de venda. */
-export async function applyStockReturnDelta(
-  tx: StockTx,
-  produtoId: bigint,
-  quantidade: number,
-): Promise<number> {
-  const totalBefore = await getQuantidadeTotal(tx, produtoId);
-  const totalAfter = totalBefore + quantidade;
-
-  await tx.stockBalance.upsert({
-    where: { produtoId },
-    create: {
-      produtoId,
-      quantidadeTotal: totalAfter,
-      quantidadeReservada: 0,
-      quantidadeDisponivel: totalAfter,
-    },
-    update: {
-      quantidadeTotal: { increment: quantidade },
-      quantidadeDisponivel: { increment: quantidade },
-    },
-  });
-
-  return totalAfter;
-}
-
-/** Sincroniza StockBalance a partir da soma dos lotes activos. */
-export async function syncProductStockFromLotes(
-  tx: StockTx & {
-    lote: {
-      findMany: (args: {
-        where: Record<string, unknown>;
-        select?: Record<string, boolean>;
-      }) => Promise<Array<{ quantidadeAtual: unknown }>>;
-    };
-  },
-  produtoId: bigint,
-): Promise<number> {
-  const lotes = await tx.lote.findMany({
-    where: {
-      produtoId,
-      deletedAt: null,
-      ativo: true,
-    },
-    select: { quantidadeAtual: true },
-  });
-
-  const total = lotes.reduce(
-    (sum, lote) => sum + toNumber(lote.quantidadeAtual),
-    0,
-  );
-
+): Promise<{ total: number; disponivel: number }> {
+  const total = await getQuantidadeTotalFromMovements(tx, produtoId);
+  const sellable = await getSellableQuantityFromLotes(tx, produtoId);
   const balance = await tx.stockBalance.findUnique({
     where: { produtoId },
   });
   const reservada = toNumber(balance?.quantidadeReservada);
-  const disponivel = Math.max(0, total - reservada);
+  const disponivel = Math.max(0, Math.min(total, sellable) - reservada);
 
   await tx.stockBalance.upsert({
     where: { produtoId },
@@ -203,5 +155,37 @@ export async function syncProductStockFromLotes(
     },
   });
 
+  return { total, disponivel };
+}
+
+/** @deprecated Use syncStockBalanceCache */
+export const syncProductStockFromLotes = syncStockBalanceCache;
+
+/** Após movimento de saída registado — refresca cache. */
+export async function applyStockSaleDelta(
+  tx: StockTx,
+  produtoId: bigint,
+  _quantidade: number,
+): Promise<void> {
+  await syncStockBalanceCache(tx, produtoId);
+}
+
+/** Após movimento de entrada/devolução — refresca cache. */
+export async function applyStockReturnDelta(
+  tx: StockTx,
+  produtoId: bigint,
+  _quantidade: number,
+): Promise<number> {
+  const { total } = await syncStockBalanceCache(tx, produtoId);
+  return total;
+}
+
+/** Após movimento de ajuste — refresca cache. */
+export async function applyStockAdjustDelta(
+  tx: StockTx,
+  produtoId: bigint,
+  _delta: number,
+): Promise<number> {
+  const { total } = await syncStockBalanceCache(tx, produtoId);
   return total;
 }

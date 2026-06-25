@@ -3,8 +3,8 @@ import { ComplianceAuditService } from "../../../../../shared/services/complianc
 import { PermissionService } from "../../../shared/permission.service";
 import { flattenProdutoForApi } from "../../../products/domain/produto-presenter";
 import {
-  applyStockReturnDelta,
-  getQuantidadeTotal,
+  getQuantidadeTotalFromMovements,
+  syncStockBalanceCache,
 } from "../../../stock/domain/produto-stock.service";
 
 export interface AnularFaturaDTO {
@@ -76,26 +76,28 @@ export class AnularFaturaUseCase {
           }
 
           const qty = Number(item.quantidade);
-          const estoqueAnterior = await getQuantidadeTotal(tx, item.produtoId);
-          const estoqueFinal = await applyStockReturnDelta(tx, item.produtoId, qty);
+          const estoqueAnterior = await getQuantidadeTotalFromMovements(
+            tx,
+            item.produtoId,
+          );
+
+          if (item.loteId) {
+            await tx.lote.update({
+              where: { id: item.loteId },
+              data: {
+                quantidadeAtual: { increment: item.quantidade },
+                version: { increment: 1 },
+              },
+            });
+          }
+
+          const estoqueFinal = estoqueAnterior + qty;
 
           await tx.produto.update({
             where: { id: item.produtoId },
             data: { version: { increment: 1 } },
           });
 
-          // 2. Reverter Quantidade no Lote (Cache)
-          if (item.loteId) {
-            await tx.lote.update({
-              where: { id: item.loteId },
-              data: { 
-                quantidadeAtual: { increment: item.quantidade },
-                version: { increment: 1 }
-              }
-            });
-          }
-
-          // 3. Registrar StockReversal
           await tx.stockReversal.create({
             data: {
               faturaId: fatura.id,
@@ -103,17 +105,16 @@ export class AnularFaturaUseCase {
               loteId: item.loteId,
               userId: BigInt(data.userId),
               quantidade: item.quantidade,
-              motivo: data.motivo
-            }
+              motivo: data.motivo,
+            },
           });
 
-          // 4. Criar Movimento de DEVOLUÇÃO (SOURCE OF TRUTH)
           await tx.estoqueMovimento.create({
             data: {
               produtoId: item.produtoId,
               loteId: item.loteId,
               userId: BigInt(data.userId),
-              tipo: "ENTRADA",
+              tipo: "DEVOLUCAO",
               quantidade: item.quantidade,
               estoqueAnterior,
               estoqueFinal,
@@ -121,6 +122,8 @@ export class AnularFaturaUseCase {
               observacoes: `Estorno da Fatura #${fatura.numero}`
             }
           });
+
+          await syncStockBalanceCache(tx, item.produtoId);
 
           const produtoFlat = flattenProdutoForApi(
             item.produto as Record<string, unknown>,

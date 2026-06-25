@@ -66,7 +66,7 @@ else
   echo "   Se a base já tinha schema via db push, execute:"
   echo "   bash scripts/migrate-tenant-deploy.sh ${DB_NAME} --baseline-all"
   echo ""
-  echo "   Se faltam apenas tabelas novas (ex.: transferencias), faça baseline só das"
+  echo "   Se faltam apenas tabelas novas (ex.: requisicoes), faça baseline só das"
   echo "   migrations antigas e volte a correr sem --baseline-all:"
   echo "   docker exec -e DATABASE_URL_TENANT=\"${DB_URL}\" ${BACKEND_CONTAINER} \\"
   echo "     bunx prisma migrate resolve --applied NOME_DA_MIGRATION --schema=${SCHEMA}"

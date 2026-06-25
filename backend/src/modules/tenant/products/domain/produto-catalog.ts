@@ -1,4 +1,4 @@
-/** Campos persistidos apenas em `produtos` (catálogo e preço). */
+/** Campos persistidos apenas em `produtos` (catálogo regulatório e fiscal). */
 
 const CATALOG_KEYS = new Set([
   "nome",
@@ -8,7 +8,7 @@ const CATALOG_KEYS = new Set([
   "apresentacao",
   "ativo",
   "barcode",
-  "precoVenda",
+  "categoria",
   "estoqueMinimo",
   "taxRuleId",
 ]);

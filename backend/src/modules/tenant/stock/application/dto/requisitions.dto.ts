@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { categoriaProdutoSchema } from "../../../products/application/dto/produto.dto";
 
 const optionalLocationSchema = z
   .string()
@@ -180,6 +181,7 @@ export const createLoteSchema = z.object({
 export const searchRequisitionProdutosQuerySchema = z.object({
   q: z.string().trim().min(1).optional(),
   barcode: z.string().trim().min(1).optional(),
+  categoria: categoriaProdutoSchema.optional(),
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().max(100).optional(),
 });

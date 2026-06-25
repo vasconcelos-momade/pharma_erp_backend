@@ -1,27 +1,22 @@
-import { syncProductStockFromLotes, type StockTx } from "./produto-stock.service";
-
-type PurchaseProductRecord = {
-  id: bigint;
-  precoVenda: unknown;
-  nome?: string;
-};
+import {
+  getQuantidadeTotalFromMovements,
+  syncStockBalanceCache,
+  type StockTx,
+} from "./produto-stock.service";
 
 type PurchaseLotRecord = {
   id: bigint;
   fornecedorId: bigint | null;
   quantidadeInicial: unknown;
   quantidadeAtual: unknown;
+  precoVenda: unknown | null;
 };
 
 type PurchaseReceivingTx = StockTx & {
   produto: {
     findUnique: (args: {
       where: { id: bigint };
-    }) => Promise<PurchaseProductRecord | null>;
-    update: (args: {
-      where: { id: bigint };
-      data: Record<string, unknown>;
-    }) => Promise<unknown>;
+    }) => Promise<{ id: bigint; nome?: string } | null>;
   };
   lote: {
     findMany: NonNullable<StockTx["lote"]>["findMany"];
@@ -56,7 +51,7 @@ export interface PurchaseReceivingItemInput {
   dataValidade: string | Date;
   quantidade: number;
   precoCompra: number;
-  precoVenda?: number | null;
+  precoVenda: number;
   userId: bigint;
 }
 
@@ -90,14 +85,25 @@ export function getNormalizedExpiryRange(value: string | Date): { start: Date; e
   return { start, end };
 }
 
-function shouldUseExplicitSalePrice(
+function resolvePrecoVendaLoteInput(
   precoVenda: number | null | undefined,
   mode: PurchaseReceivingItemOptions["salePriceMode"],
-): boolean {
+): number {
   if (mode === "truthy") {
-    return Boolean(precoVenda);
+    const preco = Number(precoVenda ?? 0);
+    if (!Number.isFinite(preco) || preco <= 0) {
+      throw new Error("Preço de venda do lote é obrigatório e deve ser superior a zero.");
+    }
+    return preco;
   }
-  return precoVenda != null;
+  if (precoVenda == null) {
+    throw new Error("Preço de venda do lote é obrigatório.");
+  }
+  const preco = Number(precoVenda);
+  if (!Number.isFinite(preco) || preco <= 0) {
+    throw new Error("Preço de venda do lote deve ser superior a zero.");
+  }
+  return preco;
 }
 
 export async function receivePurchaseItemStock(
@@ -128,17 +134,14 @@ export async function receivePurchaseItemStock(
   const { start: dataValidadeInicio, end: dataValidadeFim } = getNormalizedExpiryRange(
     input.dataValidade,
   );
-  const hasExplicitSalePrice = shouldUseExplicitSalePrice(input.precoVenda, options.salePriceMode);
-  const precoVendaLote = hasExplicitSalePrice
-    ? Number(input.precoVenda)
-    : Number(produto.precoVenda);
+  const precoVendaLote = resolvePrecoVendaLoteInput(input.precoVenda, options.salePriceMode);
 
   await (tx as { $executeRaw: (query: TemplateStringsArray, ...values: unknown[]) => Promise<unknown> })
     .$executeRaw`SELECT id FROM produtos WHERE id = ${produto.id} FOR UPDATE`;
   await (tx as { $executeRaw: (query: TemplateStringsArray, ...values: unknown[]) => Promise<unknown> })
     .$executeRaw`SELECT id FROM lotes WHERE produtoId = ${produto.id} AND deletedAt IS NULL FOR UPDATE`;
 
-  const estoqueAnterior = await syncProductStockFromLotes(tx, produto.id);
+  const estoqueAnterior = await getQuantidadeTotalFromMovements(tx, produto.id);
 
   const loteExistente = await tx.lote.findFirst({
     where: {
@@ -152,6 +155,8 @@ export async function receivePurchaseItemStock(
     },
     orderBy: { id: "asc" },
   });
+
+  const precoAnteriorLote = loteExistente ? Number(loteExistente.precoVenda ?? 0) : 0;
 
   const lote = loteExistente
     ? await tx.lote.update({
@@ -179,14 +184,7 @@ export async function receivePurchaseItemStock(
         },
       });
 
-  if (hasExplicitSalePrice) {
-    await tx.produto.update({
-      where: { id: produto.id },
-      data: { precoVenda: input.precoVenda },
-    });
-  }
-
-  const estoqueFinal = await syncProductStockFromLotes(tx, produto.id);
+  const estoqueFinal = estoqueAnterior + input.quantidade;
 
   await tx.estoqueMovimento.create({
     data: {
@@ -201,15 +199,15 @@ export async function receivePurchaseItemStock(
     },
   });
 
+  await syncStockBalanceCache(tx, produto.id);
+
   await tx.historicoPreco.create({
     data: {
       produtoId: produto.id,
       fornecedorId: input.fornecedorId,
-      precoAnterior: produto.precoVenda,
+      precoAnterior: precoAnteriorLote,
       precoNovo: precoVendaLote,
-      variacao: hasExplicitSalePrice
-        ? Number(input.precoVenda) - Number(produto.precoVenda)
-        : 0,
+      variacao: precoVendaLote - precoAnteriorLote,
     },
   });
 

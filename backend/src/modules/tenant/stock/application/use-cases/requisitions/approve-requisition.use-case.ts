@@ -124,4 +124,3 @@ export class ApproveRequisitionUseCase {
 }
 
 export const ConfirmRequisitionUseCase = ApproveRequisitionUseCase;
-export const ConfirmTransferUseCase = ApproveRequisitionUseCase;

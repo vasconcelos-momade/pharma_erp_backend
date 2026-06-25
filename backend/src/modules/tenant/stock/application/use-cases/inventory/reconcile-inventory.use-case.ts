@@ -1,7 +1,7 @@
 import { getPrisma } from "../../../../../../infrastructure/prisma/tenant-prisma.factory";
 import {
-  getQuantidadeTotal,
-  syncProductStockFromLotes,
+  getQuantidadeTotalFromMovements,
+  syncStockBalanceCache,
 } from "../../../domain/produto-stock.service";
 import { inventarioItemInclude, mapInventarioDetalhe } from "./inventory.mapper";
 
@@ -41,7 +41,7 @@ export class ReconcileInventoryUseCase {
       }
 
       for (const produtoId of produtoIds) {
-        const estoqueAnterior = await getQuantidadeTotal(tx, produtoId);
+        const estoqueAnterior = await getQuantidadeTotalFromMovements(tx, produtoId);
         const itensProduto = itensComDivergencia.filter(
           (item: { produtoId: bigint }) => item.produtoId === produtoId,
         );
@@ -59,34 +59,29 @@ export class ReconcileInventoryUseCase {
           });
         }
 
-        const novoEstoque = await syncProductStockFromLotes(tx, produtoId);
+        const novoEstoque = itensProduto.reduce(
+          (sum: number, item: { estoqueContado: unknown }) =>
+            sum + Number(item.estoqueContado),
+          0,
+        );
 
-        for (const item of itensProduto) {
-          const divergencia = Number(item.divergencia);
-          const sistema = Number(item.estoqueSistema);
-          const contado = Number(item.estoqueContado);
-
+        if (itensProduto.length > 0) {
           await tx.estoqueMovimento.create({
             data: {
               produtoId,
-              loteId: item.loteId,
+              loteId: itensProduto[0]?.loteId ?? null,
               userId: BigInt(userId),
               tipo: "AJUSTE",
-              quantidade: Math.abs(divergencia),
+              quantidade: Math.abs(novoEstoque - estoqueAnterior),
               estoqueAnterior,
               estoqueFinal: novoEstoque,
               origem: "RECONCILIACAO_INVENTARIO",
-              observacoes: [
-                `Reconciliação Inventário ${inventario.codigo}`,
-                `Sistema: ${sistema}`,
-                `Contado: ${contado}`,
-                `Diferença: ${divergencia}`,
-              ].join("\n"),
+              observacoes: `Reconciliação Inventário ${inventario.codigo}`,
             },
           });
-        }
 
-        if (itensProduto.length > 0) {
+          await syncStockBalanceCache(tx, produtoId);
+
           await tx.produto.update({
             where: { id: produtoId },
             data: { version: { increment: 1 } },

@@ -54,7 +54,12 @@ async function main() {
 
     // Criar lote
     const loteNumero = `TEST-${Date.now()}-${count}`;
-    const precoCompraLote = Math.round(Number(produto.precoVenda) * 0.65 * 100) / 100;
+    const precoCompraFornecedor =
+      produto.fornecedores[0]?.precoCompra != null
+        ? Number(produto.fornecedores[0].precoCompra)
+        : 65;
+    const precoVendaLote = Math.round((precoCompraFornecedor / 0.65) * 100) / 100;
+    const precoCompraLote = precoCompraFornecedor;
     const lote = await prisma.lote.create({
       data: {
         produtoId: produto.id,
@@ -65,7 +70,7 @@ async function main() {
         quantidadeInicial: 50,
         quantidadeAtual: 50,
         precoCompra: precoCompraLote,
-        precoVenda: produto.precoVenda,
+        precoVenda: precoVendaLote,
         ativo: true
       }
     });

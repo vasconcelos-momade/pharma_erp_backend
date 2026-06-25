@@ -1,7 +1,12 @@
+import type { CategoriaProdutoValue } from "../dto/produto.dto";
 import { ProdutoRepository } from "../../infrastructure/repositories/produto.repository";
 
-type ProdutoListFilters = {
-  requiresManualReview?: boolean;
+type ProdutoSearchFilters = {
+  query?: string;
+  barcode?: string;
+  categoria?: CategoriaProdutoValue;
+  page?: number;
+  pageSize?: number;
 };
 
 export class ProdutoService {
@@ -24,8 +29,8 @@ export class ProdutoService {
     return this.repo.create(data, BigInt(userId));
   }
 
-  async list(filters: ProdutoListFilters = {}) {
-    return (this.repo as any).findAll(filters);
+  async search(filters: ProdutoSearchFilters = {}) {
+    return this.repo.search(filters);
   }
 
   async get(id: bigint) {

@@ -1,32 +1,14 @@
 import { ProdutoService } from "../../application/services/produto.service";
-import { z } from "zod";
+import {
+  createProdutoSchema,
+  searchProdutosQuerySchema,
+  updateProdutoSchema,
+} from "../../application/dto/produto.dto";
 import {
   parseJsonBody,
   parseSearchParams,
 } from "../../../../../shared/http/request-validation";
 import { controllerErrorResponse } from "../../../../../shared/http/controller-error";
-
-const produtoBaseSchema = z.looseObject({
-  nome: z.string().trim().min(1),
-  barcode: z.string().trim().min(1).optional(),
-  tipoDispensacao: z.string().trim().min(1).optional(),
-  requiresManualReview: z.coerce.boolean().optional(),
-  precoVenda: z.coerce.number().nonnegative().optional(),
-});
-
-const createProdutoSchema = produtoBaseSchema;
-
-const updateProdutoSchema = produtoBaseSchema.partial().refine(
-  (data: any) => Object.keys(data).length > 0,
-  { message: "Informe ao menos um campo para atualizar" },
-);
-
-const listProdutosQuerySchema = z.object({
-  requiresManualReview: z
-    .enum(["true", "false"])
-    .transform((value: any) => value === "true")
-    .optional(),
-});
 
 export class ProdutoController {
   private service = new ProdutoService();
@@ -41,13 +23,21 @@ export class ProdutoController {
     }
   }
 
-  async list(req: Request) {
+  async search(req: Request) {
     try {
       const url = new URL(req.url);
-      const { requiresManualReview } = parseSearchParams(url, listProdutosQuerySchema);
+      const { q, barcode, categoria, page = 1, pageSize = 20 } =
+        parseSearchParams(url, searchProdutosQuerySchema);
 
-      const result = await this.service.list({ requiresManualReview });
-      return Response.json(result.map((p: any) => this.serialize(p)));
+      const result = await this.service.search({
+        query: q,
+        barcode,
+        categoria,
+        page,
+        pageSize,
+      });
+
+      return Response.json(this.serialize(result));
     } catch (error: any) {
       return controllerErrorResponse(error, 500);
     }

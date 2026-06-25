@@ -177,7 +177,7 @@ model Produto {
   apresentacao             String?                 @db.Text
   ativo                    Boolean                 @default(true)
   barcode                  String?                 @unique @db.VarChar(100)
-  precoVenda               Decimal                 @db.Decimal(14, 2)
+  categoria                CategoriaProduto        @default(MEDICAMENTO)
   estoqueMinimo            Decimal                 @default(0) @db.Decimal(14, 2)
   taxRuleId                BigInt?                 @db.UnsignedBigInt
   version                  Int                     @default(0)
@@ -205,6 +205,7 @@ model Produto {
   updatedAt                DateTime                @updatedAt
 
   @@index([ativo])
+  @@index([categoria])
   @@index([taxRuleId])
   @@map("produtos")
 }
@@ -814,7 +815,7 @@ model Requisicao {
   @@index([tipo])
   @@index([fornecedorId])
   @@index([createdAt])
-  @@map("transferencias")
+  @@map("requisicoes")
 }
 
 model RequisicaoItem {
@@ -835,7 +836,7 @@ model RequisicaoItem {
   @@unique([requisicaoId, produtoId, loteId])
   @@index([requisicaoId])
   @@index([produtoId])
-  @@map("transferencia_itens")
+  @@map("requisicao_itens")
 }
 
 model CashBalance {
@@ -1216,6 +1217,15 @@ enum TipoMovimentoPsicotropico {
   ENTRADA
   SAIDA
   IMPORTACAO
+}
+
+enum CategoriaProduto {
+  MEDICAMENTO
+  CONSUMIVEL
+  EQUIPAMENTO
+  HIGIENE
+  SUPLEMENTO
+  OUTRO
 }
 
 enum TipoDispensacao {

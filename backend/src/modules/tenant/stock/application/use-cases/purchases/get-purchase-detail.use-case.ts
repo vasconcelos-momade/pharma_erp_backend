@@ -37,9 +37,7 @@ export class GetPurchaseDetailUseCase {
         dataValidade: item.dataValidade ? item.dataValidade.toISOString() : "",
         quantidade: Number(item.quantidade),
         precoCompra: Number(item.precoCompra),
-        precoVenda: item.precoVenda != null
-          ? Number(item.precoVenda)
-          : Number(item.produto.precoVenda),
+        precoVenda: item.precoVenda != null ? Number(item.precoVenda) : null,
         subtotal: Number(item.total),
       })),
     };

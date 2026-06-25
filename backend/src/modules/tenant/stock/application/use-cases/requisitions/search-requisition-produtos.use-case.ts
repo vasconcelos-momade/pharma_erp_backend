@@ -1,4 +1,5 @@
 import { getPrisma } from "../../../../../../infrastructure/prisma/tenant-prisma.factory";
+import type { CategoriaProdutoValue } from "../../../../products/application/dto/produto.dto";
 import {
   mapRequisicaoProduto,
   produtoRequisicaoSelect,
@@ -7,6 +8,7 @@ import {
 export class SearchRequisitionProdutosUseCase {
   async execute(params?: {
     q?: string;
+    categoria?: CategoriaProdutoValue;
     page?: number;
     pageSize?: number;
   }) {
@@ -18,6 +20,7 @@ export class SearchRequisitionProdutosUseCase {
     const baseWhere = {
       ativo: true,
       deletedAt: null,
+      ...(params?.categoria ? { categoria: params.categoria } : {}),
     };
 
     const queryFilters = searchTerm

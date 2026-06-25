@@ -347,13 +347,6 @@ function registerRequisitionRoutes(router: Router, prefix: string): void {
     "requisicoes",
     ":requisicaoId",
   );
-  // Alias legado da API (clientes antigos) — preferir /tenant/requisicoes.
-  registerRequisitionRoutesForResource(
-    router,
-    prefix,
-    "transferencias",
-    ":requisicaoId",
-  );
 }
 
 export function registerStockRoutes(router: Router, prefix: string): void {

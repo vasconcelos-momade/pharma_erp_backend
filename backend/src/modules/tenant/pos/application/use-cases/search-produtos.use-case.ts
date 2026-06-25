@@ -1,10 +1,12 @@
 import { getPrisma } from "../../../../../infrastructure/prisma/tenant-prisma.factory";
+import type { CategoriaProdutoValue } from "../../../products/application/dto/produto.dto";
 import { mapPosProduto, produtoPosSelect } from "../../../products/domain/produto-presenter";
 
 export class SearchProdutosUseCase {
   async execute(params?: {
     query?: string;
     barcode?: string;
+    categoria?: CategoriaProdutoValue;
     page?: number;
     pageSize?: number;
   }) {
@@ -17,6 +19,7 @@ export class SearchProdutosUseCase {
     const baseWhere = {
       ativo: true,
       deletedAt: null,
+      ...(params?.categoria ? { categoria: params.categoria } : {}),
     };
 
     if (barcode) {

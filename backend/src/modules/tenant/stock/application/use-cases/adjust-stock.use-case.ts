@@ -1,7 +1,7 @@
 import { getPrisma } from "../../../../../infrastructure/prisma/tenant-prisma.factory";
 import {
-  applyStockAdjustDelta,
-  syncProductStockFromLotes,
+  getQuantidadeTotalFromMovements,
+  syncStockBalanceCache,
 } from "../../domain/produto-stock.service";
 
 export interface AdjustStockDTO {
@@ -25,16 +25,13 @@ export class AdjustStockUseCase {
         throw new Error("Produto não encontrado");
       }
 
-      let estoqueAnterior: number;
-      let novoEstoque: number;
+      const estoqueAnterior = await getQuantidadeTotalFromMovements(tx, produtoId);
 
       if (data.loteId) {
         const loteId = BigInt(data.loteId);
         await tx.$executeRaw`SELECT id FROM lotes WHERE id = ${loteId} FOR UPDATE`;
         const lote = await tx.lote.findUnique({ where: { id: loteId } });
         if (!lote) throw new Error("Lote não encontrado");
-
-        estoqueAnterior = await syncProductStockFromLotes(tx, produtoId);
 
         await tx.lote.update({
           where: { id: loteId },
@@ -43,12 +40,9 @@ export class AdjustStockUseCase {
             version: { increment: 1 },
           },
         });
-
-        novoEstoque = await syncProductStockFromLotes(tx, produtoId);
-      } else {
-        estoqueAnterior = await syncProductStockFromLotes(tx, produtoId);
-        novoEstoque = await applyStockAdjustDelta(tx, produtoId, data.quantidade);
       }
+
+      const novoEstoque = estoqueAnterior + data.quantidade;
 
       await tx.estoqueMovimento.create({
         data: {
@@ -63,6 +57,8 @@ export class AdjustStockUseCase {
           observacoes: data.motivo,
         },
       });
+
+      await syncStockBalanceCache(tx, produtoId);
 
       await tx.produto.update({
         where: { id: produtoId },

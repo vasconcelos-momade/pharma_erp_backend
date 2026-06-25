@@ -77,6 +77,28 @@ describe("SearchRequisitionProdutosUseCase", () => {
     });
   });
 
+  test("filtra por categoria quando informada", async () => {
+    const findMany = mock(async () => []);
+
+    (TenantPrismaFactory as any).getClient = mock(() => ({
+      produto: { findMany },
+    }));
+
+    await new SearchRequisitionProdutosUseCase().execute({
+      categoria: "EQUIPAMENTO",
+      page: 1,
+      pageSize: 20,
+    });
+
+    expect(findMany.mock.calls[0]?.[0]).toMatchObject({
+      where: {
+        ativo: true,
+        deletedAt: null,
+        categoria: "EQUIPAMENTO",
+      },
+    });
+  });
+
   test("mantem produtos com e sem lote quando nao ha pesquisa, sem exigir fornecedor, e preserva a paginacao", async () => {
     const findMany = mock(async () => [
       {

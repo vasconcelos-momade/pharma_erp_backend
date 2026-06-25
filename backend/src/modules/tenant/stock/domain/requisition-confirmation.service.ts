@@ -3,11 +3,9 @@ import {
   ValidationApiError,
 } from "../../../../shared/http/api-error";
 import {
-  applyStockReturnDelta,
-  applyStockSaleDelta,
   getQuantidadeDisponivel,
-  getQuantidadeTotal,
-  syncProductStockFromLotes,
+  getQuantidadeTotalFromMovements,
+  syncStockBalanceCache,
   type StockTx,
 } from "./produto-stock.service";
 
@@ -117,22 +115,6 @@ function buildObservationBase(input: ConfirmRequisitionInput): string {
   return `Requisicao ${input.numeroDocumento}: ${input.tipo} - ${origem} -> ${destino}`;
 }
 
-async function getCurrentStockReference(
-  tx: RequisitionConfirmationTx,
-  produtoId: bigint,
-  loteId: bigint | null,
-): Promise<number> {
-  if (loteId != null) {
-    const lote = await tx.lote.findUnique({
-      where: { id: loteId },
-      select: { quantidadeAtual: true },
-    });
-    return Number(lote?.quantidadeAtual ?? 0);
-  }
-
-  return getQuantidadeTotal(tx, produtoId);
-}
-
 async function validateStockAvailability(
   tx: RequisitionConfirmationTx,
   produtoId: bigint,
@@ -159,6 +141,19 @@ async function validateStockAvailability(
   }
 }
 
+async function getEstoqueTotalProdutoReference(
+  tx: RequisitionConfirmationTx,
+  produtoId: bigint,
+): Promise<number> {
+  // Fonte de verdade: ledger. Fallback: StockBalance (bases novas / seeds / testes).
+  const fromLedger = await getQuantidadeTotalFromMovements(tx, produtoId);
+  if (fromLedger > 0) {
+    return fromLedger;
+  }
+  const balance = await tx.stockBalance.findUnique({ where: { produtoId } });
+  return Number(balance?.quantidadeTotal ?? 0);
+}
+
 async function applyMovement(
   tx: RequisitionConfirmationTx,
   input: ConfirmRequisitionInput,
@@ -167,15 +162,22 @@ async function applyMovement(
   kind: MovementKind,
   observacaoBase: string,
 ): Promise<void> {
-  const estoqueAnterior = await getCurrentStockReference(
-    tx,
-    produto.id,
-    item.loteId,
-  );
+  const estoqueAnterior =
+    item.loteId != null
+      ? Number(
+          (
+            await tx.lote.findUnique({
+              where: { id: item.loteId },
+              select: { quantidadeAtual: true },
+            })
+          )?.quantidadeAtual ?? 0,
+        )
+      : await getEstoqueTotalProdutoReference(tx, produto.id);
+  const delta =
+    kind === "SAIDA" ? -item.quantidadeSolicitada : item.quantidadeSolicitada;
 
-  let estoqueFinal: number;
-  if (kind === "SAIDA") {
-    if (item.loteId != null) {
+  if (item.loteId != null) {
+    if (kind === "SAIDA") {
       await tx.lote.update({
         where: { id: item.loteId },
         data: {
@@ -183,38 +185,19 @@ async function applyMovement(
           version: { increment: 1 },
         },
       });
-      await syncProductStockFromLotes(tx, produto.id);
-      estoqueFinal = await getCurrentStockReference(
-        tx,
-        produto.id,
-        item.loteId,
-      );
     } else {
-      await applyStockSaleDelta(tx, produto.id, item.quantidadeSolicitada);
-      estoqueFinal = await getQuantidadeTotal(tx, produto.id);
+      await tx.lote.update({
+        where: { id: item.loteId },
+        data: {
+          quantidadeAtual: { increment: item.quantidadeSolicitada },
+          quantidadeInicial: { increment: item.quantidadeSolicitada },
+          version: { increment: 1 },
+        },
+      });
     }
-  } else if (item.loteId != null) {
-    await tx.lote.update({
-      where: { id: item.loteId },
-      data: {
-        quantidadeAtual: { increment: item.quantidadeSolicitada },
-        quantidadeInicial: { increment: item.quantidadeSolicitada },
-        version: { increment: 1 },
-      },
-    });
-    await syncProductStockFromLotes(tx, produto.id);
-    estoqueFinal = await getCurrentStockReference(
-      tx,
-      produto.id,
-      item.loteId,
-    );
-  } else {
-    estoqueFinal = await applyStockReturnDelta(
-      tx,
-      produto.id,
-      item.quantidadeSolicitada,
-    );
   }
+
+  const estoqueFinal = estoqueAnterior + delta;
 
   await tx.estoqueMovimento.create({
     data: {
@@ -230,6 +213,8 @@ async function applyMovement(
       observacoes: `${observacaoBase}`,
     },
   });
+
+  await syncStockBalanceCache(tx, produto.id);
 }
 
 export async function confirmRequisitionStockMovements(
@@ -311,8 +296,3 @@ export async function confirmRequisitionStockMovements(
     await applyMovement(tx, input, item, produto as { id: bigint; nome?: string }, kind, observacaoBase);
   }
 }
-
-export type TransferConfirmationTx = RequisitionConfirmationTx;
-export type TransferConfirmationItem = RequisitionConfirmationItem;
-export type ConfirmTransferInput = ConfirmRequisitionInput;
-export const confirmTransferStockMovements = confirmRequisitionStockMovements;
