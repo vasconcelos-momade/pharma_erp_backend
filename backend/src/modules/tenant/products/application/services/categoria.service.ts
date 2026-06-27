@@ -24,6 +24,10 @@ export class CategoriaService {
     return this.repo.listActive();
   }
 
+  async getStats() {
+    return this.repo.getStats();
+  }
+
   async get(id: bigint) {
     const categoria = await this.repo.findById(id);
     if (!categoria) {

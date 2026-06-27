@@ -24,6 +24,8 @@ export const listStockMovementsQuerySchema = z
     q: optionalStringSchema,
     tipo: stockMovementTypeSchema.optional(),
     origem: optionalStringSchema,
+    produtoId: z.string().trim().regex(/^\d+$/).optional(),
+    loteId: z.string().trim().regex(/^\d+$/).optional(),
     dataInicio: optionalStringSchema,
     dataFim: optionalStringSchema,
     page: z.coerce.number().int().positive().optional(),

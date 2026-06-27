@@ -3,6 +3,7 @@ import {
   CategoriaController,
   ProdutoController,
 } from "../../modules/tenant/products";
+import { LotesController } from "../../modules/tenant/stock/presentation/controllers/lotes.controller";
 import {
   tenantAuthMiddleware,
   tenantBranchContextMiddleware,
@@ -16,6 +17,7 @@ import type { Router } from "../../shared/http/router";
 
 const produtoController = new ProdutoController();
 const categoriaController = new CategoriaController();
+const lotesController = new LotesController();
 const productIdParamSchema = z.object({
   productId: z.string().regex(/^\d+$/, "productId inválido"),
 });
@@ -148,6 +150,14 @@ function registerCategoryItemResource(router: Router, path: string): void {
 }
 
 export function registerProductRoutes(router: Router, prefix: string): void {
+  router.get(
+    `${prefix}/tenant/dashboard/produtos`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("PRODUTOS", "VIEW"),
+    async () => produtoController.dashboard(),
+  );
+
   registerProductResource(router, `${prefix}/tenant/products`);
   registerProductResource(router, `${prefix}/tenant/produtos`);
   registerCategoryResource(router, `${prefix}/tenant/categories`);
@@ -155,8 +165,58 @@ export function registerProductRoutes(router: Router, prefix: string): void {
   registerCategoryActiveResource(router, `${prefix}/tenant/categories/active`);
   registerCategoryActiveResource(router, `${prefix}/tenant/categorias/ativas`);
 
+  router.get(
+    `${prefix}/tenant/categorias/stats`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("PRODUTOS", "VIEW"),
+    async () => categoriaController.stats(),
+  );
+
   registerProductItemResource(router, `${prefix}/tenant/products/:productId`);
   registerProductItemResource(router, `${prefix}/tenant/produtos/:productId`);
+
+  router.get(
+    `${prefix}/tenant/produtos/:productId/historico-precos`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("PRODUTOS", "VIEW"),
+    async (context) => lotesController.listProductPriceHistory(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/produtos/:productId/fornecedores`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("PRODUTOS", "VIEW"),
+    async (context) => {
+      const { productId } = parseRouteParams(context.params, productIdParamSchema);
+      return produtoController.listSuppliers(context.req, productId);
+    },
+  );
+
+  router.get(
+    `${prefix}/tenant/produtos/:productId/historico`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("PRODUTOS", "VIEW"),
+    async (context) => {
+      const { productId } = parseRouteParams(context.params, productIdParamSchema);
+      return produtoController.listHistory(context.req, productId);
+    },
+  );
+
+  router.get(
+    `${prefix}/tenant/produtos/:productId/auditoria`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("PRODUTOS", "VIEW"),
+    async (context) => {
+      const { productId } = parseRouteParams(context.params, productIdParamSchema);
+      return produtoController.listAudit(context.req, productId);
+    },
+  );
+
   registerCategoryItemResource(router, `${prefix}/tenant/categories/:categoryId`);
   registerCategoryItemResource(router, `${prefix}/tenant/categorias/:categoryId`);
 }

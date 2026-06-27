@@ -51,6 +51,15 @@ export class CategoriaController {
     }
   }
 
+  async stats() {
+    try {
+      const result = await this.service.getStats();
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error, 500);
+    }
+  }
+
   async get(id: string) {
     try {
       const result = await this.service.get(BigInt(id));

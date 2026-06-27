@@ -1,0 +1,210 @@
+import {
+  LotesDashboardUseCase,
+  SearchLotesUseCase,
+} from "../../application/use-cases/lotes/search-lotes.use-case";
+import { GetLoteDetailUseCase } from "../../application/use-cases/lotes/get-lote-detail.use-case";
+import {
+  ValidadesDashboardUseCase,
+  SearchValidadesUseCase,
+} from "../../application/use-cases/lotes/validades.use-case";
+import {
+  FefoDashboardUseCase,
+  SearchFefoOverviewUseCase,
+  SearchFefoAuditUseCase,
+} from "../../application/use-cases/lotes/fefo.use-case";
+import {
+  ListLoteMovimentosUseCase,
+  ListLoteReservasUseCase,
+  ListLoteDispensacoesUseCase,
+  ListLoteIncineracoesUseCase,
+  ListProductPriceHistoryUseCase,
+} from "../../application/use-cases/lotes/lote-detail-lists.use-case";
+import {
+  searchLotesQuerySchema,
+  searchValidadesQuerySchema,
+  searchFefoAuditQuerySchema,
+  listProductPriceHistoryQuerySchema,
+} from "../../application/dto/lotes.dto";
+import { parseSearchParams } from "../../../../../shared/http/request-validation";
+import { controllerErrorResponse } from "../../../../../shared/http/controller-error";
+import { z } from "zod";
+
+export class LotesController {
+  private lotesDashboardUseCase = new LotesDashboardUseCase();
+  private searchLotesUseCase = new SearchLotesUseCase();
+  private getLoteDetailUseCase = new GetLoteDetailUseCase();
+  private validadesDashboardUseCase = new ValidadesDashboardUseCase();
+  private searchValidadesUseCase = new SearchValidadesUseCase();
+  private fefoDashboardUseCase = new FefoDashboardUseCase();
+  private searchFefoOverviewUseCase = new SearchFefoOverviewUseCase();
+  private searchFefoAuditUseCase = new SearchFefoAuditUseCase();
+  private listLoteMovimentosUseCase = new ListLoteMovimentosUseCase();
+  private listLoteReservasUseCase = new ListLoteReservasUseCase();
+  private listLoteDispensacoesUseCase = new ListLoteDispensacoesUseCase();
+  private listLoteIncineracoesUseCase = new ListLoteIncineracoesUseCase();
+  private listProductPriceHistoryUseCase = new ListProductPriceHistoryUseCase();
+
+  async search(req: Request) {
+    try {
+      const url = new URL(req.url);
+      const query = parseSearchParams(url, searchLotesQuerySchema);
+      const result = await this.searchLotesUseCase.execute(query);
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async dashboard(_req: Request) {
+    try {
+      const result = await this.lotesDashboardUseCase.execute();
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async get(req: Request) {
+    try {
+      const loteId = req.url.split("/").filter(Boolean).pop()!;
+      const result = await this.getLoteDetailUseCase.execute(loteId);
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error, 404);
+    }
+  }
+
+  async validadesDashboard(_req: Request) {
+    try {
+      const result = await this.validadesDashboardUseCase.execute();
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async searchValidades(req: Request) {
+    try {
+      const url = new URL(req.url);
+      const query = parseSearchParams(url, searchValidadesQuerySchema);
+      const result = await this.searchValidadesUseCase.execute(query);
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async fefoDashboard(_req: Request) {
+    try {
+      const result = await this.fefoDashboardUseCase.execute();
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async searchFefoOverview(req: Request) {
+    try {
+      const url = new URL(req.url);
+      const query = parseSearchParams(
+        url,
+        z.object({
+          q: z.string().optional(),
+          produtoId: z.string().optional(),
+          page: z.coerce.number().optional(),
+          pageSize: z.coerce.number().optional(),
+        }),
+      );
+      const result = await this.searchFefoOverviewUseCase.execute(query);
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async searchFefoAudit(req: Request) {
+    try {
+      const url = new URL(req.url);
+      const query = parseSearchParams(url, searchFefoAuditQuerySchema);
+      const result = await this.searchFefoAuditUseCase.execute(query);
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async listMovimentos(req: Request) {
+    try {
+      const parts = new URL(req.url).pathname.split("/");
+      const loteId = parts[parts.indexOf("lotes") + 1];
+      const url = new URL(req.url);
+      const page = Number(url.searchParams.get("page") ?? "1");
+      const pageSize = Number(url.searchParams.get("pageSize") ?? "20");
+      const result = await this.listLoteMovimentosUseCase.execute(loteId, page, pageSize);
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async listReservas(req: Request) {
+    try {
+      const parts = new URL(req.url).pathname.split("/");
+      const loteId = parts[parts.indexOf("lotes") + 1];
+      const result = await this.listLoteReservasUseCase.execute(loteId);
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async listDispensacoes(req: Request) {
+    try {
+      const parts = new URL(req.url).pathname.split("/");
+      const loteId = parts[parts.indexOf("lotes") + 1];
+      const result = await this.listLoteDispensacoesUseCase.execute(loteId);
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async listIncineracoes(req: Request) {
+    try {
+      const parts = new URL(req.url).pathname.split("/");
+      const loteId = parts[parts.indexOf("lotes") + 1];
+      const result = await this.listLoteIncineracoesUseCase.execute(loteId);
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async listProductPriceHistory(req: Request) {
+    try {
+      const parts = new URL(req.url).pathname.split("/");
+      const productId = parts[parts.indexOf("produtos") + 1];
+      const url = new URL(req.url);
+      const { page, pageSize } = parseSearchParams(
+        url,
+        listProductPriceHistoryQuerySchema,
+      );
+      const result = await this.listProductPriceHistoryUseCase.execute(
+        productId,
+        page,
+        pageSize,
+      );
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  private serialize(data: any) {
+    return JSON.parse(
+      JSON.stringify(data, (_key, value) =>
+        typeof value === "bigint" ? value.toString() : value,
+      ),
+    );
+  }
+}

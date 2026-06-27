@@ -9,6 +9,7 @@ import {
   parseSearchParams,
 } from "../../../../../shared/http/request-validation";
 import { controllerErrorResponse } from "../../../../../shared/http/controller-error";
+import { z } from "zod";
 
 export class ProdutoController {
   private service = new ProdutoService();
@@ -30,17 +31,27 @@ export class ProdutoController {
         q,
         barcode,
         categoriaId,
+        categoria,
+        fornecedorId,
+        tipoDispensacao,
+        ativo,
         includeInactive = false,
+        sortBy,
+        sortOrder,
         page = 1,
         pageSize = 20,
-      } =
-        parseSearchParams(url, searchProdutosQuerySchema);
+      } = parseSearchParams(url, searchProdutosQuerySchema);
 
       const result = await this.service.search({
         query: q,
         barcode,
-        categoriaId,
+        categoriaId: categoriaId ?? categoria,
+        fornecedorId,
+        tipoDispensacao,
+        ativo,
         includeInactive,
+        sortBy,
+        sortOrder,
         page,
         pageSize,
       });
@@ -54,6 +65,57 @@ export class ProdutoController {
   async get(id: string) {
     try {
       const result = await this.service.get(BigInt(id));
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error, 404);
+    }
+  }
+
+  async dashboard() {
+    try {
+      const result = await this.service.getDashboard();
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error, 500);
+    }
+  }
+
+  async listSuppliers(req: Request, id: string) {
+    try {
+      void req;
+      const result = await this.service.listSuppliers(BigInt(id));
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error, 404);
+    }
+  }
+
+  async listHistory(req: Request, id: string) {
+    try {
+      const url = new URL(req.url);
+      const { page, pageSize } = parseSearchParams(url, z.object({
+        page: z.coerce.number().int().positive().optional(),
+        pageSize: z.coerce.number().int().positive().max(100).optional(),
+      }));
+      const result = await this.service.listClassificationHistory(
+        BigInt(id),
+        page,
+        pageSize,
+      );
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error, 404);
+    }
+  }
+
+  async listAudit(req: Request, id: string) {
+    try {
+      const url = new URL(req.url);
+      const { page, pageSize } = parseSearchParams(url, z.object({
+        page: z.coerce.number().int().positive().optional(),
+        pageSize: z.coerce.number().int().positive().max(100).optional(),
+      }));
+      const result = await this.service.listAuditLogs(BigInt(id), page, pageSize);
       return Response.json(this.serialize(result));
     } catch (error: any) {
       return controllerErrorResponse(error, 404);

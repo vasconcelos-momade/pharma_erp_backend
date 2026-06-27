@@ -488,7 +488,16 @@ async function main() {
     throw new Error("IVA_ISENTO_MEDICAMENTOS tax rule not found");
   }
 
+  const categoriaMedicamentos = await prisma.categoria.findFirst({
+    where: { nome: "Medicamentos" },
+  });
+
+  if (!categoriaMedicamentos) {
+    throw new Error("Categoria 'Medicamentos' não encontrada. Execute as migrations tenant primeiro.");
+  }
+
   console.log(`Using tax rule: ${taxRule.codigo} (ID: ${taxRule.id})`);
+  console.log(`Using categoria: ${categoriaMedicamentos.nome} (ID: ${categoriaMedicamentos.id})`);
 
   const content = fs.readFileSync(csvPath, "utf-8");
   const parsedCsv = parseCsv(content);
@@ -641,6 +650,7 @@ async function main() {
         classificacaoReason: effectiveAuditReason,
         classificacaoMatchedTerm: toNullable(truncateField(effectiveMatchedTerm, 191)),
         taxRuleId: taxRule.id,
+        categoriaId: categoriaMedicamentos.id,
         riskLevel: riskLevel as any,
       };
 

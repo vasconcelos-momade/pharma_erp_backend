@@ -1,0 +1,14 @@
+O que o script faz (conforme a documentação)
+Passo	Comando
+1. Subir stack
+docker compose -f docker-compose.dev.yml up -d --build
+2. Migrations central
+docker exec skalway_pharm_backend bun run prisma:migrate:central
+3. Seed central
+docker exec skalway_pharm_backend bun prisma/seed.ts
+4. Criar tenant
+POST /api/v1/central/tenants (cria a base tenant_farmacia_<timestamp>)
+5. Migrations tenant
+bash backend/scripts/migrate-tenant-deploy.sh <DB> --baseline-all
+6. Todos os seeders
+docker exec ... bun prisma/seed-all-tenant.ts <DB>

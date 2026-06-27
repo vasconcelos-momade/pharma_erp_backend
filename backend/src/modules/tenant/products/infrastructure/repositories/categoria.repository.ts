@@ -47,13 +47,31 @@ export class CategoriaRepository {
       orderBy: [{ nome: "asc" }, { id: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize + 1,
+      include: {
+        _count: {
+          select: {
+            produtos: {
+              where: { deletedAt: null },
+            },
+          },
+        },
+      },
     });
 
+    const items = rows.slice(0, pageSize).map((row: any) => ({
+      ...row,
+      productCount: row._count?.produtos ?? 0,
+      _count: undefined,
+    }));
+
+    const totalCount = await this.prisma.categoria.count({ where });
+
     return {
-      items: rows.slice(0, pageSize),
+      items,
       page,
       pageSize,
       hasMore: rows.length > pageSize,
+      totalCount,
     };
   }
 
@@ -67,13 +85,88 @@ export class CategoriaRepository {
     });
   }
 
+  async getStats() {
+    const categorias = await this.prisma.categoria.findMany({
+      where: { deletedAt: null },
+      select: {
+        id: true,
+        nome: true,
+        ativo: true,
+        produtos: {
+          where: { deletedAt: null },
+          select: {
+            id: true,
+            ativo: true,
+            stockBalance: {
+              select: {
+                quantidadeDisponivel: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: [{ nome: "asc" }, { id: "asc" }],
+    });
+
+    const items = categorias.map((categoria: any) => {
+      const totalProdutos = categoria.produtos.length;
+      const produtosActivos = categoria.produtos.filter((produto: any) => produto.ativo).length;
+      const produtosInactivos = totalProdutos - produtosActivos;
+      const stockDisponivel = categoria.produtos.reduce(
+        (sum: number, produto: any) =>
+          sum + Number(produto.stockBalance?.quantidadeDisponivel ?? 0),
+        0,
+      );
+
+      return {
+        id: categoria.id.toString(),
+        nome: categoria.nome,
+        activo: Boolean(categoria.ativo),
+        totalProdutos,
+        produtosActivos,
+        produtosInactivos,
+        stockDisponivel: Math.round(stockDisponivel * 100) / 100,
+      };
+    });
+
+    return {
+      totalCategorias: items.length,
+      categoriasActivas: items.filter((item: any) => item.activo).length,
+      categoriasInactivas: items.filter((item: any) => !item.activo).length,
+      totalProdutos: items.reduce((sum: number, item: any) => sum + item.totalProdutos, 0),
+      stockDisponivel: Math.round(
+        items.reduce((sum: number, item: any) => sum + item.stockDisponivel, 0) * 100,
+      ) / 100,
+      items,
+    };
+  }
+
   async findById(id: bigint) {
-    return this.prisma.categoria.findFirst({
+    const row = await this.prisma.categoria.findFirst({
       where: {
         id,
         deletedAt: null,
       },
+      include: {
+        _count: {
+          select: {
+            produtos: {
+              where: { deletedAt: null },
+            },
+          },
+        },
+      },
     });
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      ...row,
+      productCount: row._count?.produtos ?? 0,
+      _count: undefined,
+    };
   }
 
   async findByNome(nome: string) {

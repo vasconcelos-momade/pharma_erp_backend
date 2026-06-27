@@ -5,7 +5,9 @@ import {
 } from "../../../../../infrastructure/sync/tenant-sync-outbox.service";
 import {
   flattenProdutoForApi,
+  mapMasterProdutoListItem,
   mapRequisicaoProduto,
+  produtoMasterListSelect,
   produtoRequisicaoSelect,
   produtoWithRegulacaoInclude,
 } from "../../domain/produto-presenter";
@@ -20,10 +22,31 @@ type ProdutoSearchFilters = {
   query?: string;
   barcode?: string;
   categoriaId?: bigint;
+  fornecedorId?: bigint;
+  tipoDispensacao?: string;
+  ativo?: boolean;
   includeInactive?: boolean;
+  sortBy?: "nome" | "estoqueAtual" | "createdAt";
+  sortOrder?: "asc" | "desc";
   page?: number;
   pageSize?: number;
 };
+
+function buildProdutoOrderBy(
+  sortBy: ProdutoSearchFilters["sortBy"],
+  sortOrder: ProdutoSearchFilters["sortOrder"],
+): any {
+  const direction: "asc" | "desc" = sortOrder === "desc" ? "desc" : "asc";
+  switch (sortBy) {
+    case "estoqueAtual":
+      return [{ stockBalance: { quantidadeDisponivel: direction } }, { nome: "asc" }];
+    case "createdAt":
+      return [{ createdAt: direction }, { id: direction }];
+    case "nome":
+    default:
+      return [{ nome: direction }, { id: direction }];
+  }
+}
 
 export class ProdutoRepository {
   private get prisma() {
@@ -73,26 +96,48 @@ export class ProdutoRepository {
     const barcode = filters.barcode?.trim() || undefined;
     const page = Math.max(1, filters.page ?? 1);
     const pageSize = Math.min(100, Math.max(1, filters.pageSize ?? 20));
+    const sortBy = filters.sortBy ?? "nome";
+    const sortOrder = filters.sortOrder ?? "asc";
 
-    const baseWhere = {
+    const baseWhere: Record<string, unknown> = {
       deletedAt: null,
-      ...(filters.includeInactive ? {} : { ativo: true }),
       ...(filters.categoriaId ? { categoriaId: filters.categoriaId } : {}),
+      ...(filters.fornecedorId
+        ? {
+            fornecedores: {
+              some: { fornecedorId: filters.fornecedorId },
+            },
+          }
+        : {}),
+      ...(filters.tipoDispensacao
+        ? {
+            regulacao: {
+              is: { tipoDispensacao: filters.tipoDispensacao },
+            },
+          }
+        : {}),
     };
+
+    if (filters.ativo !== undefined) {
+      baseWhere.ativo = filters.ativo;
+    } else if (!filters.includeInactive) {
+      baseWhere.ativo = true;
+    }
 
     if (barcode) {
       const produto = await this.prisma.produto.findFirst({
         where: { ...baseWhere, barcode },
-        select: produtoRequisicaoSelect,
+        select: produtoMasterListSelect,
       });
 
       return {
         items: produto
-            ? [mapRequisicaoProduto(produto as Record<string, unknown>)]
-            : [],
+          ? [mapMasterProdutoListItem(produto as Record<string, unknown>)]
+          : [],
         page: 1,
         pageSize: 1,
         hasMore: false,
+        totalCount: produto ? 1 : 0,
       };
     }
 
@@ -129,16 +174,19 @@ export class ProdutoRepository {
       ...(query ? queryFilters : {}),
     };
 
-    const rows = await this.prisma.produto.findMany({
-      where,
-      select: produtoRequisicaoSelect,
-      orderBy: [{ nome: "asc" }, { id: "asc" }],
-      skip: (page - 1) * pageSize,
-      take: pageSize + 1,
-    });
+    const [totalCount, rows] = await this.prisma.$transaction([
+      this.prisma.produto.count({ where }),
+      this.prisma.produto.findMany({
+        where,
+        select: produtoMasterListSelect,
+        orderBy: buildProdutoOrderBy(sortBy, sortOrder),
+        skip: (page - 1) * pageSize,
+        take: pageSize + 1,
+      }),
+    ]);
 
     const items = rows.map((row: Record<string, unknown>) =>
-      mapRequisicaoProduto(row),
+      mapMasterProdutoListItem(row),
     );
 
     return {
@@ -146,6 +194,111 @@ export class ProdutoRepository {
       page,
       pageSize,
       hasMore: rows.length > pageSize,
+      totalCount,
+    };
+  }
+
+  async getDashboard() {
+    const prisma = this.prisma as any;
+    const now = new Date();
+    const in30Days = new Date(now);
+    in30Days.setDate(in30Days.getDate() + 30);
+
+    const [productRows, produtosComLotes, produtosComValidadeCritica] =
+      await prisma.$transaction([
+        prisma.produto.findMany({
+          where: { deletedAt: null },
+          select: {
+            ativo: true,
+            estoqueMinimo: true,
+            stockBalance: {
+              select: {
+                quantidadeDisponivel: true,
+              },
+            },
+            regulacao: {
+              select: {
+                tipoDispensacao: true,
+              },
+            },
+          },
+        }),
+        prisma.produto.count({
+          where: {
+            deletedAt: null,
+            lotes: {
+              some: {
+                ativo: true,
+                deletedAt: null,
+              },
+            },
+          },
+        }),
+        prisma.produto.count({
+          where: {
+            deletedAt: null,
+            ativo: true,
+            lotes: {
+              some: {
+                ativo: true,
+                deletedAt: null,
+                quantidadeAtual: { gt: 0 },
+                dataValidade: { lte: in30Days },
+              },
+            },
+          },
+        }),
+      ]);
+
+    const summary = productRows.reduce(
+      (acc: {
+        total: number;
+        ativos: number;
+        inativos: number;
+        semStock: number;
+        stockBaixo: number;
+        controlados: number;
+        estoqueDisponivel: number;
+      }, row: any) => {
+        const ativo = Boolean(row.ativo);
+        const disponivel = Number(row.stockBalance?.quantidadeDisponivel ?? 0);
+        const estoqueMinimo = Number(row.estoqueMinimo ?? 0);
+        const tipoDispensacao = row.regulacao?.tipoDispensacao ?? "VENDA_LIVRE";
+
+        acc.total += 1;
+        acc.estoqueDisponivel += disponivel;
+        if (ativo) acc.ativos += 1;
+        else acc.inativos += 1;
+        if (disponivel <= 0) acc.semStock += 1;
+        if (ativo && disponivel > 0 && disponivel <= estoqueMinimo) {
+          acc.stockBaixo += 1;
+        }
+        if (tipoDispensacao !== "VENDA_LIVRE") {
+          acc.controlados += 1;
+        }
+        return acc;
+      },
+      {
+        total: 0,
+        ativos: 0,
+        inativos: 0,
+        semStock: 0,
+        stockBaixo: 0,
+        controlados: 0,
+        estoqueDisponivel: 0,
+      },
+    );
+
+    return {
+      totalProdutos: summary.total,
+      produtosActivos: summary.ativos,
+      produtosInactivos: summary.inativos,
+      produtosSemStock: summary.semStock,
+      produtosStockBaixo: summary.stockBaixo,
+      produtosControlados: summary.controlados,
+      produtosComLotes,
+      produtosComValidadeCritica,
+      unidadesDisponiveis: Math.round(summary.estoqueDisponivel * 100) / 100,
     };
   }
 
@@ -244,6 +397,134 @@ export class ProdutoRepository {
     });
 
     return flat;
+  }
+
+  async listSuppliers(produtoId: bigint) {
+    const rows = await (this.prisma as any).produtoFornecedor.findMany({
+      where: { produtoId },
+      include: {
+        fornecedor: {
+          select: {
+            id: true,
+            nome: true,
+            nuit: true,
+            email: true,
+            telefone: true,
+            cidade: true,
+            provincia: true,
+            ativo: true,
+          },
+        },
+      },
+      orderBy: [
+        { fornecedorPrincipal: "desc" },
+        { fornecedor: { nome: "asc" } },
+      ],
+    });
+
+    return rows.map((row: any) => ({
+      id: row.id.toString(),
+      precoCompra: Number(row.precoCompra ?? 0),
+      fornecedorPrincipal: Boolean(row.fornecedorPrincipal),
+      prazoEntregaDias: row.prazoEntregaDias ?? null,
+      codigoFornecedor: row.codigoFornecedor ?? null,
+      fornecedor: row.fornecedor
+        ? {
+            id: row.fornecedor.id.toString(),
+            nome: row.fornecedor.nome,
+            nuit: row.fornecedor.nuit ?? null,
+            email: row.fornecedor.email ?? null,
+            telefone: row.fornecedor.telefone ?? null,
+            cidade: row.fornecedor.cidade ?? null,
+            provincia: row.fornecedor.provincia ?? null,
+            ativo: Boolean(row.fornecedor.ativo),
+          }
+        : null,
+    }));
+  }
+
+  async listClassificationHistory(produtoId: bigint, page = 1, pageSize = 20) {
+    const safePage = Math.max(1, page);
+    const safeSize = Math.min(100, Math.max(1, pageSize));
+    const where = { produtoId };
+
+    const [totalCount, rows] = await (this.prisma as any).$transaction([
+      (this.prisma as any).produtoClassificacaoEvento.count({ where }),
+      (this.prisma as any).produtoClassificacaoEvento.findMany({
+        where,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        skip: (safePage - 1) * safeSize,
+        take: safeSize + 1,
+      }),
+    ]);
+
+    return {
+      items: rows.slice(0, safeSize).map((row: any) => ({
+        id: row.id.toString(),
+        rule: row.rule,
+        reason: row.reason ?? null,
+        matchedTerm: row.matchedTerm ?? null,
+        source: row.source,
+        policySnapshot: row.policySnapshot ?? null,
+        createdAt: row.createdAt.toISOString(),
+      })),
+      page: safePage,
+      pageSize: safeSize,
+      hasMore: rows.length > safeSize,
+      totalCount,
+    };
+  }
+
+  async listAuditLogs(produtoId: bigint, page = 1, pageSize = 20) {
+    const safePage = Math.max(1, page);
+    const safeSize = Math.min(100, Math.max(1, pageSize));
+    const where = {
+      entity: "Produto",
+      entityId: produtoId,
+    };
+
+    const [totalCount, rows] = await (this.prisma as any).$transaction([
+      (this.prisma as any).auditLog.count({ where }),
+      (this.prisma as any).auditLog.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        skip: (safePage - 1) * safeSize,
+        take: safeSize + 1,
+      }),
+    ]);
+
+    return {
+      items: rows.slice(0, safeSize).map((row: any) => ({
+        id: row.id.toString(),
+        action: row.action,
+        entity: row.entity,
+        before: row.before ?? null,
+        after: row.after ?? null,
+        ip: row.ip ?? null,
+        userAgent: row.userAgent ?? null,
+        createdAt: row.createdAt.toISOString(),
+        user: row.user
+          ? {
+              id: row.user.id.toString(),
+              nome: row.user.name,
+              email: row.user.email ?? null,
+            }
+          : null,
+      })),
+      page: safePage,
+      pageSize: safeSize,
+      hasMore: rows.length > safeSize,
+      totalCount,
+    };
   }
 }
 

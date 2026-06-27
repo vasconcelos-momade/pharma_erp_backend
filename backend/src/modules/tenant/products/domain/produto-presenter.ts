@@ -181,6 +181,92 @@ export const produtoPosSelect = {
 };
 
 /** Select de catálogo para Requisições (Stock): independente do POS. */
+const masterProximaValidadeLoteSelect = {
+  where: {
+    ativo: true,
+    deletedAt: null,
+    quantidadeAtual: { gt: 0 },
+  },
+  orderBy: { dataValidade: "asc" as const },
+  take: 1,
+  select: {
+    id: true,
+    numeroLote: true,
+    dataValidade: true,
+  },
+};
+
+export const produtoMasterListSelect = {
+  id: true,
+  nome: true,
+  barcode: true,
+  categoriaId: true,
+  categoria: {
+    select: {
+      id: true,
+      nome: true,
+      descricao: true,
+      ativo: true,
+    },
+  },
+  estoqueMinimo: true,
+  substanciaActiva: true,
+  dosagem: true,
+  forma: true,
+  apresentacao: true,
+  ativo: true,
+  createdAt: true,
+  regulacao: true,
+  stockBalance: {
+    select: {
+      quantidadeDisponivel: true,
+      quantidadeTotal: true,
+    },
+  },
+  _count: {
+    select: {
+      lotes: {
+        where: {
+          ativo: true,
+          deletedAt: null,
+        },
+      },
+    },
+  },
+  lotes: masterProximaValidadeLoteSelect,
+} as const;
+
+/** Item de listagem master (catálogo ERP) com agregados de stock/lotes. */
+export function mapMasterProdutoListItem<T extends Record<string, unknown>>(
+  row: T,
+): T & ResolvedProdutoPolicy & {
+  estoqueAtual: number;
+  numLotes: number;
+  proximaValidade: string | null;
+  lote: string | null;
+  dataValidade: string | null;
+} {
+  const flat = flattenProdutoForApi(row);
+  const proximoLote = (
+    row as { lotes?: Array<{ numeroLote?: string; dataValidade?: Date }> }
+  ).lotes?.[0];
+
+  return {
+    ...flat,
+    estoqueAtual: flat.estoqueAtual,
+    numLotes: Number((row as { _count?: { lotes?: number } })._count?.lotes ?? 0),
+    proximaValidade: proximoLote?.dataValidade?.toISOString() ?? null,
+    lote: proximoLote?.numeroLote ?? null,
+    dataValidade: proximoLote?.dataValidade?.toISOString() ?? null,
+  } as T & ResolvedProdutoPolicy & {
+    estoqueAtual: number;
+    numLotes: number;
+    proximaValidade: string | null;
+    lote: string | null;
+    dataValidade: string | null;
+  };
+}
+
 export const produtoRequisicaoSelect = {
   id: true,
   nome: true,

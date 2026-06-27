@@ -4,6 +4,8 @@ type ListStockMovementsParams = {
   q?: string;
   tipo?: string;
   origem?: string;
+  produtoId?: string;
+  loteId?: string;
   dataInicio?: string;
   dataFim?: string;
   page?: number;
@@ -157,6 +159,14 @@ function buildMovementWhere(params: ListStockMovementsParams) {
 
   if (origem) {
     where.origem = origem;
+  }
+
+  if (params.produtoId) {
+    where.produtoId = BigInt(params.produtoId);
+  }
+
+  if (params.loteId) {
+    where.loteId = BigInt(params.loteId);
   }
 
   if (dataInicio || dataFim) {

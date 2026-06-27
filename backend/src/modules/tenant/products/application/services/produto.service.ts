@@ -5,7 +5,12 @@ type ProdutoSearchFilters = {
   query?: string;
   barcode?: string;
   categoriaId?: string;
+  fornecedorId?: string;
+  tipoDispensacao?: string;
+  ativo?: boolean;
   includeInactive?: boolean;
+  sortBy?: "nome" | "estoqueAtual" | "createdAt";
+  sortOrder?: "asc" | "desc";
   page?: number;
   pageSize?: number;
 };
@@ -33,11 +38,21 @@ export class ProdutoService {
 
   async search(filters: ProdutoSearchFilters = {}) {
     const categoriaId = await this.resolveSearchCategoriaId(filters);
+    const fornecedorId =
+      filters.fornecedorId && filters.fornecedorId.trim().length > 0
+        ? BigInt(filters.fornecedorId)
+        : undefined;
+
     return this.repo.search({
       query: filters.query,
       barcode: filters.barcode,
       categoriaId,
+      fornecedorId,
+      tipoDispensacao: filters.tipoDispensacao,
+      ativo: filters.ativo,
       includeInactive: filters.includeInactive,
+      sortBy: filters.sortBy,
+      sortOrder: filters.sortOrder,
       page: filters.page,
       pageSize: filters.pageSize,
     });
@@ -49,6 +64,34 @@ export class ProdutoService {
       throw new Error("Produto não encontrado");
     }
     return produto;
+  }
+
+  async getDashboard() {
+    return this.repo.getDashboard();
+  }
+
+  async listSuppliers(id: bigint) {
+    const produto = await this.repo.findById(id);
+    if (!produto) {
+      throw new Error("Produto não encontrado");
+    }
+    return this.repo.listSuppliers(id);
+  }
+
+  async listClassificationHistory(id: bigint, page?: number, pageSize?: number) {
+    const produto = await this.repo.findById(id);
+    if (!produto) {
+      throw new Error("Produto não encontrado");
+    }
+    return this.repo.listClassificationHistory(id, page, pageSize);
+  }
+
+  async listAuditLogs(id: bigint, page?: number, pageSize?: number) {
+    const produto = await this.repo.findById(id);
+    if (!produto) {
+      throw new Error("Produto não encontrado");
+    }
+    return this.repo.listAuditLogs(id, page, pageSize);
   }
 
   async update(id: bigint, data: any, userId: string) {
@@ -85,8 +128,9 @@ export class ProdutoService {
   }
 
   private async resolveSearchCategoriaId(filters: ProdutoSearchFilters) {
-    if (filters.categoriaId) {
-      const categoria = await this.categoriaRepo.findById(BigInt(filters.categoriaId));
+    const rawId = filters.categoriaId ?? (filters as { categoria?: string }).categoria;
+    if (rawId) {
+      const categoria = await this.categoriaRepo.findById(BigInt(rawId));
       if (!categoria) {
         throw new Error("Categoria não encontrada");
       }

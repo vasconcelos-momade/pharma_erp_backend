@@ -2,6 +2,7 @@ import { StockController } from "../../modules/tenant/stock";
 import { InventoryController } from "../../modules/tenant/stock/presentation/controllers/inventory.controller";
 import { PurchasesController } from "../../modules/tenant/stock/presentation/controllers/purchases.controller";
 import { RequisitionsController } from "../../modules/tenant/stock/presentation/controllers/requisitions.controller";
+import { LotesController } from "../../modules/tenant/stock/presentation/controllers/lotes.controller";
 import {
   tenantAuthMiddleware,
   tenantBranchContextMiddleware,
@@ -15,6 +16,7 @@ const stockController = new StockController();
 const purchasesController = new PurchasesController();
 const inventoryController = new InventoryController();
 const requisitionsController = new RequisitionsController();
+const lotesController = new LotesController();
 
 function registerReceiveRoute(router: Router, path: string): void {
   router.post(
@@ -331,6 +333,118 @@ function registerRequisitionRoutes(router: Router, prefix: string): void {
     requirePermission("LOTES", "CREATE_LOTE"),
     auditMiddleware,
     async (context) => requisitionsController.createLote(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/dashboard/lotes`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "VIEW"),
+    async (context) => lotesController.dashboard(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/dashboard/validades`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "VIEW"),
+    async (context) => lotesController.validadesDashboard(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/dashboard/fefo`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "VIEW"),
+    async (context) => lotesController.fefoDashboard(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/lotes`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "VIEW"),
+    async (context) => lotesController.search(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/validades/dashboard`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "VIEW"),
+    async (context) => lotesController.validadesDashboard(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/validades`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "VIEW"),
+    async (context) => lotesController.searchValidades(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/fefo/dashboard`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "VIEW"),
+    async (context) => lotesController.fefoDashboard(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/fefo/overview`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "VIEW"),
+    async (context) => lotesController.searchFefoOverview(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/fefo/audit`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "VIEW"),
+    async (context) => lotesController.searchFefoAudit(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/lotes/:loteId/movimentos`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "VIEW"),
+    async (context) => lotesController.listMovimentos(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/lotes/:loteId/reservas`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "VIEW"),
+    async (context) => lotesController.listReservas(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/lotes/:loteId/dispensacoes`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "VIEW"),
+    async (context) => lotesController.listDispensacoes(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/lotes/:loteId/incineracoes`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "VIEW"),
+    async (context) => lotesController.listIncineracoes(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/lotes/:loteId`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "VIEW"),
+    async (context) => lotesController.get(context.req),
   );
 
   router.get(
