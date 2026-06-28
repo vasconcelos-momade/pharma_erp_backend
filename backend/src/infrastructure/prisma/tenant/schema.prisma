@@ -22,6 +22,7 @@ model User {
   caixaMovimentos         CaixaMovimento[]
   estoqueMovimentos       EstoqueMovimento[]
   faturas                 Fatura[]
+  cotacoes                Cotacao[]
   dispensacoes            Dispensacao[]
   livroPsicotropicos      LivroPsicotropico[]
   livroReceitas           LivroReceita[]
@@ -130,6 +131,7 @@ model Cliente {
   version        Int            @default(0)
   deletedAt      DateTime?
   faturas        Fatura[]
+  cotacoes       Cotacao[]
   contasReceber  ContaReceber[]
   livroReceitas  LivroReceita[]
   receitas       Receita[]
@@ -210,6 +212,7 @@ model Produto {
   stockBalance             StockBalance?
   dispensacoes             Dispensacao[]
   faturaItens              FaturaItem[]
+  cotacaoItens             CotacaoItem[]
   stockReversals           StockReversal[]
   livroReceitas            LivroReceita[]
   regulacao                ProdutoRegulacao?
@@ -274,6 +277,7 @@ model Servico {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   faturaItens        FaturaItem[]
+  cotacaoItens       CotacaoItem[]
   taxRule            TaxRule?           @relation(fields: [taxRuleId], references: [id])
 
   @@index([ativo])
@@ -578,6 +582,56 @@ model FaturaItem {
   stockReversals          StockReversal[]
 
   @@map("fatura_itens")
+}
+
+model Cotacao {
+  id                 BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  numero             String              @unique
+  clienteId          BigInt              @db.UnsignedBigInt
+  cliente            Cliente             @relation(fields: [clienteId], references: [id])
+  userId             BigInt              @db.UnsignedBigInt
+  user               User                @relation(fields: [userId], references: [id])
+  subtotal           Decimal             @db.Decimal(14, 2)
+  desconto           Decimal             @default(0) @db.Decimal(14, 2)
+  ivaTotal           Decimal             @db.Decimal(14, 2)
+  total              Decimal             @db.Decimal(14, 2)
+  moeda              String              @default("MZN")
+  estado             EstadoCotacao       @default(PENDENTE)
+  validade           DateTime
+  observacoes        String?             @db.Text
+  deletedAt          DateTime?
+  version            Int                 @default(0)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  items              CotacaoItem[]
+
+  @@index([clienteId, estado])
+  @@index([createdAt])
+  @@index([estado])
+  @@map("cotacoes")
+}
+
+model CotacaoItem {
+  id                      BigInt                   @id @default(autoincrement()) @db.UnsignedBigInt
+  cotacaoId               BigInt                   @db.UnsignedBigInt
+  produtoId               BigInt?                  @db.UnsignedBigInt
+  servicoId               BigInt?                  @db.UnsignedBigInt
+  descricao               String
+  quantidade              Decimal                  @db.Decimal(14, 2)
+  precoUnit               Decimal                  @db.Decimal(14, 2)
+  baseCalculo             Decimal                  @default(0) @db.Decimal(14, 2)
+  iva                     Decimal                  @db.Decimal(5, 2)
+  valorIva                Decimal                  @default(0) @db.Decimal(14, 2)
+  taxaAplicada            Decimal                  @default(0) @db.Decimal(5, 2)
+  tipoRegraFiscalSnapshot TipoRegraFiscal?
+  codigoRegraFiscal       String?                  @db.VarChar(50)
+  motivoIsencao           String?                  @db.Text
+  total                   Decimal                  @db.Decimal(14, 2)
+  cotacao                 Cotacao                  @relation(fields: [cotacaoId], references: [id], onDelete: Cascade)
+  produto                 Produto?                 @relation(fields: [produtoId], references: [id])
+  servico                 Servico?                 @relation(fields: [servicoId], references: [id])
+
+  @@map("cotacao_itens")
 }
 
 model ContaReceber {
@@ -1156,6 +1210,13 @@ enum EstadoFatura {
   ANULADA
 }
 
+enum EstadoCotacao {
+  PENDENTE
+  APROVADA
+  REJEITADA
+  EXPIRADA
+}
+
 enum StatusConvenio {
   ATIVO
   SUSPENSO
@@ -1324,6 +1385,7 @@ enum SystemModule {
   RELATORIOS
   UTILIZADORES
   CONFIGURACOES
+  COTACOES
   // Legado: mantido para compatibilidade de dados existentes.
   FATURAS
   CAIXA

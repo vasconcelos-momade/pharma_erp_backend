@@ -9,6 +9,10 @@ import { registerStockRoutes } from "./stock.routes";
 import { registerDashboardRoutes } from "./dashboard.routes";
 import { registerRegulatoryRoutes } from "./regulatory.routes";
 import { registerSyncRoutes } from "./sync.routes";
+import { registerClientesRoutes } from "./clientes.routes";
+import { registerFaturasRoutes } from "./faturas.routes";
+import { registerUsersRoutes } from "./users.routes";
+import { registerAuditRoutes } from "./audit.routes";
 
 export const API_V1_PREFIX = "/api/v1";
 
@@ -24,6 +28,10 @@ export function buildV1Router(): Router {
   registerRegulatoryRoutes(router, API_V1_PREFIX);
   registerPosRoutes(router, API_V1_PREFIX);
   registerSalesRoutes(router, API_V1_PREFIX);
+  registerClientesRoutes(router, API_V1_PREFIX);
+  registerFaturasRoutes(router, API_V1_PREFIX);
+  registerUsersRoutes(router, API_V1_PREFIX);
+  registerAuditRoutes(router, API_V1_PREFIX);
   registerSyncRoutes(router, API_V1_PREFIX);
 
   router.get(`${API_V1_PREFIX}/health`, async () => ({
