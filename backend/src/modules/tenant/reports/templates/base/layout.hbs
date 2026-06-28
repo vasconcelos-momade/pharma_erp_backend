@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <title>{{title}}</title>
+  <style>{{{css}}}</style>
+</head>
+<body class="report-body orientation-{{pageOrientation}} page-{{pageSize}}">
+  <div class="watermark">{{watermarkText}}</div>
+  <main class="report-main">
+    {{#each sections}}
+      {{> (lookup @root.partialMap partial) this}}
+    {{/each}}
+  </main>
+  <footer class="report-footer">
+    <span>{{footer.left}}</span>
+    <span>{{footer.center}}</span>
+    <span>{{footer.right}}</span>
+  </footer>
+</body>
+</html>

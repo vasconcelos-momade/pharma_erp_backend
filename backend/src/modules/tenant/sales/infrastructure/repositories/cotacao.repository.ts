@@ -1,8 +1,11 @@
 import { getPrisma } from "../../../../../infrastructure/prisma/tenant-prisma.factory";
-import { FiscalCalculatorUtil } from "../../../../../shared/utils/fiscal-calculator.util";
 import { ComplianceAuditService } from "../../../../../shared/services/compliance-audit.service";
 import { parseDateRange } from "../../../regulatory/application/use-cases/regulatory.helpers";
 import { flattenProdutoForApi } from "../../../products/domain/produto-presenter";
+import {
+  buildCotacaoItemApi,
+  buildCotacaoTotals,
+} from "../../application/helpers/cotacao-calculator";
 import type {
   CreateCotacaoDTO,
   UpdateCotacaoDTO,
@@ -24,54 +27,54 @@ type CotacaoSearchFilters = {
 
 type PrismaTx = any;
 
-function toNumber(value: unknown): number {
-  return Number(value ?? 0);
-}
+const COTACAO_ITEM_INCLUDE = {
+  produto: {
+    select: {
+      id: true,
+      nome: true,
+      barcode: true,
+      taxRule: {
+        select: {
+          codigo: true,
+          tipo: true,
+          taxa: true,
+        },
+      },
+    },
+  },
+  servico: {
+    select: {
+      id: true,
+      nome: true,
+      preco: true,
+      taxRule: {
+        select: {
+          codigo: true,
+          tipo: true,
+          taxa: true,
+        },
+      },
+    },
+  },
+} as const;
 
 function serializeCotacaoItem(row: any) {
-  return {
-    id: row.id.toString(),
-    cotacaoId: row.cotacaoId.toString(),
-    produtoId: row.produtoId?.toString() ?? null,
-    servicoId: row.servicoId?.toString() ?? null,
-    descricao: row.descricao,
-    quantidade: Number(row.quantidade),
-    precoUnit: Number(row.precoUnit),
-    baseCalculo: Number(row.baseCalculo),
-    iva: Number(row.iva),
-    valorIva: Number(row.valorIva),
-    taxaAplicada: Number(row.taxaAplicada),
-    tipoRegraFiscalSnapshot: row.tipoRegraFiscalSnapshot ?? null,
-    codigoRegraFiscal: row.codigoRegraFiscal ?? null,
-    motivoIsencao: row.motivoIsencao ?? null,
-    total: Number(row.total),
-    produto: row.produto
-      ? {
-          id: row.produto.id.toString(),
-          nome: row.produto.nome,
-          barcode: row.produto.barcode ?? null,
-        }
-      : null,
-    servico: row.servico
-      ? {
-          id: row.servico.id.toString(),
-          nome: row.servico.nome,
-          preco: Number(row.servico.preco),
-        }
-      : null,
-  };
+  return buildCotacaoItemApi(row);
 }
 
 function serializeCotacao(row: any) {
+  const items = row.items?.map(serializeCotacaoItem) ?? [];
+  const totals = buildCotacaoTotals(items, Number(row.desconto ?? 0));
+
   return {
     id: row.id.toString(),
     numero: row.numero,
     clienteId: row.clienteId.toString(),
     userId: row.userId.toString(),
-    subtotal: Number(row.subtotal),
+    subtotal: totals.subtotal,
     desconto: Number(row.desconto),
-    ivaTotal: Number(row.ivaTotal),
-    total: Number(row.total),
+    ivaTotal: totals.ivaTotal,
+    total: totals.total,
     moeda: row.moeda,
     estado: row.estado,
     validade: row.validade.toISOString(),
@@ -95,8 +98,8 @@ function serializeCotacao(row: any) {
           role: row.user.role,
         }
       : null,
-    itemCount: row._count?.items ?? row.items?.length ?? 0,
-    items: row.items?.map(serializeCotacaoItem),
+    itemCount: row._count?.items ?? items.length,
+    items,
   };
 }
 
@@ -235,33 +238,11 @@ export class CotacaoRepository {
             throw new Error(`Produto ${produto.nome} sem preço de venda configurado`);
           }
 
-          const fiscalCalc = FiscalCalculatorUtil.calcularIVA({
-            quantidade: item.quantidade,
-            precoUnitario: precoUnit,
-            taxRule: produto.taxRule
-              ? {
-                  codigo: produto.taxRule.codigo,
-                  tipo: produto.taxRule.tipo,
-                  taxa: Number(produto.taxRule.taxa),
-                }
-              : null,
-            descricao: item.descricao ?? produto.nome,
-          });
-
           items.push({
             produtoId: produto.id,
             servicoId: null,
-            descricao: item.descricao ?? produto.nome,
             quantidade: item.quantidade,
             precoUnit,
-            baseCalculo: fiscalCalc.baseCalculo,
-            iva: fiscalCalc.taxaAplicadaPercentual,
-            valorIva: fiscalCalc.valorIva,
-            taxaAplicada: fiscalCalc.taxaAplicadaPercentual,
-            tipoRegraFiscalSnapshot: fiscalCalc.tipoRegraFiscal,
-            codigoRegraFiscal: fiscalCalc.codigoRegraFiscal,
-            motivoIsencao: fiscalCalc.motivoIsencao,
-            total: fiscalCalc.totalItem,
           });
           continue;
         }
@@ -272,50 +253,20 @@ export class CotacaoRepository {
           throw new Error(`Serviço ${servico.nome} sem preço válido`);
         }
 
-        const fiscalCalc = FiscalCalculatorUtil.calcularIVA({
-          quantidade: item.quantidade,
-          precoUnitario: precoUnit,
-          taxRule: servico.taxRule
-            ? {
-                codigo: servico.taxRule.codigo,
-                tipo: servico.taxRule.tipo,
-                taxa: Number(servico.taxRule.taxa),
-              }
-            : null,
-          descricao: item.descricao ?? servico.nome,
-        });
-
         items.push({
           produtoId: null,
           servicoId: servico.id,
-          descricao: item.descricao ?? servico.nome,
           quantidade: item.quantidade,
           precoUnit,
-          baseCalculo: fiscalCalc.baseCalculo,
-          iva: fiscalCalc.taxaAplicadaPercentual,
-          valorIva: fiscalCalc.valorIva,
-          taxaAplicada: fiscalCalc.taxaAplicadaPercentual,
-          tipoRegraFiscalSnapshot: fiscalCalc.tipoRegraFiscal,
-          codigoRegraFiscal: fiscalCalc.codigoRegraFiscal,
-          motivoIsencao: fiscalCalc.motivoIsencao,
-          total: fiscalCalc.totalItem,
         });
       }
 
-      const totals = {
-        subtotal: items.reduce((sum, item) => sum + Number(item.baseCalculo), 0),
-        ivaTotal: items.reduce((sum, item) => sum + Number(item.valorIva), 0),
-        total: items.reduce((sum, item) => sum + Number(item.total), 0),
-      };
       const cotacao = await tx.cotacao.create({
         data: {
           numero: this.buildNumeroCotacao(),
           clienteId: BigInt(data.clienteId),
           userId,
-          subtotal: totals.subtotal,
           desconto: 0,
-          ivaTotal: totals.ivaTotal,
-          total: totals.total,
           validade: data.validade,
           observacoes: data.observacoes ?? null,
           items: {
@@ -326,10 +277,7 @@ export class CotacaoRepository {
           cliente: { select: { id: true, nome: true, telefone: true, nuit: true } },
           user: { select: { id: true, name: true, role: true } },
           items: {
-            include: {
-              produto: { select: { id: true, nome: true, barcode: true } },
-              servico: { select: { id: true, nome: true, preco: true } },
-            },
+            include: COTACAO_ITEM_INCLUDE,
           },
           _count: { select: { items: true } },
         },
@@ -389,7 +337,8 @@ export class CotacaoRepository {
               { numero: { contains: query } },
               { observacoes: { contains: query } },
               { cliente: { nome: { contains: query } } },
-              { items: { some: { descricao: { contains: query } } } },
+              { items: { some: { produto: { nome: { contains: query } } } } },
+              { items: { some: { servico: { nome: { contains: query } } } } },
             ],
           }
         : {}),
@@ -400,11 +349,42 @@ export class CotacaoRepository {
         ? [{ validade: sortOrder }, { id: sortOrder }]
         : sortBy === "numero"
           ? [{ numero: sortOrder }, { id: sortOrder }]
-          : sortBy === "total"
-            ? [{ total: sortOrder }, { id: sortOrder }]
-            : sortBy === "clienteNome"
-              ? [{ cliente: { nome: sortOrder } }, { id: sortOrder }]
-              : [{ createdAt: sortOrder }, { id: sortOrder }];
+          : sortBy === "clienteNome"
+            ? [{ cliente: { nome: sortOrder } }, { id: sortOrder }]
+            : [{ createdAt: sortOrder }, { id: sortOrder }];
+
+    if (sortBy === "total") {
+      const [totalCount, allRows] = await this.prisma.$transaction([
+        this.prisma.cotacao.count({ where }),
+        this.prisma.cotacao.findMany({
+          where,
+          include: {
+            cliente: { select: { id: true, nome: true, telefone: true, nuit: true } },
+            user: { select: { id: true, name: true, role: true } },
+            items: { include: COTACAO_ITEM_INCLUDE },
+            _count: { select: { items: true } },
+          },
+        }),
+      ]);
+
+      const sorted = allRows
+        .map((row: any) => ({ row, total: serializeCotacao(row).total }))
+        .sort((a, b) =>
+          sortOrder === "asc" ? a.total - b.total : b.total - a.total,
+        )
+        .map((entry) => entry.row);
+
+      const offset = (page - 1) * pageSize;
+      const pageRows = sorted.slice(offset, offset + pageSize + 1);
+
+      return {
+        items: pageRows.slice(0, pageSize).map(serializeCotacao),
+        page,
+        pageSize,
+        hasMore: pageRows.length > pageSize,
+        totalCount,
+      };
+    }
 
     const [totalCount, rows] = await this.prisma.$transaction([
       this.prisma.cotacao.count({ where }),
@@ -439,10 +419,7 @@ export class CotacaoRepository {
         cliente: { select: { id: true, nome: true, telefone: true, nuit: true } },
         user: { select: { id: true, name: true, role: true } },
         items: {
-          include: {
-            produto: { select: { id: true, nome: true, barcode: true } },
-            servico: { select: { id: true, nome: true, preco: true } },
-          },
+          include: COTACAO_ITEM_INCLUDE,
           orderBy: { id: "asc" },
         },
         _count: { select: { items: true } },
@@ -465,10 +442,7 @@ export class CotacaoRepository {
         cliente: { select: { id: true, nome: true, telefone: true, nuit: true } },
         user: { select: { id: true, name: true, role: true } },
         items: {
-          include: {
-            produto: { select: { id: true, nome: true, barcode: true } },
-            servico: { select: { id: true, nome: true, preco: true } },
-          },
+          include: COTACAO_ITEM_INCLUDE,
         },
         _count: { select: { items: true } },
       },
@@ -499,10 +473,7 @@ export class CotacaoRepository {
           cliente: { select: { id: true, nome: true, telefone: true, nuit: true } },
           user: { select: { id: true, name: true, role: true } },
           items: {
-            include: {
-              produto: { select: { id: true, nome: true, barcode: true } },
-              servico: { select: { id: true, nome: true, preco: true } },
-            },
+            include: COTACAO_ITEM_INCLUDE,
           },
           _count: { select: { items: true } },
         },
@@ -535,10 +506,7 @@ export class CotacaoRepository {
         cliente: { select: { id: true, nome: true, telefone: true, nuit: true } },
         user: { select: { id: true, name: true, role: true } },
         items: {
-          include: {
-            produto: { select: { id: true, nome: true, barcode: true } },
-            servico: { select: { id: true, nome: true, preco: true } },
-          },
+          include: COTACAO_ITEM_INCLUDE,
         },
         _count: { select: { items: true } },
       },
@@ -588,10 +556,7 @@ export class CotacaoRepository {
         cliente: { select: { id: true, nome: true, telefone: true, nuit: true } },
         user: { select: { id: true, name: true, role: true } },
         items: {
-          include: {
-            produto: { select: { id: true, nome: true, barcode: true } },
-            servico: { select: { id: true, nome: true, preco: true } },
-          },
+          include: COTACAO_ITEM_INCLUDE,
         },
         _count: { select: { items: true } },
       },
@@ -618,10 +583,7 @@ export class CotacaoRepository {
           cliente: { select: { id: true, nome: true, telefone: true, nuit: true } },
           user: { select: { id: true, name: true, role: true } },
           items: {
-            include: {
-              produto: { select: { id: true, nome: true, barcode: true } },
-              servico: { select: { id: true, nome: true, preco: true } },
-            },
+            include: COTACAO_ITEM_INCLUDE,
           },
           _count: { select: { items: true } },
         },

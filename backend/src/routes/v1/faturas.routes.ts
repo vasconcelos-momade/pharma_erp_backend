@@ -1,12 +1,16 @@
 import { z } from "zod";
+/// <reference lib="dom" />
 import { ListFaturasUseCase } from "../../modules/tenant/pos/application/use-cases/list-faturas.use-case";
 import { GetFaturaDetalheUseCase } from "../../modules/tenant/pos/application/use-cases/get-fatura-detalhe.use-case";
 import { FaturaDocumentService } from "../../modules/tenant/pos/application/services/fatura-document.service";
+import { ReportsController } from "../../modules/tenant/reports";
+import { REPORT_KEYS } from "../../modules/tenant/reports/application/constants/report-keys";
 import { getPrisma } from "../../infrastructure/prisma/tenant-prisma.factory";
 import {
   tenantAuthMiddleware,
   tenantBranchContextMiddleware,
   requirePermission,
+  getTenantAuth,
 } from "../../shared/http/auth-middlewares";
 import { parseRouteParams, parseSearchParams } from "../../shared/http/request-validation";
 import { controllerErrorResponse } from "../../shared/http/controller-error";
@@ -16,6 +20,7 @@ import type { Router } from "../../shared/http/router";
 
 const listFaturas = new ListFaturasUseCase();
 const getFaturaDetalhe = new GetFaturaDetalheUseCase();
+const reportsController = new ReportsController();
 
 const faturaIdParamSchema = z.object({
   faturaId: z.string().regex(/^\d+$/, "faturaId inválido"),
@@ -225,13 +230,21 @@ function registerFaturaResource(router: Router, basePath: string): void {
     async (context) => {
       try {
         const { faturaId } = parseRouteParams(context.params, faturaIdParamSchema);
-        const fatura = await getFaturaDetalhe.execute(faturaId);
-        const { bytes, fileName, contentType } = FaturaDocumentService.buildPdf(fatura as any);
-        const body = new Blob([bytes as any], { type: contentType });
+        const artifact = await reportsController.generateArtifact({
+          reportKey: REPORT_KEYS.INVOICE,
+          userId: getTenantAuth(context).userId,
+          routeParams: { faturaId },
+          url: new URL(context.req.url),
+          format: "pdf",
+          disposition: "attachment",
+        });
+        const body = new Blob([artifact.bytes as BlobPart], {
+          type: artifact.contentType,
+        });
         return new Response(body, {
           headers: {
-            "Content-Type": contentType,
-            "Content-Disposition": `attachment; filename="${fileName}"`,
+            "Content-Type": artifact.contentType,
+            "Content-Disposition": `attachment; filename="${artifact.fileName}"`,
           },
         });
       } catch (error: any) {

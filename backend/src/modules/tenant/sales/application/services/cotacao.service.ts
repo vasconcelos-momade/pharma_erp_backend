@@ -1,4 +1,8 @@
 import { CotacaoRepository } from "../../infrastructure/repositories/cotacao.repository";
+import {
+  buildCotacaoItemApi,
+  buildCotacaoTotals,
+} from "../helpers/cotacao-calculator";
 import type {
   CreateCotacaoDTO,
   UpdateCotacaoDTO,
@@ -6,6 +10,20 @@ import type {
 
 export class CotacaoService {
   private repo = new CotacaoRepository();
+
+  /** Totais e linhas fiscais calculados em runtime (não persistidos). */
+  enrichCotacao<T extends { desconto?: unknown; items?: unknown[] }>(cotacao: T) {
+    const items = (cotacao.items ?? []).map((item) =>
+      buildCotacaoItemApi(item as Parameters<typeof buildCotacaoItemApi>[0]),
+    );
+    const totals = buildCotacaoTotals(items, Number(cotacao.desconto ?? 0));
+
+    return {
+      ...cotacao,
+      ...totals,
+      items,
+    };
+  }
 
   create(data: CreateCotacaoDTO, userId: string) {
     return this.repo.create(data, BigInt(userId));

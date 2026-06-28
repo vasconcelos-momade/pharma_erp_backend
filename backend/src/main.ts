@@ -1,9 +1,12 @@
 /// <reference lib="dom" />
 import { buildV1Router } from "./routes/v1";
+import { validateReportRegistry } from "./modules/tenant/reports/application/validation/report-registry.validator";
 import { ApiError, NotFoundApiError } from "./shared/http/api-error";
 import { globalErrorHandler } from "./shared/http/error-handler";
 import { createPreflightResponse, requestLifecycleMiddleware } from "./shared/http/middlewares";
 import { Router } from "./shared/http/router";
+
+validateReportRegistry();
 
 const v1Router = buildV1Router();
 const v2Router = new Router();

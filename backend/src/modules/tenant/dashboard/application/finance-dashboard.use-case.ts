@@ -18,6 +18,9 @@ import {
   buildPagedTableResult,
   normalizeTablePagination,
 } from "./dashboard-pagination.util";
+import { ListContasPagarUseCase } from "./list-contas-pagar.use-case";
+import { ListContasReceberUseCase } from "./list-contas-receber.use-case";
+import { ListFinancialMovementsUseCase } from "./list-financial-movements.use-case";
 
 type PeriodParams = {
   days?: number;
@@ -26,7 +29,14 @@ type PeriodParams = {
   to?: string;
 };
 type FinanceTableParams = PeriodParams & {
-  table: "ultimosPagamentos" | "ultimasReceitas" | "ultimasDespesas" | "contasVencidas";
+  table:
+    | "ultimosPagamentos"
+    | "ultimasReceitas"
+    | "ultimasDespesas"
+    | "contasVencidas"
+    | "fluxoCaixa"
+    | "contasReceber"
+    | "contasPagar";
   page?: number;
   pageSize?: number;
   search?: string;
@@ -420,6 +430,68 @@ export class FinanceDashboardUseCase {
             vencimento: row.vencimento?.toISOString() ?? null,
           })),
         });
+      }
+      case "fluxoCaixa": {
+        const listUseCase = new ListFinancialMovementsUseCase();
+        const result = await listUseCase.execute({
+          ...params,
+          search,
+          page,
+          pageSize,
+          sortDir,
+        });
+        return {
+          table: params.table,
+          items: result.items,
+          page: result.page,
+          pageSize: result.pageSize,
+          hasMore: result.hasMore,
+          hasPrevious: result.hasPrevious,
+          totalCount: result.totalCount,
+          totalPages: result.totalPages,
+        };
+      }
+      case "contasReceber": {
+        const listUseCase = new ListContasReceberUseCase();
+        const result = await listUseCase.execute({
+          status: params.estado,
+          clienteId: params.clienteId,
+          search,
+          page,
+          pageSize,
+          sortDir,
+        });
+        return {
+          table: params.table,
+          items: result.items,
+          page: result.page,
+          pageSize: result.pageSize,
+          hasMore: result.hasMore,
+          hasPrevious: result.hasPrevious,
+          totalCount: result.totalCount,
+          totalPages: result.totalPages,
+        };
+      }
+      case "contasPagar": {
+        const listUseCase = new ListContasPagarUseCase();
+        const result = await listUseCase.execute({
+          status: params.estado,
+          fornecedorId: params.fornecedorId,
+          search,
+          page,
+          pageSize,
+          sortDir,
+        });
+        return {
+          table: params.table,
+          items: result.items,
+          page: result.page,
+          pageSize: result.pageSize,
+          hasMore: result.hasMore,
+          hasPrevious: result.hasPrevious,
+          totalCount: result.totalCount,
+          totalPages: result.totalPages,
+        };
       }
     }
   }

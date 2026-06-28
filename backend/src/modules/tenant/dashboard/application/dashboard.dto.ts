@@ -33,6 +33,9 @@ export const financeDashboardTableQuerySchema = z.object({
     "ultimasReceitas",
     "ultimasDespesas",
     "contasVencidas",
+    "fluxoCaixa",
+    "contasReceber",
+    "contasPagar",
   ]),
   ...dashboardTableQueryFields,
 });
