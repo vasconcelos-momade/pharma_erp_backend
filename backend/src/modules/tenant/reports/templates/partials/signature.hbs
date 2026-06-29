@@ -1,7 +1,25 @@
 <section class="section signature-block">
-  <h2 class="section-title">{{signature.label}}</h2>
-  <div class="signature-line"></div>
-  <div class="signature-name">{{signature.name}}</div>
-  <div class="signature-role">{{signature.role}}</div>
-  <div class="signature-date">{{signature.date}}</div>
+  <div class="section-heading">
+    <h2 class="section-title">{{signature.label}}</h2>
+  </div>
+  <div class="signature-grid">
+    <div class="signature-card">
+      <div class="signature-line"></div>
+      <div class="signature-name">{{signature.name}}</div>
+      <div class="signature-role">Emitido por{{#if signature.role}} - {{signature.role}}{{/if}}</div>
+      <div class="signature-date">{{signature.date}}</div>
+    </div>
+    <div class="signature-card">
+      <div class="signature-line"></div>
+      <div class="signature-name">________________</div>
+      <div class="signature-role">Conferido por</div>
+      <div class="signature-date">&nbsp;</div>
+    </div>
+    <div class="signature-card">
+      <div class="signature-line"></div>
+      <div class="signature-name">________________</div>
+      <div class="signature-role">Aprovado por</div>
+      <div class="signature-date">&nbsp;</div>
+    </div>
+  </div>
 </section>

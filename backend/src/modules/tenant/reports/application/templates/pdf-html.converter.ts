@@ -14,6 +14,15 @@ function escapePdfText(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 }
 
+function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function buildSimplePdfFromLines(lines: string[]): Uint8Array {
   const encoder = new TextEncoder();
   const safeLines = lines.map((line) => escapePdfText(toAscii(line)));
@@ -78,6 +87,32 @@ export async function convertHtmlToPdf(
   try {
     const puppeteer = await import("puppeteer");
     const { format, landscape } = resolvePdfFormat(definition);
+    const pharmacyName = escapeHtml(definition.institution?.pharmacyName);
+    const branchName = escapeHtml(definition.institution?.branchName);
+    const generatedBy = escapeHtml(definition.generatedBy);
+
+    const footerTemplate = `
+      <div style="width:100%; padding:0 10mm; font-family: Arial, Helvetica, sans-serif; font-size:9px; color:#555;">
+        <div style="border-top:1px solid #ccc; padding-top:4px; display:flex; justify-content:space-between; gap:8px;">
+          <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            <span style="font-weight:700; color:#111;">Pharma ERP</span>
+            <span style="margin:0 6px; color:#777;">|</span>
+            <span>${pharmacyName}</span>
+            <span style="margin:0 6px; color:#777;">|</span>
+            <span>${branchName}</span>
+          </div>
+          <div style="text-align:center; white-space:nowrap;">
+            <span>Utilizador: ${generatedBy}</span>
+          </div>
+          <div style="text-align:right; white-space:nowrap;">
+            <span>Pagina </span>
+            <span class="pageNumber" style="margin:0 4px;"></span>
+            <span>de</span>
+            <span class="totalPages" style="margin-left:4px;"></span>
+          </div>
+        </div>
+      </div>
+    `;
     const browser = await puppeteer.default.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -90,10 +125,13 @@ export async function convertHtmlToPdf(
         format,
         landscape,
         printBackground: true,
+        displayHeaderFooter: true,
+        headerTemplate: "<div></div>",
+        footerTemplate,
         margin: {
           top: "12mm",
           right: "10mm",
-          bottom: "14mm",
+          bottom: "22mm",
           left: "10mm",
         },
       });

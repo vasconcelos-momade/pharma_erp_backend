@@ -1,4 +1,4 @@
-import { toText } from "../helpers/report-export.helper";
+import { toText } from "../../helpers/report-export.helper";
 import { type ModuleReportDefinition, type ReportSectionTable } from "../types/report.types";
 import {
   type AdminAuditQuery,

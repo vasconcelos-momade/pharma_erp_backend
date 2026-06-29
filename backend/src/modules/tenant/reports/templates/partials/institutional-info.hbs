@@ -1,20 +1,31 @@
-<section class="section institutional-info">
+<section class="section institutional-info report-header-block">
   <div class="institutional-head">
-    <img class="report-logo" src="{{logoSrc}}" alt="" />
-    <div class="institutional-copy">
-      <div class="report-brand">PHARMA ERP</div>
+    <div class="header-left">
+      <div class="logo-and-brand">
+        <img class="report-logo" src="{{logoSrc}}" alt="" />
+        <div class="brand-copy">
+          <div class="report-brand">PHARMA ERP</div>
+          <div class="company-name">{{institution.pharmacyName}}</div>
+          <div class="company-branch">Filial: {{institution.branchName}}</div>
+        </div>
+      </div>
+      <div class="company-lines">
+        <div><span class="line-label">NUIT:</span> <span>{{institution.nuit}}</span></div>
+        <div><span class="line-label">Endereco:</span> <span>{{institution.address}}</span></div>
+        <div><span class="line-label">Contactos:</span> <span>{{institution.contacts}}</span></div>
+      </div>
+    </div>
+    <div class="header-right">
       <h1 class="report-title">{{titleText}}</h1>
       <p class="report-subtitle">{{subtitle}}</p>
+      <div class="report-lines">
+        <div><span class="line-label">Codigo:</span> <span>{{titleText}}</span></div>
+        <div><span class="line-label">Periodo:</span> <span>{{subtitle}}</span></div>
+        <div><span class="line-label">Utilizador:</span> <span>{{generatedBy}}</span></div>
+        <div><span class="line-label">Data:</span> <span>{{generatedDate}}</span></div>
+        <div><span class="line-label">Hora:</span> <span>{{generatedTime}}</span></div>
+        <div><span class="line-label">Pagina:</span> <span><span class="page-number"></span> / <span class="page-count"></span></span></div>
+      </div>
     </div>
   </div>
-  <dl class="report-meta">
-    <div><dt>Farmacia:</dt><dd>{{institution.pharmacyName}}</dd></div>
-    <div><dt>Filial:</dt><dd>{{institution.branchName}}</dd></div>
-    <div><dt>Endereco:</dt><dd>{{institution.address}}</dd></div>
-    <div><dt>NUIT:</dt><dd>{{institution.nuit}}</dd></div>
-    <div><dt>Contactos:</dt><dd>{{institution.contacts}}</dd></div>
-    <div><dt>Data:</dt><dd>{{generatedDate}}</dd></div>
-    <div><dt>Hora:</dt><dd>{{generatedTime}}</dd></div>
-    <div><dt>Utilizador:</dt><dd>{{generatedBy}}</dd></div>
-  </dl>
 </section>

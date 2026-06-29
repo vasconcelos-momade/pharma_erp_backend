@@ -18,8 +18,15 @@ v2Router.get("/api/v2/health", async () => ({
   message: "Versão reservada para evolução futura da API.",
 }));
 
+const httpIdleTimeoutSeconds = Number(process.env.HTTP_IDLE_TIMEOUT_SECONDS ?? 120);
+const serverIdleTimeout =
+  Number.isFinite(httpIdleTimeoutSeconds) && httpIdleTimeoutSeconds > 0
+    ? httpIdleTimeoutSeconds
+    : 120;
+
 const server = Bun.serve({
   port: 3300,
+  idleTimeout: serverIdleTimeout,
   async fetch(req: Request) {
     const url = new URL(req.url);
 
