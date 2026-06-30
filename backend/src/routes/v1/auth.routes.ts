@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { LoginUseCase } from "../../modules/central/auth/application/use-cases/login.use-case";
+import { ForgotPasswordUseCase } from "../../modules/central/auth/application/use-cases/forgot-password.use-case";
 import { prismaCentral } from "../../infrastructure/prisma/prisma-central.service";
 import { Role } from "../../infrastructure/prisma/central/generated/central";
 import { parseJsonBody } from "../../shared/http/request-validation";
@@ -26,6 +27,10 @@ function parseCentralRole(input: string | undefined, fallback: Role): Role {
   return fallback;
 }
 
+const forgotPasswordSchema = z.object({
+  email: z.string().trim().pipe(z.email()),
+});
+
 export function registerAuthRoutes(router: Router, prefix: string): void {
   router.post(
     `${prefix}/central/auth/login`,
@@ -34,6 +39,24 @@ export function registerAuthRoutes(router: Router, prefix: string): void {
       const body = await parseJsonBody(req, loginSchema);
       const loginUseCase = new LoginUseCase();
       return loginUseCase.execute(body.email, body.password);
+    },
+  );
+
+  router.post(
+    `${prefix}/central/auth/forgot-password`,
+    createRateLimitMiddleware({
+      keyPrefix: "central-forgot-password",
+      windowMs: 15 * 60_000,
+      max: 5,
+    }),
+    async ({ req }) => {
+      const body = await parseJsonBody(req, forgotPasswordSchema);
+      const useCase = new ForgotPasswordUseCase();
+      const result = await useCase.execute(body.email);
+      return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
     },
   );
 
