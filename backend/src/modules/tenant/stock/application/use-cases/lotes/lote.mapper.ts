@@ -28,6 +28,7 @@ export function mapLoteListItem(lote: any, now = new Date()) {
     diasRestantes,
     indicadorValidade,
     quantidadeAtual: Number(lote.quantidadeAtual),
+    quantidadeQuarentena: Number(lote.quantidadeQuarentena ?? 0),
     quantidadeDisponivel: disponivel,
     precoCompra: Number(lote.precoCompra),
     precoVenda: lote.precoVenda != null ? Number(lote.precoVenda) : null,

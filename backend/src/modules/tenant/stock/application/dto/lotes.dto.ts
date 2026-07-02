@@ -60,3 +60,15 @@ export const listProductPriceHistoryQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().max(100).optional(),
 });
+
+export const moveLoteQuarentenaBodySchema = z.object({
+  quantidade: z.coerce.number().positive(),
+  motivo: z.string().trim().min(3, "Motivo obrigatório"),
+  documentoReferencia: optionalStringSchema,
+});
+
+export const revertLoteQuarentenaBodySchema = z.object({
+  quantidade: z.coerce.number().positive().optional(),
+  motivo: z.string().trim().min(3, "Motivo obrigatório"),
+  documentoReferencia: optionalStringSchema,
+});

@@ -439,6 +439,32 @@ function registerRequisitionRoutes(router: Router, prefix: string): void {
     async (context) => lotesController.listIncineracoes(context.req),
   );
 
+  router.post(
+    `${prefix}/tenant/lotes/:loteId/quarentena`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "UPDATE"),
+    auditMiddleware,
+    async (context) =>
+      lotesController.moveToQuarentena(
+        context.req,
+        getTenantAuth(context).userId,
+      ),
+  );
+
+  router.post(
+    `${prefix}/tenant/lotes/:loteId/liberar-quarentena`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "UPDATE"),
+    auditMiddleware,
+    async (context) =>
+      lotesController.revertQuarentena(
+        context.req,
+        getTenantAuth(context).userId,
+      ),
+  );
+
   router.get(
     `${prefix}/tenant/lotes/:loteId`,
     tenantAuthMiddleware(),

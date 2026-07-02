@@ -20,12 +20,18 @@ import {
   ListProductPriceHistoryUseCase,
 } from "../../application/use-cases/lotes/lote-detail-lists.use-case";
 import {
+  MoveLoteToQuarentenaUseCase,
+  RevertLoteQuarentenaUseCase,
+} from "../../application/use-cases/lotes/lote-quarentena.use-case";
+import {
   searchLotesQuerySchema,
   searchValidadesQuerySchema,
   searchFefoAuditQuerySchema,
   listProductPriceHistoryQuerySchema,
+  moveLoteQuarentenaBodySchema,
+  revertLoteQuarentenaBodySchema,
 } from "../../application/dto/lotes.dto";
-import { parseSearchParams } from "../../../../../shared/http/request-validation";
+import { parseSearchParams, parseJsonBody } from "../../../../../shared/http/request-validation";
 import { controllerErrorResponse } from "../../../../../shared/http/controller-error";
 import { z } from "zod";
 
@@ -43,6 +49,13 @@ export class LotesController {
   private listLoteDispensacoesUseCase = new ListLoteDispensacoesUseCase();
   private listLoteIncineracoesUseCase = new ListLoteIncineracoesUseCase();
   private listProductPriceHistoryUseCase = new ListProductPriceHistoryUseCase();
+  private moveLoteToQuarentenaUseCase = new MoveLoteToQuarentenaUseCase();
+  private revertLoteQuarentenaUseCase = new RevertLoteQuarentenaUseCase();
+
+  private extractLoteId(req: Request): string {
+    const parts = new URL(req.url).pathname.split("/");
+    return parts[parts.indexOf("lotes") + 1];
+  }
 
   async search(req: Request) {
     try {
@@ -194,6 +207,40 @@ export class LotesController {
         page,
         pageSize,
       );
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async moveToQuarentena(req: Request, userId: string) {
+    try {
+      const loteId = this.extractLoteId(req);
+      const body = await parseJsonBody(req, moveLoteQuarentenaBodySchema);
+      const result = await this.moveLoteToQuarentenaUseCase.execute({
+        loteId,
+        quantidade: body.quantidade,
+        motivo: body.motivo,
+        userId,
+        documentoReferencia: body.documentoReferencia,
+      });
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async revertQuarentena(req: Request, userId: string) {
+    try {
+      const loteId = this.extractLoteId(req);
+      const body = await parseJsonBody(req, revertLoteQuarentenaBodySchema);
+      const result = await this.revertLoteQuarentenaUseCase.execute({
+        loteId,
+        quantidade: body.quantidade,
+        motivo: body.motivo,
+        userId,
+        documentoReferencia: body.documentoReferencia,
+      });
       return Response.json(this.serialize(result));
     } catch (error: any) {
       return controllerErrorResponse(error);
