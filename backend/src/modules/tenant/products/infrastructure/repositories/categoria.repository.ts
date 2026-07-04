@@ -4,7 +4,7 @@ import {
   recordLocalOutboxEvent,
 } from "../../../../../infrastructure/sync/tenant-sync-outbox.service";
 
-const DEFAULT_CATEGORY_NAME = "Medicamentos";
+const DEFAULT_CATEGORY_CODIGO = "SISTEMA_NERVOSO_CENTRAL";
 
 type CategoriaSearchFilters = {
   query?: string;
@@ -15,6 +15,7 @@ type CategoriaSearchFilters = {
 
 type CategoriaWritePayload = {
   nome?: string;
+  codigoFNM?: string | null;
   descricao?: string | null;
   ativo?: boolean;
 };
@@ -180,11 +181,17 @@ export class CategoriaRepository {
 
   async findDefaultCategory() {
     return (
-      (await this.findByNome(DEFAULT_CATEGORY_NAME)) ??
+      (await this.prisma.categoria.findFirst({
+        where: {
+          codigoFNM: DEFAULT_CATEGORY_CODIGO,
+          deletedAt: null,
+        },
+      })) ??
       (await this.prisma.categoria.findFirst({
         where: {
           ativo: true,
           deletedAt: null,
+          codigoFNM: { not: null },
         },
         orderBy: [{ nome: "asc" }, { id: "asc" }],
       }))
@@ -196,6 +203,7 @@ export class CategoriaRepository {
       const categoria = await tx.categoria.create({
         data: {
           nome: data.nome,
+          codigoFNM: data.codigoFNM ?? data.nome,
           descricao: data.descricao ?? null,
           ativo: data.ativo ?? true,
         },
@@ -228,6 +236,7 @@ export class CategoriaRepository {
         where: { id },
         data: {
           ...(data.nome !== undefined ? { nome: data.nome } : {}),
+          ...(data.codigoFNM !== undefined ? { codigoFNM: data.codigoFNM } : {}),
           ...(data.descricao !== undefined ? { descricao: data.descricao } : {}),
           ...(data.ativo !== undefined ? { ativo: data.ativo } : {}),
         },

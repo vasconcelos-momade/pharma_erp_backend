@@ -2,14 +2,9 @@ import { getPrisma } from "../../../../../infrastructure/prisma/tenant-prisma.fa
 import { flattenProdutoForApi } from "../../../products/domain/produto-presenter";
 import {
   getQuantidadeDisponivel,
-  getQuantidadeTotalFromMovements,
-  syncStockBalanceCache,
 } from "../../../stock/domain/produto-stock.service";
-import {
-  FEFO_LOTE_FILTER,
-  loteQuantidadeDisponivel,
-  resolveLotePrecoVenda,
-} from "../../../stock/domain/fefo-lote.service";
+import { consumeStockFefo } from "../../../stock/domain/fefo-allocation.service";
+import { replaceItemLoteAllocations } from "../../../sales/domain/fatura-item-lote.service";
 
 export interface CreateSaleDTO {
   clienteId: string;
@@ -30,23 +25,21 @@ export class CreateSaleUseCase {
     const prisma = getPrisma();
 
     return await prisma.$transaction(async (tx) => {
-      const results = [];
+      const results: Array<{
+        produtoId: string;
+        nome: string;
+        quantidade: number;
+        preco: number;
+        custoUnitario: number;
+        lotesUtilizados: Array<{ loteId: bigint; quantidade: number }>;
+      }> = [];
       let totalGeral = 0;
 
       for (const item of data.items) {
         const produtoId = BigInt(item.produtoId);
         const produtoRow = await tx.produto.findUnique({
           where: { id: produtoId },
-          include: {
-            regulacao: true,
-            lotes: {
-              where: {
-                ...FEFO_LOTE_FILTER,
-                dataValidade: { gt: new Date() },
-              },
-              orderBy: { dataValidade: "asc" },
-            },
-          },
+          include: { regulacao: true },
         });
 
         if (!produtoRow) {
@@ -59,80 +52,39 @@ export class CreateSaleUseCase {
 
         const disponivel = await getQuantidadeDisponivel(tx, produtoId);
         if (disponivel < item.quantidade) {
-          throw new Error(`Stock insuficiente para o produto ${produto.nome}`);
+          throw new Error(`Stock insuficiente para o produto ${produto.nomeComercial}`);
         }
 
-        let quantidadeRestante = item.quantidade;
-        const lotesUtilizados: Array<{
-          loteId: bigint;
-          quantidade: number;
-          precoUnit: number;
-          custoUnitario: number;
-        }> = [];
+        await tx.$executeRaw`SELECT id FROM produtos WHERE id = ${produtoId} FOR UPDATE`;
+        await tx.$executeRaw`SELECT id FROM lotes WHERE produtoId = ${produtoId} AND deletedAt IS NULL FOR UPDATE`;
 
-        let runningProductStock = await getQuantidadeTotalFromMovements(tx, produtoId);
-        let totalItem = 0;
-        let totalCustoItem = 0;
+        const { allocations, totalCusto } = await consumeStockFefo(tx, {
+          produtoId: produtoRow.id,
+          userId: BigInt(data.userId),
+          quantidade: item.quantidade,
+          origem: "VENDA",
+          idempotencyKeyPrefix: `SALE-${Date.now()}-${produtoId}`,
+        });
 
-        for (const lote of produtoRow.lotes) {
-          if (quantidadeRestante <= 0) break;
-
-          const disponivelNoLote = loteQuantidadeDisponivel(lote);
-          if (disponivelNoLote <= 0) continue;
-
-          const qtdATirar = Math.min(disponivelNoLote, quantidadeRestante);
-          const precoUnit = resolveLotePrecoVenda(lote, produtoRow.nome);
-          const custoUnitario = Number(lote.precoCompra);
-
-          await tx.lote.update({
-            where: { id: lote.id },
-            data: { quantidadeAtual: { decrement: qtdATirar } },
-          });
-
-          const estoqueAnterior = runningProductStock;
-          runningProductStock -= qtdATirar;
-
-          await tx.estoqueMovimento.create({
-            data: {
-              produtoId: produtoRow.id,
-              loteId: lote.id,
-              userId: BigInt(data.userId),
-              tipo: "SAIDA",
-              quantidade: qtdATirar,
-              estoqueAnterior,
-              estoqueFinal: runningProductStock,
-              origem: "VENDA",
-            },
-          });
-
-          lotesUtilizados.push({
-            loteId: lote.id,
-            quantidade: qtdATirar,
-            precoUnit,
-            custoUnitario,
-          });
-          totalItem += precoUnit * qtdATirar;
-          totalCustoItem += custoUnitario * qtdATirar;
-          quantidadeRestante -= qtdATirar;
-        }
-
-        if (quantidadeRestante > 0) {
-          throw new Error(
-            `Não foi possível satisfazer a quantidade do produto ${produto.nome} com os lotes disponíveis`,
-          );
-        }
-
-        await syncStockBalanceCache(tx, produtoId);
+        const lotesUtilizados = allocations.map((a) => ({
+          loteId: a.lote.id,
+          quantidade: a.quantidade,
+        }));
 
         const precoMedio =
-          item.quantidade > 0 ? totalItem / item.quantidade : 0;
-        const custoMedio =
-          item.quantidade > 0 ? totalCustoItem / item.quantidade : 0;
+          allocations.reduce(
+            (sum, a) =>
+              sum + Number(a.lote.precoVenda ?? 0) * a.quantidade,
+            0,
+          ) / item.quantidade;
+        const custoMedio = totalCusto / item.quantidade;
+        const totalItem = precoMedio * item.quantidade;
 
         if (produto.tipoDispensacao !== "VENDA_LIVRE") {
           await tx.dispensacao.create({
             data: {
               produtoId: produtoRow.id,
+              loteId: lotesUtilizados[0]?.loteId ?? produtoRow.id,
               userId: BigInt(data.userId),
               quantidade: item.quantidade,
               tipoDispensacao: produto.tipoDispensacao as any,
@@ -145,12 +97,12 @@ export class CreateSaleUseCase {
             const now = new Date();
             await tx.livroPsicotropico.create({
               data: {
-                mes: now.getMonth() + 1,
-                ano: now.getFullYear(),
                 produtoId: produtoRow.id,
                 responsavelId: BigInt(data.userId),
                 tipoMovimento: "SAIDA",
                 quantidade: item.quantidade,
+                saldoAnterior: disponivel,
+                saldoAtual: disponivel - item.quantidade,
                 numeroDocumento: item.receita?.numero || "RECEITA_INTERNA",
                 observacoes: `Venda para cliente ${data.clienteId}`,
               },
@@ -161,11 +113,11 @@ export class CreateSaleUseCase {
         totalGeral += totalItem;
         results.push({
           produtoId: produtoRow.id.toString(),
-          nome: produtoRow.nome,
+          nome: produtoRow.nomeComercial,
           quantidade: item.quantidade,
           preco: precoMedio,
           custoUnitario: custoMedio,
-          loteId: lotesUtilizados[0]?.loteId.toString(),
+          lotesUtilizados,
         });
       }
 
@@ -182,7 +134,6 @@ export class CreateSaleUseCase {
           items: {
             create: results.map((r) => ({
               produtoId: BigInt(r.produtoId),
-              loteId: r.loteId ? BigInt(r.loteId) : null,
               descricao: r.nome,
               quantidade: r.quantidade,
               precoUnit: r.preco,
@@ -193,13 +144,27 @@ export class CreateSaleUseCase {
             })),
           },
         },
+        include: { items: true },
       });
+
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i];
+        const faturaItem = fatura.items[i];
+        await replaceItemLoteAllocations(tx, faturaItem.id, result.lotesUtilizados);
+      }
 
       return {
         faturaId: fatura.id.toString(),
         numero: fatura.numero,
         total: fatura.total.toString(),
-        itens: results,
+        itens: results.map((r) => ({
+          produtoId: r.produtoId,
+          nome: r.nome,
+          quantidade: r.quantidade,
+          preco: r.preco,
+          custoUnitario: r.custoUnitario,
+          loteId: r.lotesUtilizados[0]?.loteId.toString(),
+        })),
       };
     });
   }
@@ -218,19 +183,11 @@ export class CreateSaleUseCase {
 
     if (
       produto.tipoDispensacao === "PSICOTROPICO" &&
-      !receita
+      !receita?.numero
     ) {
-      throw new Error(`[ANARME] Bloqueio: Psicotrópicos exigem receita controlada.`);
-    }
-
-    if (
-      produto.tipoDispensacao === "RECEITA_CONTROLADA" ||
-      produto.tipoDispensacao === "RECEITA_SIMPLES" ||
-      produto.tipoDispensacao === "RECEITA_OBRIGATORIA"
-    ) {
-      if (!receita) {
-        throw new Error(`Este medicamento exige apresentação de receita.`);
-      }
+      throw new Error(
+        `[ANARME] Bloqueio: Psicotrópicos exigem receita controlada.`,
+      );
     }
   }
 }

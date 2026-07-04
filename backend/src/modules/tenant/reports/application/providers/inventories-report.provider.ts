@@ -80,8 +80,8 @@ export class InventoryDetailReportProvider implements ReportDataProvider {
     }
 
     const query = context.url.searchParams.get("q")?.trim() || undefined;
-    const substanciaActiva =
-      context.url.searchParams.get("substanciaActiva")?.trim() || undefined;
+    const nomeGenerico =
+      context.url.searchParams.get("nomeGenerico")?.trim() || undefined;
     const forma = context.url.searchParams.get("forma")?.trim() || undefined;
     const fornecedorNome =
       context.url.searchParams.get("fornecedorNome")?.trim() || undefined;
@@ -92,7 +92,7 @@ export class InventoryDetailReportProvider implements ReportDataProvider {
         this.itemsUseCase.execute({
           inventarioId,
           query,
-          substanciaActiva,
+          nomeGenerico,
           forma,
           fornecedorNome,
           page,
@@ -136,7 +136,7 @@ export class InventoryDetailReportProvider implements ReportDataProvider {
             "Fornecedor",
           ],
           rows: items.map((item: any) => [
-            toText(item.produtoNome ?? item.produto?.nome),
+            toText(item.produtoNomeComercial ?? item.produto?.nomeComercial),
             toText(item.numeroLote ?? item.lote?.numeroLote),
             formatDateTime(item.dataValidade ?? item.lote?.dataValidade),
             toText(item.estoqueSistema, "0"),

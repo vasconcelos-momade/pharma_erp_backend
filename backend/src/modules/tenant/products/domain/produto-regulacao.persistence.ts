@@ -1,4 +1,5 @@
 import { extractCatalogData } from "./produto-catalog";
+import { isAntimicrobianoFnm } from "./fnm-categorias";
 import { regulacaoToPolicyInput } from "./produto-presenter";
 import {
   extractPolicyInput,
@@ -41,11 +42,15 @@ export function prepareProdutoWrite(
   data: Record<string, unknown>,
   source: ProdutoRegulacaoSource,
   existingPolicy?: ProdutoPolicyInput | null,
+  categoria?: { nome?: string | null; codigoFNM?: string | null } | null,
 ): PrepareProdutoWriteResult {
   const incoming = extractPolicyInput(data);
+  delete (incoming as Record<string, unknown>).antimicrobiano;
+
   const mergedInput: ProdutoPolicyInput = {
     ...(existingPolicy ?? {}),
     ...incoming,
+    antimicrobiano: isAntimicrobianoFnm(categoria),
   };
   const policy = resolveProdutoPolicy(mergedInput);
   const catalogData = extractCatalogData(data);

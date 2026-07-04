@@ -60,7 +60,7 @@ export function mapMovementRows(items: Array<Record<string, unknown>>) {
   return items.map((item) => [
     formatDateTime(item.createdAt),
     toText(item.tipoLabel ?? item.tipo),
-    toText((item.produto as any)?.nome ?? item.produtoNome),
+    toText((item.produto as any)?.nomeComercial ?? item.produtoNomeComercial),
     toText((item.lote as any)?.numeroLote ?? item.numeroLote),
     toText(item.quantidade, "0"),
     toText(item.estoqueAnterior, "0"),

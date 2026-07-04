@@ -199,7 +199,7 @@ export class ClienteRepository {
       ...(query
         ? {
             OR: [
-              { nome: { contains: query } },
+              { nomeComercial: { contains: query } },
               { telefone: { contains: query } },
               { nuit: { contains: query } },
               { documento: { contains: query } },

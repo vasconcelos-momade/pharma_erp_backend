@@ -17,7 +17,7 @@ describe("SearchRequisitionProdutosUseCase", () => {
         barcode: "7891234567890",
         precoVenda: 120,
         estoqueMinimo: 2,
-        substanciaActiva: "Paracetamol",
+        nomeGenerico: "Paracetamol",
         dosagem: "500mg",
         forma: "Comprimido",
         apresentacao: "Caixa",
@@ -48,8 +48,8 @@ describe("SearchRequisitionProdutosUseCase", () => {
         ativo: true,
         deletedAt: null,
         OR: [
-          { nome: { contains: "12345" } },
-          { substanciaActiva: { contains: "12345" } },
+          { nomeComercial: { contains: "12345" } },
+          { nomeGenerico: { contains: "12345" } },
           { barcode: { contains: "12345" } },
           {
             lotes: {
@@ -64,7 +64,7 @@ describe("SearchRequisitionProdutosUseCase", () => {
         ],
       },
       select: expect.any(Object),
-      orderBy: [{ nome: "asc" }, { id: "asc" }],
+      orderBy: [{ nomeComercial: "asc" }, { id: "asc" }],
       skip: 10,
       take: 11,
     });
@@ -85,7 +85,7 @@ describe("SearchRequisitionProdutosUseCase", () => {
     }));
 
     await new SearchRequisitionProdutosUseCase().execute({
-      categoria: "EQUIPAMENTO",
+      categoriaId: 7n,
       page: 1,
       pageSize: 20,
     });
@@ -94,7 +94,7 @@ describe("SearchRequisitionProdutosUseCase", () => {
       where: {
         ativo: true,
         deletedAt: null,
-        categoria: "EQUIPAMENTO",
+        categoriaId: 7n,
       },
     });
   });
@@ -107,7 +107,7 @@ describe("SearchRequisitionProdutosUseCase", () => {
         barcode: "111",
         precoVenda: 10,
         estoqueMinimo: 1,
-        substanciaActiva: "Activa A",
+        nomeGenerico: "Activa A",
         dosagem: null,
         forma: null,
         apresentacao: null,
@@ -131,7 +131,7 @@ describe("SearchRequisitionProdutosUseCase", () => {
         barcode: "222",
         precoVenda: 15,
         estoqueMinimo: 1,
-        substanciaActiva: "Activa B",
+        nomeGenerico: "Activa B",
         dosagem: null,
         forma: null,
         apresentacao: null,
@@ -147,7 +147,7 @@ describe("SearchRequisitionProdutosUseCase", () => {
         barcode: "333",
         precoVenda: 20,
         estoqueMinimo: 1,
-        substanciaActiva: "Activa C",
+        nomeGenerico: "Activa C",
         dosagem: null,
         forma: null,
         apresentacao: null,

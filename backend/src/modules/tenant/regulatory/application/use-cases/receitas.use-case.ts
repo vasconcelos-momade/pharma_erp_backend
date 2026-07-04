@@ -362,7 +362,7 @@ export class GetReceitaDetailUseCase {
         cliente: true,
         dispensacoes: {
           include: {
-            produto: { select: { id: true, nome: true } },
+            produto: { select: { id: true, nomeComercial: true } },
             lote: { select: { id: true, numeroLote: true, dataValidade: true } },
             user: { select: { id: true, name: true } },
             validadoPor: { select: { id: true, name: true } },
@@ -372,7 +372,7 @@ export class GetReceitaDetailUseCase {
         },
         livroReceitas: {
           include: {
-            produto: { select: { id: true, nome: true } },
+            produto: { select: { id: true, nomeComercial: true } },
             lote: { select: { id: true, numeroLote: true } },
             responsavel: { select: { id: true, name: true, role: true } },
             fatura: { select: { id: true, numero: true, total: true } },
@@ -413,14 +413,14 @@ export class GetReceitaDetailUseCase {
         type: `LIVRO_${item.tipoMovimento}`,
         at: item.createdAt.toISOString(),
         description: `Movimento ${item.tipoMovimento} no livro de receitas`,
-        productName: item.produto?.nome ?? null,
+        productName: item.produto?.nomeComercial ?? null,
         quantity: item.quantidade,
       })),
       ...receita.dispensacoes.map((item: any) => ({
         type: "DISPENSACAO",
         at: item.createdAt.toISOString(),
         description: "Dispensação vinculada à receita",
-        productName: item.produto?.nome ?? null,
+        productName: item.produto?.nomeComercial ?? null,
         quantity: item.quantidade,
       })),
     ].sort((a, b) => String(b.at).localeCompare(String(a.at)));
@@ -447,7 +447,7 @@ export class GetReceitaDetailUseCase {
         receitaValida: item.receitaValida,
         createdAt: item.createdAt.toISOString(),
         produto: item.produto
-          ? { id: item.produto.id.toString(), nome: item.produto.nome }
+          ? { id: item.produto.id.toString(), nome: item.produto.nomeComercial }
           : null,
         lote: item.lote
           ? {
@@ -483,7 +483,7 @@ export class GetReceitaDetailUseCase {
         observacoes: item.observacoes,
         createdAt: item.createdAt.toISOString(),
         produto: item.produto
-          ? { id: item.produto.id.toString(), nome: item.produto.nome }
+          ? { id: item.produto.id.toString(), nome: item.produto.nomeComercial }
           : null,
         lote: item.lote
           ? { id: item.lote.id.toString(), numeroLote: item.lote.numeroLote }

@@ -20,7 +20,7 @@ export class ListLoteMovimentosUseCase {
         where,
         include: {
           user: { select: { id: true, name: true } },
-          produto: { select: { id: true, nome: true } },
+          produto: { select: { id: true, nomeComercial: true } },
         },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         skip: (safePage - 1) * safeSize,
@@ -76,7 +76,7 @@ export class ListLoteDispensacoesUseCase {
       where: { loteId: BigInt(loteId), deletedAt: null },
       include: {
         user: { select: { id: true, name: true } },
-        produto: { select: { id: true, nome: true } },
+        produto: { select: { id: true, nomeComercial: true } },
       },
       orderBy: { createdAt: "desc" },
     });

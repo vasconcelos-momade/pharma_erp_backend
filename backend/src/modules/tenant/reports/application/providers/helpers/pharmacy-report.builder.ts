@@ -31,7 +31,7 @@ export function mapProductTableRows(items: ProductListItem[]) {
     toText(item.estoqueAtual, "0"),
     toText(item.estoqueMinimo, "0"),
     toText(item.tipoDispensacao),
-    toText(item.substanciaActiva),
+    toText(item.nomeGenerico),
     item.ativo === false ? "Nao" : "Sim",
   ]);
 }

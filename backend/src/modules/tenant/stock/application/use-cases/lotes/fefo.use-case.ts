@@ -17,7 +17,7 @@ export class FefoDashboardUseCase {
           where: {
             deletedAt: null,
             ativo: true,
-            quantidadeAtual: { gt: 0 },
+            stockBalance: { quantidadeDisponivel: { gt: 0 } },
             dataValidade: { lt: now },
           },
         }),
@@ -36,7 +36,7 @@ export class FefoDashboardUseCase {
           where: {
             ...FEFO_LOTE_FILTER,
             dataValidade: { gt: now },
-            quantidadeAtual: { gt: 0 },
+            stockBalance: { quantidadeDisponivel: { gt: 0 } },
           },
           _count: { _all: true },
           having: { produtoId: { _count: { gt: 1 } } },
@@ -71,7 +71,7 @@ export class SearchFefoOverviewUseCase {
         some: {
           ...FEFO_LOTE_FILTER,
           dataValidade: { gt: now },
-          quantidadeAtual: { gt: 0 },
+          stockBalance: { quantidadeDisponivel: { gt: 0 } },
         },
       },
     };
@@ -80,15 +80,15 @@ export class SearchFefoOverviewUseCase {
     const q = params.q?.trim();
     if (q) {
       produtoWhere.OR = [
-        { nome: { contains: q } },
+        { nomeComercial: { contains: q } },
         { barcode: { contains: q } },
       ];
     }
 
     const produtos = await prisma.produto.findMany({
       where: produtoWhere,
-      select: { id: true, nome: true, barcode: true },
-      orderBy: { nome: "asc" },
+      select: { id: true, nomeComercial: true, barcode: true },
+      orderBy: { nomeComercial: "asc" },
       skip: (page - 1) * pageSize,
       take: pageSize + 1,
     });
@@ -101,11 +101,12 @@ export class SearchFefoOverviewUseCase {
           produtoId: produto.id,
           deletedAt: null,
           ativo: true,
-          quantidadeAtual: { gt: 0 },
+          stockBalance: { quantidadeDisponivel: { gt: 0 } },
         },
         include: {
-          produto: { select: { nome: true } },
+          produto: { select: { nomeComercial: true } },
           fornecedor: { select: { nome: true } },
+          stockBalance: { select: { quantidadeDisponivel: true, quantidadeTotal: true } },
         },
         orderBy: { dataValidade: "asc" },
       });
@@ -121,7 +122,7 @@ export class SearchFefoOverviewUseCase {
 
       items.push({
         produtoId: produto.id.toString(),
-        produtoNome: produto.nome,
+        produtoNomeComercial: produto.nomeComercial,
         produtoBarcode: produto.barcode ?? null,
         loteRecomendado: recomendado
           ? {
@@ -165,7 +166,8 @@ export class SearchFefoAuditUseCase {
     const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 20));
 
     const where: Record<string, unknown> = {
-      loteId: { not: null },
+      produtoId: { not: null },
+      lotesAlocacao: { some: {} },
     };
 
     if (params.produtoId) where.produtoId = BigInt(params.produtoId);
@@ -173,8 +175,12 @@ export class SearchFefoAuditUseCase {
     const q = params.q?.trim();
     if (q) {
       where.OR = [
-        { produto: { nome: { contains: q } } },
-        { lote: { numeroLote: { contains: q } } },
+        { produto: { nomeComercial: { contains: q } } },
+        {
+          lotesAlocacao: {
+            some: { lote: { numeroLote: { contains: q } } },
+          },
+        },
         { fatura: { user: { name: { contains: q } } } },
       ];
     }
@@ -198,16 +204,21 @@ export class SearchFefoAuditUseCase {
       const rows = await prisma.faturaItem.findMany({
         where,
         include: {
-          produto: { select: { id: true, nome: true } },
-          lote: {
-            select: {
-              id: true,
-              numeroLote: true,
-              dataValidade: true,
-              estadoSanitario: true,
-              disponibilidade: true,
-              quantidadeAtual: true,
-              quantidadeQuarentena: true,
+          produto: { select: { id: true, nomeComercial: true } },
+          lotesAlocacao: {
+            orderBy: { ordemFefo: "asc" },
+            include: {
+              lote: {
+                select: {
+                  id: true,
+                  numeroLote: true,
+                  dataValidade: true,
+                  estadoSanitario: true,
+                  disponibilidade: true,
+                  quantidadeQuarentena: true,
+                  stockBalance: { select: { quantidadeDisponivel: true } },
+                },
+              },
             },
           },
           fatura: {
@@ -231,23 +242,24 @@ export class SearchFefoAuditUseCase {
       skip += rows.length;
 
       for (const row of rows) {
-        if (!row.lote || !row.produto) continue;
+        const lote = row.lotesAlocacao?.[0]?.lote;
+        if (!lote || !row.produto) continue;
 
         const recomendado = await findFefoLote(prisma, row.produto.id);
         const now = new Date();
         let situacao: string = "CONFORME";
         let motivo = "Lote utilizado conforme FEFO";
 
-        if (new Date(row.lote.dataValidade) < now) {
+        if (new Date(lote.dataValidade) < now) {
           situacao = "LOTE_EXPIRADO";
           motivo = "Lote expirado no momento da consulta";
         } else if (
-          row.lote.estadoSanitario !== "VALIDO" ||
-          row.lote.disponibilidade !== "DISPONIVEL"
+          lote.estadoSanitario !== "VALIDO" ||
+          lote.disponibilidade !== "DISPONIVEL"
         ) {
           situacao = "QUARENTENA";
-          motivo = `Estado ${row.lote.estadoSanitario} / ${row.lote.disponibilidade}`;
-        } else if (recomendado && row.lote.id !== recomendado.id) {
+          motivo = `Estado ${lote.estadoSanitario} / ${lote.disponibilidade}`;
+        } else if (recomendado && lote.id !== recomendado.id) {
           situacao = "VIOLACAO_FEFO";
           motivo = `Lote correcto FEFO: ${recomendado.numeroLote}`;
         }
@@ -259,11 +271,11 @@ export class SearchFefoAuditUseCase {
         items.push({
           id: row.id.toString(),
           produtoId: row.produto.id.toString(),
-          produtoNome: row.produto.nome,
+          produtoNomeComercial: row.produto.nomeComercial,
           loteUtilizado: {
-            id: row.lote.id.toString(),
-            numeroLote: row.lote.numeroLote,
-            dataValidade: row.lote.dataValidade.toISOString(),
+            id: lote.id.toString(),
+            numeroLote: lote.numeroLote,
+            dataValidade: lote.dataValidade.toISOString(),
           },
           loteCorreto: recomendado
             ? {

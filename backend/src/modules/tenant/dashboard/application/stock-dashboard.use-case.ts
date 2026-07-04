@@ -58,11 +58,11 @@ export class StockDashboardUseCase {
         where: {
           deletedAt: null,
           ativo: true,
-          quantidadeAtual: { gt: 0 },
+          stockBalance: { quantidadeDisponivel: { gt: 0 } },
         },
         select: {
-          quantidadeAtual: true,
           quantidadeQuarentena: true,
+          stockBalance: { select: { quantidadeDisponivel: true } },
           precoCompra: true,
           produto: {
             select: {
@@ -83,10 +83,7 @@ export class StockDashboardUseCase {
       }),
       prisma.produto.findMany({
         where: { deletedAt: null, ativo: true },
-        select: {
-          id: true,
-          nome: true,
-          estoqueMinimo: true,
+        select: { id: true, nomeComercial: true, estoqueMinimo: true,
           stockBalance: { select: { quantidadeDisponivel: true } },
         },
         take: 200,
@@ -140,7 +137,7 @@ export class StockDashboardUseCase {
           quantidade: true,
           origem: true,
           createdAt: true,
-          produto: { select: { nome: true } },
+          produto: { select: { nomeComercial: true } },
           lote: { select: { numeroLote: true } },
         },
       }),
@@ -173,7 +170,7 @@ export class StockDashboardUseCase {
           quantidade: true,
           expiresAt: true,
           createdAt: true,
-          produto: { select: { nome: true } },
+          produto: { select: { nomeComercial: true } },
           lote: { select: { numeroLote: true } },
         },
       }),
@@ -191,7 +188,7 @@ export class StockDashboardUseCase {
     const valorTotalStock = valorStockRows.reduce((sum: number, row: any) => {
       const qty = Math.max(
         0,
-        toNumber(row.quantidadeAtual) - toNumber(row.quantidadeQuarentena),
+        toNumber(row.stockBalance?.quantidadeDisponivel),
       );
       return sum + qty * toNumber(row.precoCompra);
     }, 0);
@@ -199,7 +196,7 @@ export class StockDashboardUseCase {
     for (const row of valorStockRows) {
       const qty = Math.max(
         0,
-        toNumber(row.quantidadeAtual) - toNumber(row.quantidadeQuarentena),
+        toNumber(row.stockBalance?.quantidadeDisponivel),
       );
       const categoria = row.produto?.categoria?.nome ?? "Sem categoria";
       const valor = qty * toNumber(row.precoCompra);
@@ -210,9 +207,7 @@ export class StockDashboardUseCase {
       .map((row: any) => {
         const disponivel = toNumber(row.stockBalance?.quantidadeDisponivel);
         const minimo = toNumber(row.estoqueMinimo);
-        return {
-          id: row.id.toString(),
-          nome: row.nome,
+        return { id: row.id.toString(), nome: row.nomeComercial,
           disponivel: round2(disponivel),
           minimo: round2(minimo),
           critico: disponivel <= 0 || (disponivel > 0 && disponivel <= minimo),
@@ -230,7 +225,7 @@ export class StockDashboardUseCase {
       produtoIds.length > 0
         ? await prisma.produto.findMany({
             where: { id: { in: produtoIds } },
-            select: { id: true, nome: true, categoria: { select: { nome: true } } },
+            select: { id: true, nomeComercial: true, categoria: { select: { nome: true } } },
           })
         : [];
     const produtoMap = new Map<string, any>(
@@ -286,7 +281,7 @@ export class StockDashboardUseCase {
           const produto = produtoMap.get(row.produtoId?.toString() ?? "");
           return {
             produtoId: row.produtoId?.toString() ?? null,
-            produtoNome: produto?.nome ?? "—",
+            produtoNomeComercial: produto?.nomeComercial ?? "—",
             quantidade: round2(toNumber(row._sum.quantidade)),
             movimentos: row._count._all ?? 0,
           };
@@ -311,7 +306,7 @@ export class StockDashboardUseCase {
           tipo: row.tipo,
           quantidade: round2(toNumber(row.quantidade)),
           origem: row.origem ?? "—",
-          produtoNome: row.produto?.nome ?? "—",
+          produtoNomeComercial: row.produto?.nomeComercial ?? "—",
           numeroLote: row.lote?.numeroLote ?? "—",
           createdAt: row.createdAt.toISOString(),
         })),
@@ -331,7 +326,7 @@ export class StockDashboardUseCase {
         })),
         reservas: reservas.map((row: any) => ({
           id: row.id.toString(),
-          produtoNome: row.produto?.nome ?? "—",
+          produtoNomeComercial: row.produto?.nomeComercial ?? "—",
           numeroLote: row.lote?.numeroLote ?? "—",
           quantidade: round2(toNumber(row.quantidade)),
           expiresAt: row.expiresAt.toISOString(),
@@ -385,7 +380,7 @@ export class StockDashboardUseCase {
         if (params.tipoMovimentacao) where.tipo = params.tipoMovimentacao;
         if (search) {
           where.OR = [
-            { produto: { nome: { contains: search, mode: "insensitive" } } },
+            { produto: { nomeComercial: { contains: search, mode: "insensitive" } } },
             { lote: { numeroLote: { contains: search, mode: "insensitive" } } },
             { origem: { contains: search, mode: "insensitive" } },
           ];
@@ -403,7 +398,7 @@ export class StockDashboardUseCase {
               quantidade: true,
               origem: true,
               createdAt: true,
-              produto: { select: { nome: true } },
+              produto: { select: { nomeComercial: true } },
               lote: { select: { numeroLote: true } },
             },
           }),
@@ -418,7 +413,7 @@ export class StockDashboardUseCase {
             tipo: row.tipo,
             quantidade: round2(toNumber(row.quantidade)),
             origem: row.origem ?? "—",
-            produtoNome: row.produto?.nome ?? "—",
+            produtoNomeComercial: row.produto?.nomeComercial ?? "—",
             numeroLote: row.lote?.numeroLote ?? "—",
             createdAt: row.createdAt.toISOString(),
           })),
@@ -501,7 +496,7 @@ export class StockDashboardUseCase {
         if (params.produtoId) where.produtoId = BigInt(params.produtoId);
         if (search) {
           where.OR = [
-            { produto: { nome: { contains: search, mode: "insensitive" } } },
+            { produto: { nomeComercial: { contains: search, mode: "insensitive" } } },
             { lote: { numeroLote: { contains: search, mode: "insensitive" } } },
           ];
         }
@@ -517,7 +512,7 @@ export class StockDashboardUseCase {
               quantidade: true,
               expiresAt: true,
               createdAt: true,
-              produto: { select: { nome: true } },
+              produto: { select: { nomeComercial: true } },
               lote: { select: { numeroLote: true } },
             },
           }),
@@ -529,7 +524,7 @@ export class StockDashboardUseCase {
           totalCount,
           rows: rows.map((row: any) => ({
             id: row.id.toString(),
-            produtoNome: row.produto?.nome ?? "—",
+            produtoNomeComercial: row.produto?.nomeComercial ?? "—",
             numeroLote: row.lote?.numeroLote ?? "—",
             quantidade: round2(toNumber(row.quantidade)),
             expiresAt: row.expiresAt.toISOString(),
@@ -571,13 +566,10 @@ export class StockDashboardUseCase {
       case "produtosCriticos": {
         const where: any = { deletedAt: null, ativo: true };
         if (params.produtoId) where.id = BigInt(params.produtoId);
-        if (search) where.nome = { contains: search, mode: "insensitive" };
+        if (search) where.nomeComercial = { contains: search, mode: "insensitive" };
         const rows = await prisma.produto.findMany({
           where,
-          select: {
-            id: true,
-            nome: true,
-            estoqueMinimo: true,
+          select: { id: true, nomeComercial: true, estoqueMinimo: true,
             stockBalance: { select: { quantidadeDisponivel: true } },
           },
           take: 500,
@@ -586,9 +578,7 @@ export class StockDashboardUseCase {
           .map((row: any) => {
             const disponivel = toNumber(row.stockBalance?.quantidadeDisponivel);
             const minimo = toNumber(row.estoqueMinimo);
-            return {
-              id: row.id.toString(),
-              nome: row.nome,
+            return { id: row.id.toString(), nome: row.nomeComercial,
               disponivel: round2(disponivel),
               minimo: round2(minimo),
               critico: disponivel <= 0 || (disponivel > 0 && disponivel <= minimo),

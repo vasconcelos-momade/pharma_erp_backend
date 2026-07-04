@@ -91,7 +91,7 @@ export class LotesDashboardUseCase {
       prisma.lote.count({
         where: {
           ...loteBaseWhere,
-          quantidadeAtual: { gt: 0 },
+          stockBalance: { quantidadeDisponivel: { gt: 0 } },
           disponibilidade: "DISPONIVEL",
           estadoSanitario: "VALIDO",
           dataValidade: { gte: now },
@@ -100,7 +100,7 @@ export class LotesDashboardUseCase {
       prisma.lote.count({
         where: {
           ...loteBaseWhere,
-          quantidadeAtual: { gt: 0 },
+          stockBalance: { quantidadeTotal: { gt: 0 } },
           dataValidade: { lt: now },
         },
       }),
@@ -187,7 +187,7 @@ export class SearchLotesUseCase {
     if (q) {
       where.OR = [
         { numeroLote: { contains: q } },
-        { produto: { nome: { contains: q } } },
+        { produto: { nomeComercial: { contains: q } } },
         { produto: { barcode: { contains: q } } },
         { fornecedor: { nome: { contains: q } } },
         ...(/^\d+$/.test(q) ? [{ id: BigInt(q) }, { produtoId: BigInt(q) }] : []),
@@ -200,7 +200,10 @@ export class SearchLotesUseCase {
       sortBy === "numeroLote"
         ? [{ numeroLote: sortOrder }, { id: sortOrder }]
         : sortBy === "quantidadeAtual"
-          ? [{ quantidadeAtual: sortOrder }, { dataValidade: "asc" }]
+          ? [
+              { stockBalance: { quantidadeTotal: sortOrder } },
+              { dataValidade: "asc" },
+            ]
           : sortBy === "createdAt"
             ? [{ createdAt: sortOrder }, { id: sortOrder }]
             : [{ dataValidade: sortOrder }, { numeroLote: "asc" }];
@@ -210,8 +213,9 @@ export class SearchLotesUseCase {
       prisma.lote.findMany({
         where,
         include: {
-          produto: { select: { id: true, nome: true, barcode: true } },
+          produto: { select: { id: true, nomeComercial: true, barcode: true } },
           fornecedor: { select: { id: true, nome: true } },
+          stockBalance: true,
         },
         orderBy,
         skip: (page - 1) * pageSize,

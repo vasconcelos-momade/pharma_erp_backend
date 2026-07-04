@@ -1,4 +1,5 @@
 import { CategoriaRepository } from "../../infrastructure/repositories/categoria.repository";
+import { isFnmCategoriaNome } from "../../domain/fnm-categorias";
 
 type CategoriaSearchFilters = {
   query?: string;
@@ -9,6 +10,7 @@ type CategoriaSearchFilters = {
 
 type CategoriaPayload = {
   nome?: string;
+  codigoFNM?: string | null;
   descricao?: string | null;
   ativo?: boolean;
 };
@@ -37,10 +39,15 @@ export class CategoriaService {
   }
 
   async create(data: CategoriaPayload, userId: string) {
-    await this.ensureUniqueName(data.nome);
+    const nome = data.nome?.trim().toUpperCase();
+    if (!nome || !isFnmCategoriaNome(nome)) {
+      throw new Error("Categoria inválida. Utilize apenas categorias FNM permitidas.");
+    }
+    await this.ensureUniqueName(nome);
     return this.repo.create(
       {
-        nome: data.nome?.trim(),
+        nome,
+        codigoFNM: data.codigoFNM?.trim().toUpperCase() ?? nome,
         descricao: data.descricao ?? null,
         ativo: data.ativo ?? true,
       },
@@ -54,14 +61,21 @@ export class CategoriaService {
       throw new Error("Categoria não encontrada");
     }
 
-    if (data.nome && data.nome.trim() !== String(existing.nome)) {
-      await this.ensureUniqueName(data.nome, id);
+    if (data.nome && data.nome.trim().toUpperCase() !== String(existing.nome)) {
+      const nome = data.nome.trim().toUpperCase();
+      if (!isFnmCategoriaNome(nome)) {
+        throw new Error("Categoria inválida. Utilize apenas categorias FNM permitidas.");
+      }
+      await this.ensureUniqueName(nome, id);
     }
 
     return this.repo.update(
       id,
       {
-        ...(data.nome !== undefined ? { nome: data.nome.trim() } : {}),
+        ...(data.nome !== undefined ? { nome: data.nome.trim().toUpperCase() } : {}),
+        ...(data.codigoFNM !== undefined
+          ? { codigoFNM: data.codigoFNM?.trim().toUpperCase() ?? null }
+          : {}),
         ...(data.descricao !== undefined ? { descricao: data.descricao } : {}),
         ...(data.ativo !== undefined ? { ativo: data.ativo } : {}),
       },

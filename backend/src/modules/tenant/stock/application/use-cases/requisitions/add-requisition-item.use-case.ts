@@ -4,6 +4,7 @@ import {
   ValidationApiError,
 } from "../../../../../../shared/http/api-error";
 import { getQuantidadeDisponivel } from "../../../domain/produto-stock.service";
+import { getLoteQuantidadeDisponivel } from "../../../domain/lote-stock.service";
 
 export interface AddRequisitionItemInput {
   produtoId: string;
@@ -39,7 +40,7 @@ export class AddRequisitionItemUseCase {
       const produtoId = BigInt(input.produtoId);
       const produto = await tx.produto.findUnique({
         where: { id: produtoId },
-        select: { id: true, nome: true },
+        select: { id: true, nomeComercial: true },
       });
 
       if (!produto) {
@@ -80,19 +81,17 @@ export class AddRequisitionItemUseCase {
       if (requiresStockValidation(requisicao)) {
         const quantidadeDisponivel =
           loteId != null
-            ? Number(
-                (
-                  await tx.lote.findUnique({
-                    where: { id: loteId },
-                    select: { quantidadeAtual: true },
-                  })
-                )?.quantidadeAtual ?? 0,
+            ? await getLoteQuantidadeDisponivel(
+                tx,
+                await tx.lote.findUniqueOrThrow({
+                  where: { id: loteId },
+                }),
               )
             : await getQuantidadeDisponivel(tx, produtoId);
 
         if (quantidadeSolicitada > quantidadeDisponivel) {
           throw new ValidationApiError(
-            `Stock insuficiente para o produto ${produto.nome}`,
+            `Stock insuficiente para o produto ${produto.nomeComercial}`,
           );
         }
       }

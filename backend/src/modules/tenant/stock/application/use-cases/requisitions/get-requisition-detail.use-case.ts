@@ -30,7 +30,7 @@ export class GetRequisitionDetailUseCase {
             produto: {
               select: {
                 id: true,
-                nome: true,
+                nomeComercial: true,
               },
             },
             lote: {
@@ -92,7 +92,7 @@ export class GetRequisitionDetailUseCase {
         produto: item.produto
           ? {
               id: item.produto.id.toString(),
-              nome: item.produto.nome,
+              nome: item.produto.nomeComercial,
             }
           : null,
         lote: item.lote

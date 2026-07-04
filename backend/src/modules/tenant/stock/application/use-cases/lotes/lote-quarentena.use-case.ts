@@ -5,6 +5,7 @@ import {
 } from "../../../../../../shared/http/api-error";
 import { ComplianceAuditService } from "../../../../../../shared/services/compliance-audit.service";
 import { loteQuantidadeDisponivel } from "../../../domain/fefo-lote.service";
+import { readLoteTotal } from "../../../domain/lote-stock-read.util";
 import { syncStockBalanceCache } from "../../../domain/produto-stock.service";
 import { mapLoteListItem } from "./lote.mapper";
 
@@ -21,8 +22,9 @@ async function loadLoteForUpdate(tx: any, loteId: bigint) {
   const lote = await tx.lote.findFirst({
     where: { id: loteId, deletedAt: null, ativo: true },
     include: {
-      produto: { select: { id: true, nome: true, barcode: true } },
+      produto: { select: { id: true, nomeComercial: true, barcode: true } },
       fornecedor: { select: { id: true, nome: true } },
+      stockBalance: { select: { quantidadeTotal: true, quantidadeDisponivel: true } },
     },
   });
 
@@ -104,9 +106,9 @@ export class MoveLoteToQuarentenaUseCase {
 
       const quantidadeQuarentena =
         Number(lote.quantidadeQuarentena ?? 0) + quantidade;
-      const quantidadeAtual = Number(lote.quantidadeAtual);
+      const quantidadeTotal = readLoteTotal(lote);
       const disponibilidade = resolveDisponibilidadeAfterQuarentena(
-        quantidadeAtual,
+        quantidadeTotal,
         quantidadeQuarentena,
         lote.disponibilidade,
       );
@@ -119,7 +121,7 @@ export class MoveLoteToQuarentenaUseCase {
           version: { increment: 1 },
         },
         include: {
-          produto: { select: { id: true, nome: true, barcode: true } },
+          produto: { select: { id: true, nomeComercial: true, barcode: true } },
           fornecedor: { select: { id: true, nome: true } },
         },
       });
@@ -142,8 +144,8 @@ export class MoveLoteToQuarentenaUseCase {
           userId: BigInt(data.userId),
           tipo: "QUARENTENA",
           quantidade,
-          estoqueAnterior: quantidadeAtual,
-          estoqueFinal: quantidadeAtual,
+          estoqueAnterior: quantidadeTotal,
+          estoqueFinal: quantidadeTotal,
           origem: "QUARENTENA_SANITARIA",
           observacoes: data.motivo.trim(),
         },
@@ -243,9 +245,9 @@ export class RevertLoteQuarentenaUseCase {
       }
 
       const quantidadeQuarentena = emQuarentena - quantidade;
-      const quantidadeAtual = Number(lote.quantidadeAtual);
+      const quantidadeTotal = readLoteTotal(lote);
       const disponibilidade = resolveDisponibilidadeAfterQuarentena(
-        quantidadeAtual,
+        quantidadeTotal,
         quantidadeQuarentena,
         lote.disponibilidade,
       );
@@ -258,7 +260,7 @@ export class RevertLoteQuarentenaUseCase {
           version: { increment: 1 },
         },
         include: {
-          produto: { select: { id: true, nome: true, barcode: true } },
+          produto: { select: { id: true, nomeComercial: true, barcode: true } },
           fornecedor: { select: { id: true, nome: true } },
         },
       });
@@ -281,8 +283,8 @@ export class RevertLoteQuarentenaUseCase {
           userId: BigInt(data.userId),
           tipo: "AJUSTE",
           quantidade,
-          estoqueAnterior: quantidadeAtual,
-          estoqueFinal: quantidadeAtual,
+          estoqueAnterior: quantidadeTotal,
+          estoqueFinal: quantidadeTotal,
           origem: "LIBERACAO_QUARENTENA",
           observacoes: data.motivo.trim(),
         },

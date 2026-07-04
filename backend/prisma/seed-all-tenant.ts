@@ -54,7 +54,11 @@ async function main() {
     await runScript("prisma/seed-role-permissions.ts", dbUrl);
     console.log("✅ Seed de permissoes por role concluido!\n");
 
-    console.log("2️⃣  Executando seed de regras fiscais...");
+    console.log("2️⃣  Executando seed de categorias FNM...");
+    await runScript("prisma/seed-fnm-categorias.ts", dbUrl);
+    console.log("✅ Seed de categorias FNM concluido!\n");
+
+    console.log("3️⃣  Executando seed de regras fiscais...");
     const prisma = new PrismaTenantClient({
       datasources: {
         db: {
@@ -105,19 +109,19 @@ async function main() {
     await prisma.$disconnect();
     console.log("✅ Seed de regras fiscais concluido!\n");
 
-    console.log("3️⃣  Executando seed de medicamentos...");
+    console.log("4️⃣  Executando seed de medicamentos...");
     await runScript("prisma/seed-medicamentos.ts", dbUrl);
     console.log("✅ Seed de medicamentos concluido!\n");
 
-    console.log("4️⃣  Executando seed de servicos...");
+    console.log("5️⃣  Executando seed de servicos...");
     await runScript("prisma/seed-servicos.ts", dbUrl);
     console.log("✅ Seed de servicos concluido!\n");
 
-    console.log("5️⃣  Executando seed de terminais...");
+    console.log("6️⃣  Executando seed de terminais...");
     await runScript("prisma/seed-terminais.ts", dbUrl);
     console.log("✅ Seed de terminais concluido!\n");
 
-    console.log("6️⃣  Executando seed de estoque...");
+    console.log("7️⃣  Executando seed de estoque...");
     await runScript("prisma/seed-estoque.ts", dbUrl);
     console.log("✅ Seed de estoque concluido!\n");
 

@@ -13,7 +13,7 @@ export class ValidadesDashboardUseCase {
     const baseWhere = {
       deletedAt: null,
       ativo: true,
-      quantidadeAtual: { gt: 0 },
+      stockBalance: { quantidadeDisponivel: { gt: 0 } },
     };
 
     const [expirados, ate30, ate60, valorRows] = await prisma.$transaction([
@@ -38,8 +38,8 @@ export class ValidadesDashboardUseCase {
           dataValidade: { lte: in60 },
         },
         select: {
-          quantidadeAtual: true,
           quantidadeQuarentena: true,
+          stockBalance: { select: { quantidadeDisponivel: true } },
           precoCompra: true,
         },
       }),
@@ -48,7 +48,7 @@ export class ValidadesDashboardUseCase {
     const valorEmRisco = valorRows.reduce((sum: number, row: any) => {
       const qty = Math.max(
         0,
-        Number(row.quantidadeAtual) - Number(row.quantidadeQuarentena ?? 0),
+        Number(row.stockBalance?.quantidadeDisponivel ?? 0),
       );
       return sum + qty * Number(row.precoCompra ?? 0);
     }, 0);
@@ -83,7 +83,7 @@ export class SearchValidadesUseCase {
     const where: Record<string, unknown> = {
       deletedAt: null,
       ativo: true,
-      quantidadeAtual: { gt: 0 },
+      stockBalance: { quantidadeDisponivel: { gt: 0 } },
     };
 
     if (params.produtoId) where.produtoId = BigInt(params.produtoId);
@@ -110,7 +110,7 @@ export class SearchValidadesUseCase {
     if (q) {
       where.OR = [
         { numeroLote: { contains: q } },
-        { produto: { nome: { contains: q } } },
+        { produto: { nomeComercial: { contains: q } } },
       ];
     }
 
@@ -119,7 +119,7 @@ export class SearchValidadesUseCase {
       prisma.lote.findMany({
         where,
         include: {
-          produto: { select: { id: true, nome: true, barcode: true } },
+          produto: { select: { id: true, nomeComercial: true, barcode: true } },
           fornecedor: { select: { id: true, nome: true } },
         },
         orderBy: [{ dataValidade: "asc" }, { numeroLote: "asc" }],

@@ -77,7 +77,7 @@ export function resolveCotacaoItemDescricao(
     return custom;
   }
 
-  return row.produto?.nome ?? row.servico?.nome ?? "Item";
+  return row.produto?.nomeComercial ?? row.servico?.nome ?? "Item";
 }
 
 export function computeCotacaoItemFiscal(
@@ -117,7 +117,7 @@ export function buildCotacaoItemApi(
     produto: row.produto
       ? {
           id: row.produto.id.toString(),
-          nome: row.produto.nome,
+          nome: row.produto.nomeComercial,
           barcode: row.produto.barcode ?? null,
         }
       : null,

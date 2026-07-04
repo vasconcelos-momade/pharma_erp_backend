@@ -13,7 +13,7 @@ type ListLivroPsicotropicosParams = {
   tipoMovimento?: "ENTRADA" | "SAIDA" | "IMPORTACAO";
   from?: string;
   to?: string;
-  sortBy?: "createdAt" | "numeroDocumento" | "produtoNome" | "quantidade";
+  sortBy?: "createdAt" | "numeroDocumento" | "produtoNomeComercial" | "quantidade";
   sortDir?: "asc" | "desc";
   page?: number;
   pageSize?: number;
@@ -40,7 +40,7 @@ function buildLivroPsicotropicoWhere(params: ListLivroPsicotropicosParams) {
           OR: [
             { numeroDocumento: { contains: search } },
             { observacoes: { contains: search } },
-            { produto: { nome: { contains: search } } },
+            { produto: { nomeComercial: { contains: search } } },
             { lote: { numeroLote: { contains: search } } },
             { responsavel: { name: { contains: search } } },
           ],
@@ -66,7 +66,7 @@ function mapLivroPsicotropicoRow(row: any) {
     produto: row.produto
       ? {
           id: row.produto.id.toString(),
-          nome: row.produto.nome,
+          nome: row.produto.nomeComercial,
           barcode: row.produto.barcode,
           regulacao: row.produto.regulacao
             ? {
@@ -128,7 +128,7 @@ export class LivroPsicotropicosDashboardUseCase {
             produto: {
               select: {
                 id: true,
-                nome: true,
+                nomeComercial: true,
                 barcode: true,
                 regulacao: {
                   select: {
@@ -169,8 +169,8 @@ export class ListLivroPsicotropicosUseCase {
     const orderBy =
       params.sortBy === "numeroDocumento"
         ? [{ numeroDocumento: sortDir }, { id: "desc" }]
-        : params.sortBy === "produtoNome"
-          ? [{ produto: { nome: sortDir } }, { id: "desc" }]
+        : params.sortBy === "produtoNomeComercial"
+          ? [{ produto: { nomeComercial: sortDir } }, { id: "desc" }]
           : params.sortBy === "quantidade"
             ? [{ quantidade: sortDir }, { id: "desc" }]
             : [{ createdAt: sortDir }, { id: "desc" }];
@@ -182,7 +182,7 @@ export class ListLivroPsicotropicosUseCase {
           produto: {
             select: {
               id: true,
-              nome: true,
+              nomeComercial: true,
               barcode: true,
               regulacao: {
                 select: {

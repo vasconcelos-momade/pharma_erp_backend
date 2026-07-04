@@ -135,11 +135,11 @@ export class ExecutiveDashboardUseCase {
         where: {
           deletedAt: null,
           ativo: true,
-          quantidadeAtual: { gt: 0 },
+          stockBalance: { quantidadeDisponivel: { gt: 0 } },
         },
         select: {
-          quantidadeAtual: true,
           quantidadeQuarentena: true,
+          stockBalance: { select: { quantidadeDisponivel: true } },
           precoCompra: true,
         },
       }),
@@ -157,7 +157,7 @@ export class ExecutiveDashboardUseCase {
         where: {
           deletedAt: null,
           ativo: true,
-          quantidadeAtual: { gt: 0 },
+          stockBalance: { quantidadeDisponivel: { gt: 0 } },
           dataValidade: { lt: now },
         },
       }),
@@ -169,7 +169,7 @@ export class ExecutiveDashboardUseCase {
             some: {
               deletedAt: null,
               ativo: true,
-              quantidadeAtual: { gt: 0 },
+              stockBalance: { quantidadeDisponivel: { gt: 0 } },
               dataValidade: {
                 gte: now,
                 lte: new Date(now.getTime() + 30 * 86400000),
@@ -276,7 +276,7 @@ export class ExecutiveDashboardUseCase {
           tipo: true,
           mensagem: true,
           createdAt: true,
-          produto: { select: { id: true, nome: true } },
+          produto: { select: { id: true, nomeComercial: true } },
         },
       }),
       prisma.businessEvent.findMany({
@@ -310,7 +310,7 @@ export class ExecutiveDashboardUseCase {
     const valorInventario = valorInventarioRows.reduce((sum: number, row: any) => {
       const qty = Math.max(
         0,
-        toNumber(row.quantidadeAtual) - toNumber(row.quantidadeQuarentena),
+        toNumber(row.stockBalance?.quantidadeDisponivel),
       );
       return sum + qty * toNumber(row.precoCompra);
     }, 0);
@@ -335,7 +335,7 @@ export class ExecutiveDashboardUseCase {
             where: { id: { in: produtoIds } },
             select: {
               id: true,
-              nome: true,
+              nomeComercial: true,
               categoria: { select: { id: true, nome: true } },
             },
           })
@@ -399,7 +399,7 @@ export class ExecutiveDashboardUseCase {
           const produto = produtoMap.get(row.produtoId?.toString() ?? "");
           return {
             produtoId: row.produtoId?.toString() ?? null,
-            produtoNome: produto?.nome ?? "—",
+            produtoNomeComercial: produto?.nomeComercial ?? "—",
             quantidade: round2(toNumber(row._sum.quantidade)),
             total: round2(toNumber(row._sum.total)),
           };
@@ -421,7 +421,7 @@ export class ExecutiveDashboardUseCase {
           id: row.id.toString(),
           tipo: row.tipo,
           mensagem: row.mensagem,
-          produtoNome: row.produto?.nome ?? "—",
+          produtoNomeComercial: row.produto?.nomeComercial ?? "—",
           createdAt: row.createdAt.toISOString(),
         })),
         ultimosEventos: ultimosEventos.map((row: any) => ({
@@ -507,7 +507,7 @@ export class ExecutiveDashboardUseCase {
         if (search) {
           where.OR = [
             { mensagem: { contains: search, mode: "insensitive" } },
-            { produto: { nome: { contains: search, mode: "insensitive" } } },
+            { produto: { nomeComercial: { contains: search, mode: "insensitive" } } },
           ];
         }
         const [totalCount, rows] = await prisma.$transaction([
@@ -522,7 +522,7 @@ export class ExecutiveDashboardUseCase {
               tipo: true,
               mensagem: true,
               createdAt: true,
-              produto: { select: { nome: true } },
+              produto: { select: { nomeComercial: true } },
             },
           }),
         ]);
@@ -535,7 +535,7 @@ export class ExecutiveDashboardUseCase {
             id: row.id.toString(),
             tipo: row.tipo,
             mensagem: row.mensagem,
-            produtoNome: row.produto?.nome ?? "—",
+            produtoNomeComercial: row.produto?.nomeComercial ?? "—",
             createdAt: row.createdAt.toISOString(),
           })),
         });

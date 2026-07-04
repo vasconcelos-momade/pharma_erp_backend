@@ -125,28 +125,31 @@ function loadClassificationRules(): ClassificationRules {
 
 const classificationRules = loadClassificationRules();
 
-function loadAntimicrobialKeywords(): string[] {
-  const antimicrobialPath = path.resolve(__dirname, "../antimicrobianos.csv");
+const ANTIMICROBIAL_HINTS = [
+  "AMOXICIL",
+  "AMPICIL",
+  "CIPROFLOX",
+  "METRONIDAZ",
+  "AZITHROM",
+  "CLARITHROM",
+  "CEFTRIAX",
+  "DOXYCICL",
+  "TRIMETHOPRIM",
+  "NITROFUR",
+  "PENICIL",
+  "CLINDAMIC",
+  "ERYTHROM",
+  "FLUCONAZ",
+  "ACICLOVIR",
+  "ANTIBIOT",
+];
 
-  if (!fs.existsSync(antimicrobialPath)) {
-    throw new Error(`Antimicrobial CSV file not found at ${antimicrobialPath}`);
-  }
-
-  const content = fs.readFileSync(antimicrobialPath, "utf-8");
-  const parsedCsv = parseCsv(content);
-
-  return Array.from(
-    new Set(
-      parsedCsv
-        .slice(1)
-        .map((columns) => columns[1] ?? "")
-        .map((value) => normalize(value))
-        .filter(Boolean),
-    ),
-  ).sort((a, b) => b.length - a.length);
+function inferFnmCodigo(substancia: string, nomeComercial: string): string {
+  const text = normalize(`${substancia} ${nomeComercial}`);
+  return ANTIMICROBIAL_HINTS.some((hint) => text.includes(hint))
+    ? "ANTIMICROBIANOS"
+    : "SISTEMA_NERVOSO_CENTRAL";
 }
-
-const antimicrobialKeywords = loadAntimicrobialKeywords();
 
 function truncateField(text?: string | null, maxLength = 191): string {
   return (text ?? "").trim().substring(0, maxLength);
@@ -256,15 +259,6 @@ function findMatchingKeyword(text: string, keywords: string[]): string | null {
   return null;
 }
 
-function findMatchingAntimicrobial(substancia: string, nomeComercial: string): string | null {
-  const normalizedSubstancia = normalize(substancia);
-  const normalizedNome = normalize(nomeComercial);
-
-  return (
-    findMatchingKeyword(normalizedSubstancia, antimicrobialKeywords) ??
-    findMatchingKeyword(normalizedNome, antimicrobialKeywords)
-  );
-}
 
 function isCombinationDrug(substancia: string): boolean {
   return substancia.includes("+");
@@ -488,16 +482,22 @@ async function main() {
     throw new Error("IVA_ISENTO_MEDICAMENTOS tax rule not found");
   }
 
-  const categoriaMedicamentos = await prisma.categoria.findFirst({
-    where: { nome: "Medicamentos" },
+  const fnmCategorias = await prisma.categoria.findMany({
+    where: { codigoFNM: { not: null }, deletedAt: null },
+    select: { id: true, nome: true, codigoFNM: true },
   });
+  const categoriaByCodigo = new Map(
+    fnmCategorias.map((c) => [String(c.codigoFNM), c]),
+  );
 
-  if (!categoriaMedicamentos) {
-    throw new Error("Categoria 'Medicamentos' não encontrada. Execute as migrations tenant primeiro.");
+  if (categoriaByCodigo.size === 0) {
+    throw new Error(
+      "Categorias FNM não encontradas. Execute seed-fnm-categorias ou a migration FNM primeiro.",
+    );
   }
 
   console.log(`Using tax rule: ${taxRule.codigo} (ID: ${taxRule.id})`);
-  console.log(`Using categoria: ${categoriaMedicamentos.nome} (ID: ${categoriaMedicamentos.id})`);
+  console.log(`Categorias FNM disponíveis: ${categoriaByCodigo.size}`);
 
   const content = fs.readFileSync(csvPath, "utf-8");
   const parsedCsv = parseCsv(content);
@@ -524,7 +524,6 @@ async function main() {
   });
 
   console.log(`🚀 Iniciando seed de ${rows.length} medicamentos do ficheiro BD_Medicamentos.csv...`);
-  console.log(`🦠 Lista de antimicrobianos carregada com ${antimicrobialKeywords.length} entradas.`);
 
   const fornecedoresCache = new Map<string, bigint>();
   const produtosCache = new Map<string, bigint>();
@@ -534,7 +533,7 @@ async function main() {
   const produtosExistentes = await prisma.produto.findMany({
     select: {
       id: true,
-      nome: true,
+      nomeComercial: true,
       dosagem: true,
       forma: true,
       apresentacao: true,
@@ -543,7 +542,7 @@ async function main() {
 
   for (const produto of produtosExistentes) {
     const productKey = buildProductKey(
-      produto.nome,
+      produto.nomeComercial,
       produto.dosagem,
       produto.forma,
       produto.apresentacao,
@@ -588,21 +587,14 @@ async function main() {
       riskLevel,
     } = classifyMedicine(safeNome, safeSubstancia);
 
-    const antimicrobialMatch = findMatchingAntimicrobial(safeSubstancia, safeNome);
-    const antimicrobiano = antimicrobialMatch !== null;
-    const effectiveDispensacao =
-      antimicrobiano &&
-      (dispensacao === "VENDA_LIVRE" || dispensacao === "RECEITA_SIMPLES")
-        ? "RECEITA_OBRIGATORIA"
-        : dispensacao;
-    const effectiveRequiresPrescription = antimicrobiano ? true : requiresPrescription;
-    const effectiveAuditRule = antimicrobiano
-      ? `${audit.rule}:antimicrobianosCsv`
-      : audit.rule;
-    const effectiveAuditReason = antimicrobiano
-      ? `${audit.reason}. Marcado como antimicrobiano pela lista antimicrobianos.csv: ${antimicrobialMatch}.`
-      : audit.reason;
-    const effectiveMatchedTerm = audit.matchedTerm ?? antimicrobialMatch;
+    const fnmCodigo = inferFnmCodigo(safeSubstancia, safeNome);
+    const categoriaFnm = categoriaByCodigo.get(fnmCodigo);
+    if (!categoriaFnm) {
+      throw new Error(`Categoria FNM ${fnmCodigo} não encontrada`);
+    }
+    if (fnmCodigo === "ANTIMICROBIANOS") {
+      antimicrobianosCount++;
+    }
 
     try {
       const fornecedorNome = truncateField(empresa || "Fornecedor Geral", 255);
@@ -635,28 +627,29 @@ async function main() {
       const precoVenda = generatePrecoVenda(safeSubstancia, safeDosagem, safeForma);
       
       const produtoPayload = {
-        nome: safeNome,
-        substanciaActiva: toNullable(safeSubstancia),
+        nomeComercial: safeNome,
+        nomeGenerico: toNullable(safeSubstancia),
         dosagem: toNullable(safeDosagem),
         forma: toNullable(safeForma),
         apresentacao: toNullable(safeApresentacao),
-        antimicrobiano,
-        tipoDispensacao: effectiveDispensacao as any,
-        requiresPrescription: effectiveRequiresPrescription,
+        tipoDispensacao: dispensacao as any,
+        requiresPrescription,
         requiresDoubleCheck,
         requiresPsychotropicBook,
         requiresManualReview,
-        classificacaoRule: truncateField(effectiveAuditRule, 100),
-        classificacaoReason: effectiveAuditReason,
-        classificacaoMatchedTerm: toNullable(truncateField(effectiveMatchedTerm, 191)),
+        classificacaoRule: truncateField(audit.rule, 100),
+        classificacaoReason: audit.reason,
+        classificacaoMatchedTerm: toNullable(truncateField(audit.matchedTerm, 191)),
         taxRuleId: taxRule.id,
-        categoriaId: categoriaMedicamentos.id,
+        categoriaId: categoriaFnm.id,
         riskLevel: riskLevel as any,
       };
 
       const { catalogData, policy } = prepareProdutoWrite(
         produtoPayload as Record<string, unknown>,
         "seed:anarme",
+        null,
+        categoriaFnm,
       );
 
       let produtoId = produtosCache.get(productKey);
@@ -716,9 +709,6 @@ async function main() {
       });
 
       count++;
-      if (antimicrobiano) {
-        antimicrobianosCount++;
-      }
       const summaryEntry = classificationSummary.get(audit.rule);
       if (summaryEntry) {
         summaryEntry.count += 1;
@@ -746,7 +736,7 @@ async function main() {
     }
   }
 
-  console.log(`🦠 Produtos marcados como antimicrobianos: ${antimicrobianosCount}`);
+  console.log(`🦠 Produtos na categoria FNM ANTMIICROBIANOS: ${antimicrobianosCount}`);
 
   console.log(`\n🎉 Seed concluído! ${count} produtos e seus respectivos fornecedores foram importados a partir de BD_Medicamentos.csv.`);
 }

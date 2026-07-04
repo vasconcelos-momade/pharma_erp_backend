@@ -26,7 +26,7 @@ function parseLotsFilters(url: URL, expirado: boolean) {
 
 function mapLotRows(items: Array<Record<string, unknown>>) {
   return items.map((item) => [
-    toText(item.produtoNome),
+    toText(item.produtoNomeComercial),
     toText(item.numeroLote),
     formatDateTime(item.dataValidade),
     toText(item.diasRestantes),

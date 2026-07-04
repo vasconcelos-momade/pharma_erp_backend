@@ -71,7 +71,6 @@ async function main() {
     await prisma.lote.upsert({
       where: { id: BigInt(1) },
       update: {
-        quantidadeAtual: 100,
         ativo: true
       },
       create: {
@@ -80,7 +79,6 @@ async function main() {
         numeroLote: "TEST-BATCH-001",
         dataValidade: new Date("2028-12-31"),
         quantidadeInicial: 100,
-        quantidadeAtual: 100,
         precoCompra: 50,
         ativo: true
       }

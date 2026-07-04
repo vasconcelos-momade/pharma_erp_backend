@@ -56,7 +56,7 @@ export class FefoOverviewReportProvider implements ReportDataProvider {
             "Lotes c/ stock",
           ],
           rows: items.map((item: any) => [
-            toText(item.produtoNome),
+            toText(item.produtoNomeComercial),
             toText(item.produtoBarcode),
             toText(item.loteRecomendado?.numeroLote),
             formatDateTime(item.loteRecomendado?.dataValidade),
@@ -109,7 +109,7 @@ export class FefoAuditReportProvider implements ReportDataProvider {
             "Data",
           ],
           rows: items.map((item: any) => [
-            toText(item.produtoNome),
+            toText(item.produtoNomeComercial),
             toText(item.loteUtilizado?.numeroLote),
             toText(item.documento),
             toText(item.situacao),

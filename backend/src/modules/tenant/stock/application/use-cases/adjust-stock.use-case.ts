@@ -3,6 +3,7 @@ import {
   getQuantidadeTotalFromMovements,
   syncStockBalanceCache,
 } from "../../domain/produto-stock.service";
+import { syncLoteStockBalanceCache } from "../../domain/lote-stock.service";
 
 export interface AdjustStockDTO {
   produtoId: string;
@@ -32,14 +33,6 @@ export class AdjustStockUseCase {
         await tx.$executeRaw`SELECT id FROM lotes WHERE id = ${loteId} FOR UPDATE`;
         const lote = await tx.lote.findUnique({ where: { id: loteId } });
         if (!lote) throw new Error("Lote não encontrado");
-
-        await tx.lote.update({
-          where: { id: loteId },
-          data: {
-            quantidadeAtual: { increment: data.quantidade },
-            version: { increment: 1 },
-          },
-        });
       }
 
       const novoEstoque = estoqueAnterior + data.quantidade;
@@ -57,6 +50,16 @@ export class AdjustStockUseCase {
           observacoes: data.motivo,
         },
       });
+
+      if (data.loteId) {
+        const lote = await tx.lote.findUnique({
+          where: { id: BigInt(data.loteId) },
+          select: { id: true, quantidadeQuarentena: true },
+        });
+        if (lote) {
+          await syncLoteStockBalanceCache(tx, lote);
+        }
+      }
 
       await syncStockBalanceCache(tx, produtoId);
 

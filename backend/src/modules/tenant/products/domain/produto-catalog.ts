@@ -1,8 +1,8 @@
 /** Campos persistidos apenas em `produtos` (catálogo regulatório e fiscal). */
 
 const CATALOG_KEYS = new Set([
-  "nome",
-  "substanciaActiva",
+  "nomeComercial",
+  "nomeGenerico",
   "dosagem",
   "forma",
   "apresentacao",

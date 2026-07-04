@@ -68,7 +68,6 @@ async function main() {
         dataValidade: new Date("2028-12-31"),
         dataFabricacao: new Date(),
         quantidadeInicial: 50,
-        quantidadeAtual: 50,
         precoCompra: precoCompraLote,
         precoVenda: precoVendaLote,
         ativo: true

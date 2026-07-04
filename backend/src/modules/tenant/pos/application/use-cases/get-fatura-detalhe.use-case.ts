@@ -1,5 +1,6 @@
 import { NotFoundApiError } from "../../../../../shared/http/api-error";
 import { getPrisma } from "../../../../../infrastructure/prisma/tenant-prisma.factory";
+import { mapAllocationsToApiLotes } from "../../../sales/domain/fatura-item-lote.service";
 
 export class GetFaturaDetalheUseCase {
   async execute(faturaId: string) {
@@ -87,10 +88,13 @@ export class GetFaturaDetalheUseCase {
             codigoRegraFiscal: true,
             motivoIsencao: true,
             total: true,
-            lote: {
+            lotesAlocacao: {
+              orderBy: { ordemFefo: "asc" },
               select: {
-                id: true,
-                numeroLote: true,
+                loteId: true,
+                quantidade: true,
+                ordemFefo: true,
+                lote: { select: { numeroLote: true } },
               },
             },
           },
@@ -162,16 +166,7 @@ export class GetFaturaDetalheUseCase {
         codigoRegraFiscal: item.codigoRegraFiscal,
         motivoIsencao: item.motivoIsencao,
         total: item.total,
-        lotes: item.lote
-          ? [
-              {
-                loteId: item.lote.id,
-                codigo: item.lote.numeroLote,
-                quantidade: item.quantidade,
-                ordemFefo: 1,
-              },
-            ]
-          : [],
+        lotes: mapAllocationsToApiLotes(item.lotesAlocacao ?? []),
       })),
       payments: fatura.pagamentos,
       summary: {

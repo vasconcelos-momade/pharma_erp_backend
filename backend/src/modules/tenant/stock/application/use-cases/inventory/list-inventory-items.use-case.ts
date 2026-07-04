@@ -9,7 +9,7 @@ type ListInventoryItemsInput = {
   query?: string;
   page?: number;
   pageSize?: number;
-  substanciaActiva?: string;
+  nomeGenerico?: string;
   forma?: string;
   fornecedorNome?: string;
 };
@@ -19,7 +19,7 @@ export class ListInventoryItemsUseCase {
     const prisma = getPrisma();
     const inventarioId = BigInt(input.inventarioId);
     const query = input.query?.trim() || undefined;
-    const substanciaActiva = input.substanciaActiva?.trim() || undefined;
+    const nomeGenerico = input.nomeGenerico?.trim() || undefined;
     const forma = input.forma?.trim() || undefined;
     const fornecedorNome = input.fornecedorNome?.trim() || undefined;
     const page = Math.max(1, input.page ?? 1);
@@ -29,8 +29,8 @@ export class ListInventoryItemsUseCase {
     if (query) {
       andFilters.push({
         OR: [
-          { produto: { nome: { contains: query } } },
-          { produto: { substanciaActiva: { contains: query } } },
+          { produto: { nomeComercial: { contains: query } } },
+          { produto: { nomeGenerico: { contains: query } } },
           { produto: { dosagem: { contains: query } } },
           { produto: { forma: { contains: query } } },
           { produto: { apresentacao: { contains: query } } },
@@ -39,9 +39,9 @@ export class ListInventoryItemsUseCase {
         ],
       });
     }
-    if (substanciaActiva) {
+    if (nomeGenerico) {
       andFilters.push({
-        produto: { substanciaActiva: { contains: substanciaActiva } },
+        produto: { nomeGenerico: { contains: nomeGenerico } },
       });
     }
     if (forma) {
@@ -64,7 +64,7 @@ export class ListInventoryItemsUseCase {
       where,
       include: inventarioItemInclude,
       orderBy: [
-        { produto: { nome: "asc" } },
+        { produto: { nomeComercial: "asc" } },
         { lote: { numeroLote: "asc" } },
         { id: "asc" },
       ],

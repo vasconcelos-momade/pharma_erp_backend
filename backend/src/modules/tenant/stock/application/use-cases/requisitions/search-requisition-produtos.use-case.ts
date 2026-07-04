@@ -11,7 +11,7 @@ export class SearchRequisitionProdutosUseCase {
     page?: number;
     pageSize?: number;
   }) {
-    const prisma = getPrisma();
+    const prisma = getPrisma() as any;
     const searchTerm = params?.q?.trim() || undefined;
     const page = Math.max(1, params?.page ?? 1);
     const pageSize = Math.min(100, Math.max(1, params?.pageSize ?? 20));
@@ -25,8 +25,8 @@ export class SearchRequisitionProdutosUseCase {
     const queryFilters = searchTerm
       ? {
           OR: [
-            { nome: { contains: searchTerm } },
-            { substanciaActiva: { contains: searchTerm } },
+            { nomeComercial: { contains: searchTerm } },
+            { nomeGenerico: { contains: searchTerm } },
             { barcode: { contains: searchTerm } },
             {
               categoria: {
@@ -58,12 +58,12 @@ export class SearchRequisitionProdutosUseCase {
     const items = await prisma.produto.findMany({
       where,
       select: produtoRequisicaoSelect,
-      orderBy: [{ nome: "asc" }, { id: "asc" }],
+      orderBy: [{ nomeComercial: "asc" }, { id: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize + 1,
     });
 
-    const mapped = items.map((row) =>
+    const mapped = items.map((row: any) =>
       mapRequisicaoProduto(row as Record<string, unknown>),
     );
 

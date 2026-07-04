@@ -5,6 +5,7 @@ import {
 } from "../../../../../../shared/http/api-error";
 import type { UpdateRequisitionItemDTO } from "../../dto/requisitions.dto";
 import { getQuantidadeDisponivel } from "../../../domain/produto-stock.service";
+import { getLoteQuantidadeDisponivel } from "../../../domain/lote-stock.service";
 
 function requiresStockValidation(requisicao: {
   tipo?: string | null;
@@ -51,13 +52,11 @@ export class UpdateRequisitionItemUseCase {
       if (requiresStockValidation(requisicao)) {
         const quantidadeDisponivel =
           item.loteId != null
-            ? Number(
-                (
-                  await tx.lote.findUnique({
-                    where: { id: item.loteId },
-                    select: { quantidadeAtual: true },
-                  })
-                )?.quantidadeAtual ?? 0,
+            ? await getLoteQuantidadeDisponivel(
+                tx,
+                await tx.lote.findUniqueOrThrow({
+                  where: { id: item.loteId },
+                }),
               )
             : await getQuantidadeDisponivel(tx, item.produtoId);
 

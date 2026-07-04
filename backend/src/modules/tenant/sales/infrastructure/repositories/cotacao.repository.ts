@@ -162,7 +162,7 @@ export class CotacaoRepository {
           where: {
             ativo: true,
             deletedAt: null,
-            quantidadeAtual: { gt: 0 },
+            stockBalance: { quantidadeDisponivel: { gt: 0 } },
           },
           orderBy: { dataValidade: "asc" },
           take: 3,
@@ -171,8 +171,8 @@ export class CotacaoRepository {
             numeroLote: true,
             dataValidade: true,
             precoVenda: true,
-            quantidadeAtual: true,
             quantidadeQuarentena: true,
+            stockBalance: { select: { quantidadeDisponivel: true } },
           },
         },
       },
@@ -185,7 +185,7 @@ export class CotacaoRepository {
     const flat = flattenProdutoForApi(produto as Record<string, unknown>);
     return {
       id: produto.id,
-      nome: produto.nome,
+      nome: produto.nomeComercial,
       barcode: produto.barcode ?? null,
       precoVenda: Number(flat.precoVenda ?? 0),
       taxRule: produto.taxRule,
@@ -235,7 +235,7 @@ export class CotacaoRepository {
           const produto = await this.loadProdutoSnapshot(tx, BigInt(item.produtoId));
           const precoUnit = item.precoUnit ?? produto.precoVenda;
           if (!Number.isFinite(precoUnit) || precoUnit <= 0) {
-            throw new Error(`Produto ${produto.nome} sem preço de venda configurado`);
+            throw new Error(`Produto ${produto.nomeComercial} sem preço de venda configurado`);
           }
 
           items.push({
@@ -337,7 +337,7 @@ export class CotacaoRepository {
               { numero: { contains: query } },
               { observacoes: { contains: query } },
               { cliente: { nome: { contains: query } } },
-              { items: { some: { produto: { nome: { contains: query } } } } },
+              { items: { some: { produto: { nomeComercial: { contains: query } } } } },
               { items: { some: { servico: { nome: { contains: query } } } } },
             ],
           }

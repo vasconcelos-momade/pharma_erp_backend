@@ -180,7 +180,7 @@ function buildMovementWhere(params: ListStockMovementsParams) {
     where.OR = [
       { origem: { contains: q } },
       { observacoes: { contains: q } },
-      { produto: { nome: { contains: q } } },
+      { produto: { nomeComercial: { contains: q } } },
       { produto: { barcode: { contains: q } } },
       { lote: { numeroLote: { contains: q } } },
       { user: { name: { contains: q } } },
@@ -242,7 +242,7 @@ export class ListStockMovementsUseCase {
           produto: {
             select: {
               id: true,
-              nome: true,
+              nomeComercial: true,
               barcode: true,
             },
           },
@@ -316,7 +316,7 @@ export class ListStockMovementsUseCase {
       produto: item.produto
         ? {
             id: item.produto.id.toString(),
-            nome: item.produto.nome,
+            nome: item.produto.nomeComercial,
             barcode: item.produto.barcode ?? null,
           }
         : null,

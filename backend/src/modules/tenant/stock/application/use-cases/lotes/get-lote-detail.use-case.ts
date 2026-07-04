@@ -11,12 +11,13 @@ export class GetLoteDetailUseCase {
         produto: {
           select: {
             id: true,
-            nome: true,
+            nomeComercial: true,
             barcode: true,
             categoria: { select: { id: true, nome: true } },
           },
         },
         fornecedor: { select: { id: true, nome: true, nuit: true } },
+        stockBalance: true,
       },
     });
 
@@ -33,7 +34,7 @@ export class GetLoteDetailUseCase {
       produto: lote.produto
         ? {
             id: lote.produto.id.toString(),
-            nome: lote.produto.nome,
+            nome: lote.produto.nomeComercial,
             barcode: lote.produto.barcode ?? null,
             categoria: lote.produto.categoria
               ? {

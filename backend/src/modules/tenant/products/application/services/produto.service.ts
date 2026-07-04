@@ -20,11 +20,15 @@ export class ProdutoService {
   private categoriaRepo = new CategoriaRepository();
 
   async create(data: any, userId: string) {
-    if (!data.nome) {
-      throw new Error("Nome do produto é obrigatório");
+    const nomeComercial = data.nomeComercial ?? data.nome;
+    if (!nomeComercial || String(nomeComercial).trim().length === 0) {
+      throw new Error("Nome comercial do produto é obrigatório");
     }
 
-    const payload = await this.resolveCategoriaPayload(this.normalizePayload(data), true);
+    const payload = await this.resolveCategoriaPayload(
+      this.normalizePayload({ ...data, nomeComercial }),
+      true,
+    );
 
     if (payload.barcode) {
       const existing = await this.repo.findByBarcode(String(payload.barcode));
@@ -105,6 +109,14 @@ export class ProdutoService {
 
   private normalizePayload(data: Record<string, unknown>) {
     const payload = { ...data };
+    if (payload.nomeComercial === undefined && payload.nome !== undefined) {
+      payload.nomeComercial = payload.nome;
+    }
+    delete payload.nome;
+    if (payload.nomeGenerico === undefined && payload.substanciaActiva !== undefined) {
+      payload.nomeGenerico = payload.substanciaActiva;
+    }
+    delete payload.substanciaActiva;
     if (payload.ativo === undefined && payload.activo !== undefined) {
       payload.ativo = payload.activo;
     }

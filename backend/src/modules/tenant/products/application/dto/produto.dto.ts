@@ -8,12 +8,12 @@ export const categoriaIdSchema = z
 const ativoSchema = z.coerce.boolean().optional();
 
 const produtoBaseSchema = z.looseObject({
-  nome: z.string().trim().min(1),
+  nomeComercial: z.string().trim().min(1),
   barcode: z.string().trim().min(1).optional(),
   categoriaId: categoriaIdSchema.optional(),
   ativo: ativoSchema,
   activo: ativoSchema,
-  substanciaActiva: z.string().trim().min(1).optional(),
+  nomeGenerico: z.string().trim().min(1).optional(),
   dosagem: z.string().trim().min(1).optional(),
   forma: z.string().trim().min(1).optional(),
   apresentacao: z.string().trim().min(1).optional(),
@@ -29,7 +29,11 @@ export const updateProdutoSchema = produtoBaseSchema.partial().refine(
   { message: "Informe ao menos um campo para atualizar" },
 );
 
-const sortBySchema = z.enum(["nome", "estoqueAtual", "createdAt"]).optional();
+const sortBySchema = z
+  .enum(["nomeComercial", "nome", "estoqueAtual", "createdAt"])
+  .optional()
+  .transform((value) => (value === "nome" ? "nomeComercial" : value));
+
 const sortOrderSchema = z.enum(["asc", "desc"]).optional();
 
 const tipoDispensacaoSchema = z

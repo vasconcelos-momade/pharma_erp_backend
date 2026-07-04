@@ -65,9 +65,14 @@ export class CreateLoteUseCase {
           fornecedorId,
           numeroLote: data.numeroLote,
           dataValidade: data.dataValidade,
-          quantidadeAtual: 0,
           quantidadeInicial: 0,
           precoCompra: data.precoCompra || produtoFornecedor.precoCompra,
+          stockBalance: {
+            create: {
+              quantidadeTotal: 0,
+              quantidadeDisponivel: 0,
+            },
+          },
         },
       });
 

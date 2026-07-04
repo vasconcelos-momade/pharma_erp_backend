@@ -16,7 +16,7 @@ export const listInventoryItemsQuerySchema = z.object({
   q: z.string().trim().min(1).optional(),
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().max(100).optional(),
-  substanciaActiva: z.string().trim().min(1).optional(),
+  nomeGenerico: z.string().trim().min(1).optional(),
   forma: z.string().trim().min(1).optional(),
   fornecedorNome: z.string().trim().min(1).optional(),
 });

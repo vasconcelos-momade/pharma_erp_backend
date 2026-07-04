@@ -58,7 +58,7 @@ export const listLivroReceitasQuerySchema = z.object({
   from: z.string().optional(),
   to: z.string().optional(),
   sortBy: z
-    .enum(["createdAt", "dataReceita", "numeroReceita", "produtoNome", "clienteNome"])
+    .enum(["createdAt", "dataReceita", "numeroReceita", "produtoNomeComercial", "clienteNome"])
     .optional(),
   sortDir: sortDirSchema,
   page: z.coerce.number().int().positive().optional(),
@@ -73,7 +73,7 @@ export const listLivroPsicotropicosQuerySchema = z.object({
   from: z.string().optional(),
   to: z.string().optional(),
   sortBy: z
-    .enum(["createdAt", "numeroDocumento", "produtoNome", "quantidade"])
+    .enum(["createdAt", "numeroDocumento", "produtoNomeComercial", "quantidade"])
     .optional(),
   sortDir: sortDirSchema,
   page: z.coerce.number().int().positive().optional(),
@@ -103,7 +103,7 @@ export const listSanitarioQuerySchema = z.object({
     .optional(),
   produtoId: z.string().trim().regex(/^\d+$/, "produtoId inválido").optional(),
   sortBy: z
-    .enum(["dataValidade", "produtoNome", "quantidadeAtual", "estadoSanitario"])
+    .enum(["dataValidade", "produtoNomeComercial", "quantidadeAtual", "estadoSanitario"])
     .optional(),
   sortDir: sortDirSchema,
   page: z.coerce.number().int().positive().optional(),

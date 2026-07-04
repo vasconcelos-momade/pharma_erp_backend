@@ -15,7 +15,7 @@ type ListLivroReceitasParams = {
   tipoMovimento?: "ENTRADA" | "SAIDA" | "CANCELAMENTO" | "AJUSTE";
   from?: string;
   to?: string;
-  sortBy?: "createdAt" | "dataReceita" | "numeroReceita" | "produtoNome" | "clienteNome";
+  sortBy?: "createdAt" | "dataReceita" | "numeroReceita" | "produtoNomeComercial" | "clienteNome";
   sortDir?: "asc" | "desc";
   page?: number;
   pageSize?: number;
@@ -45,7 +45,7 @@ function buildLivroReceitaWhere(params: ListLivroReceitasParams) {
             { numeroReceita: { contains: search } },
             { medicoNome: { contains: search } },
             { cliente: { nome: { contains: search } } },
-            { produto: { nome: { contains: search } } },
+            { produto: { nomeComercial: { contains: search } } },
             { lote: { numeroLote: { contains: search } } },
             { fatura: { numero: { contains: search } } },
           ],
@@ -92,7 +92,7 @@ function mapLivroReceitaRow(row: any) {
     produto: row.produto
       ? {
           id: row.produto.id.toString(),
-          nome: row.produto.nome,
+          nome: row.produto.nomeComercial,
           barcode: row.produto.barcode,
         }
       : null,
@@ -152,7 +152,7 @@ export class LivroReceitasDashboardUseCase {
           where,
           include: {
             cliente: { select: { id: true, nome: true, documento: true } },
-            produto: { select: { id: true, nome: true, barcode: true } },
+            produto: { select: { id: true, nomeComercial: true, barcode: true } },
             lote: { select: { id: true, numeroLote: true, dataValidade: true } },
             responsavel: { select: { id: true, name: true, role: true } },
             dispensacao: { select: { id: true, quantidade: true, tipoDispensacao: true, createdAt: true } },
@@ -185,8 +185,8 @@ export class ListLivroReceitasUseCase {
     const orderBy =
       params.sortBy === "numeroReceita"
         ? [{ numeroReceita: sortDir }, { id: "desc" }]
-        : params.sortBy === "produtoNome"
-          ? [{ produto: { nome: sortDir } }, { id: "desc" }]
+        : params.sortBy === "produtoNomeComercial"
+          ? [{ produto: { nomeComercial: sortDir } }, { id: "desc" }]
           : params.sortBy === "clienteNome"
             ? [{ cliente: { nome: sortDir } }, { id: "desc" }]
             : params.sortBy === "dataReceita"
@@ -198,7 +198,7 @@ export class ListLivroReceitasUseCase {
         where,
         include: {
           cliente: { select: { id: true, nome: true, documento: true } },
-          produto: { select: { id: true, nome: true, barcode: true } },
+          produto: { select: { id: true, nomeComercial: true, barcode: true } },
           lote: { select: { id: true, numeroLote: true, dataValidade: true } },
           responsavel: { select: { id: true, name: true, role: true } },
           dispensacao: { select: { id: true, quantidade: true, tipoDispensacao: true, createdAt: true } },

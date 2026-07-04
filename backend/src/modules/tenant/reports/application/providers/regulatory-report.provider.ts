@@ -160,7 +160,7 @@ export class RegulatoryLivroReceitasReportProvider implements ReportDataProvider
           rows: items.map((item: any) => [
             toText(item.numeroReceita),
             toText(item.cliente?.nome ?? item.clienteNome),
-            toText(item.produto?.nome ?? item.produtoNome),
+            toText(item.produto?.nomeComercial ?? item.produtoNomeComercial),
             toText(item.lote?.numeroLote ?? item.numeroLote),
             toText(item.tipoMovimento),
             toText(item.quantidade, "0"),
@@ -228,7 +228,7 @@ export class RegulatoryLivroPsicotropicosReportProvider implements ReportDataPro
           ],
           rows: items.map((item: any) => [
             toText(item.numeroDocumento),
-            toText(item.produto?.nome ?? item.produtoNome),
+            toText(item.produto?.nomeComercial ?? item.produtoNomeComercial),
             toText(item.lote?.numeroLote),
             toText(item.tipoMovimento),
             toText(item.quantidade, "0"),
@@ -300,7 +300,7 @@ export class RegulatorySanitarioReportProvider implements ReportDataProvider {
             "Fornecedor",
           ],
           rows: items.map((item: any) => [
-            toText(item.produto?.nome),
+            toText(item.produto?.nomeComercial),
             toText(item.numeroLote),
             formatDateTime(item.dataValidade),
             toText(item.quantidadeAtual, "0"),

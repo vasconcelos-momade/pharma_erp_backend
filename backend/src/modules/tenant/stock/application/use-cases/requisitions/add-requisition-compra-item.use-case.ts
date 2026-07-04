@@ -34,7 +34,7 @@ export class AddRequisitionCompraItemUseCase {
       const produtoId = BigInt(data.produtoId);
       const produto = await tx.produto.findUnique({
         where: { id: produtoId },
-        select: { id: true, nome: true },
+        select: { id: true, nomeComercial: true },
       });
 
       if (!produto) {

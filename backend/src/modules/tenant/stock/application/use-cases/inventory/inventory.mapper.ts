@@ -23,8 +23,8 @@ type InventarioItemWithRelations = {
   divergencia: unknown;
   produto?: {
     id: bigint;
-    nome: string;
-    substanciaActiva: string | null;
+    nomeComercial: string;
+    nomeGenerico: string | null;
     dosagem: string | null;
     forma: string | null;
     apresentacao: string | null;
@@ -33,7 +33,7 @@ type InventarioItemWithRelations = {
     id: bigint;
     numeroLote: string;
     dataValidade: Date;
-    quantidadeAtual: unknown;
+    stockBalance?: { quantidadeTotal?: unknown } | null;
     fornecedor?: { nome: string } | null;
   } | null;
 };
@@ -42,8 +42,8 @@ export const inventarioItemInclude = {
   produto: {
     select: {
       id: true,
-      nome: true,
-      substanciaActiva: true,
+      nomeComercial: true,
+      nomeGenerico: true,
       dosagem: true,
       forma: true,
       apresentacao: true,
@@ -54,7 +54,7 @@ export const inventarioItemInclude = {
       id: true,
       numeroLote: true,
       dataValidade: true,
-      quantidadeAtual: true,
+      stockBalance: { select: { quantidadeTotal: true } },
       fornecedor: { select: { nome: true } },
     },
   },
@@ -85,15 +85,18 @@ export function mapInventarioItem(item: InventarioItemWithRelations) {
   return {
     id: item.id.toString(),
     produtoId: item.produtoId.toString(),
-    produtoNome: item.produto?.nome ?? "",
-    substanciaActiva: item.produto?.substanciaActiva ?? null,
+    produtoNome: item.produto?.nomeComercial ?? "",
+    produtoNomeComercial: item.produto?.nomeComercial ?? "",
+    nomeGenerico: item.produto?.nomeGenerico ?? null,
     dosagem: item.produto?.dosagem ?? null,
     forma: item.produto?.forma ?? null,
     apresentacao: item.produto?.apresentacao ?? null,
     loteId: item.loteId?.toString() ?? null,
     numeroLote: item.lote?.numeroLote ?? null,
     dataValidade: item.lote?.dataValidade?.toISOString() ?? null,
-    estoqueLoteAtual: Number(item.lote?.quantidadeAtual ?? item.estoqueSistema),
+    estoqueLoteAtual: Number(
+      item.lote?.stockBalance?.quantidadeTotal ?? item.estoqueSistema,
+    ),
     fornecedorNome: item.lote?.fornecedor?.nome ?? null,
     estoqueSistema: Number(item.estoqueSistema),
     estoqueContado: Number(item.estoqueContado),

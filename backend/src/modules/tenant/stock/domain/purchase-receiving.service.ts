@@ -1,14 +1,13 @@
 import {
-  getQuantidadeTotalFromMovements,
   syncStockBalanceCache,
   type StockTx,
 } from "./produto-stock.service";
+import { syncLoteStockBalanceCache } from "./lote-stock.service";
 
 type PurchaseLotRecord = {
   id: bigint;
   fornecedorId: bigint | null;
   quantidadeInicial: unknown;
-  quantidadeAtual: unknown;
   precoVenda: unknown | null;
 };
 
@@ -163,7 +162,6 @@ export async function receivePurchaseItemStock(
         where: { id: loteExistente.id },
         data: {
           quantidadeInicial: { increment: input.quantidade },
-          quantidadeAtual: { increment: input.quantidade },
           fornecedorId: loteExistente.fornecedorId ?? input.fornecedorId,
           precoCompra: input.precoCompra,
           precoVenda: precoVendaLote,
@@ -177,7 +175,6 @@ export async function receivePurchaseItemStock(
           numeroLote,
           dataValidade: dataValidadeInicio,
           quantidadeInicial: input.quantidade,
-          quantidadeAtual: input.quantidade,
           precoCompra: input.precoCompra,
           precoVenda: precoVendaLote,
           ativo: true,
@@ -199,6 +196,7 @@ export async function receivePurchaseItemStock(
     },
   });
 
+  await syncLoteStockBalanceCache(tx, { id: lote.id });
   await syncStockBalanceCache(tx, produto.id);
 
   await tx.historicoPreco.create({

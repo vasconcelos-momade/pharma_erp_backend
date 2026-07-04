@@ -32,7 +32,7 @@ export class GetPurchaseDetailUseCase {
       items: compra.itens.map((item: any) => ({
         id: item.id.toString(),
         produtoId: item.produtoId.toString(),
-        produtoNome: item.produto.nome,
+        produtoNomeComercial: item.produto.nomeComercial,
         numeroLote: item.numeroLote || "",
         dataValidade: item.dataValidade ? item.dataValidade.toISOString() : "",
         quantidade: Number(item.quantidade),

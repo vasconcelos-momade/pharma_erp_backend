@@ -78,7 +78,7 @@ export class InventoryController {
         q,
         page = 1,
         pageSize = 20,
-        substanciaActiva,
+        nomeGenerico,
         forma,
         fornecedorNome,
       } = parseSearchParams(url, listInventoryItemsQuerySchema);
@@ -87,7 +87,7 @@ export class InventoryController {
         query: q,
         page,
         pageSize,
-        substanciaActiva,
+        nomeGenerico,
         forma,
         fornecedorNome,
       });

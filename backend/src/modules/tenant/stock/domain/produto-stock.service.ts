@@ -1,41 +1,55 @@
 /**
  * Stock operacional: EstoqueMovimento é a fonte de verdade;
- * StockBalance é projeção/cache de leitura (total, reservado, disponível).
+ * StockBalance / LoteStockBalance são projeções/cache de leitura.
  */
 
+import type { FefoLoteTx } from "./fefo-lote.service";
 import {
-  FEFO_LOTE_FILTER,
-  loteQuantidadeDisponivel,
-  type FefoLoteTx,
-} from "./fefo-lote.service";
+  getSellableQuantityFromLoteMovements,
+  syncLoteStockBalanceCache,
+  type LoteStockTx,
+} from "./lote-stock.service";
 
-export type StockTx = FefoLoteTx & {
-  stockBalance: {
-    findUnique: (args: {
-      where: { produtoId: bigint };
-    }) => Promise<{
-      quantidadeTotal: unknown;
-      quantidadeReservada: unknown;
-      quantidadeDisponivel: unknown;
-    } | null>;
-    upsert: (args: {
-      where: { produtoId: bigint };
-      create: Record<string, unknown>;
-      update: Record<string, unknown>;
-    }) => Promise<unknown>;
-    updateMany: (args: {
-      where: { produtoId: bigint };
-      data: Record<string, unknown>;
-    }) => Promise<unknown>;
+export type StockTx = FefoLoteTx &
+  LoteStockTx & {
+    stockBalance: {
+      findUnique: (args: {
+        where: { produtoId: bigint };
+      }) => Promise<{
+        quantidadeTotal: unknown;
+        quantidadeReservada: unknown;
+        quantidadeDisponivel: unknown;
+      } | null>;
+      upsert: (args: {
+        where: { produtoId: bigint };
+        create: Record<string, unknown>;
+        update: Record<string, unknown>;
+      }) => Promise<unknown>;
+      updateMany: (args: {
+        where: { produtoId: bigint };
+        data: Record<string, unknown>;
+      }) => Promise<unknown>;
+    };
+    estoqueMovimento?: {
+      findFirst: (args: {
+        where: Record<string, unknown>;
+        orderBy: Record<string, "asc" | "desc"> | Array<Record<string, "asc" | "desc">>;
+        select?: Record<string, boolean>;
+      }) => Promise<{ estoqueFinal?: unknown } | null>;
+      findMany?: LoteStockTx["estoqueMovimento"] extends infer T
+        ? T extends { findMany: infer F }
+          ? F
+          : never
+        : never;
+      create?: (args: { data: Record<string, unknown> }) => Promise<unknown>;
+    };
+    lote?: FefoLoteTx["lote"] & {
+      findUnique?: (args: {
+        where: { id: bigint };
+        select?: Record<string, boolean>;
+      }) => Promise<{ id: bigint; quantidadeQuarentena?: unknown } | null>;
+    };
   };
-  estoqueMovimento?: {
-    findFirst: (args: {
-      where: Record<string, unknown>;
-      orderBy: Record<string, "asc" | "desc"> | Array<Record<string, "asc" | "desc">>;
-      select?: Record<string, boolean>;
-    }) => Promise<{ estoqueFinal?: unknown } | null>;
-  };
-};
 
 function toNumber(value: unknown): number {
   if (value == null) {
@@ -65,31 +79,12 @@ export async function getQuantidadeTotalFromMovements(
   return toNumber(latest?.estoqueFinal);
 }
 
-/** Quantidade vendável (FEFO) — projeção a partir dos lotes. */
+/** Quantidade vendável (FEFO) — projeção a partir dos movimentos por lote. */
 export async function getSellableQuantityFromLotes(
   tx: StockTx,
   produtoId: bigint,
 ): Promise<number> {
-  if (!tx.lote?.findMany) {
-    return 0;
-  }
-
-  const lotes = await tx.lote.findMany({
-    where: {
-      produtoId,
-      ...FEFO_LOTE_FILTER,
-      dataValidade: { gt: new Date() },
-    },
-    select: {
-      quantidadeAtual: true,
-      quantidadeQuarentena: true,
-    },
-  });
-
-  return lotes.reduce(
-    (sum, lote) => sum + loteQuantidadeDisponivel(lote),
-    0,
-  );
+  return getSellableQuantityFromLoteMovements(tx, produtoId);
 }
 
 export async function getQuantidadeTotal(
@@ -156,6 +151,23 @@ export async function syncStockBalanceCache(
   });
 
   return { total, disponivel };
+}
+
+/** Sincroniza caches de todos os lotes do produto após entrada em massa. */
+export async function syncAllLoteStockBalancesForProduct(
+  tx: StockTx,
+  produtoId: bigint,
+): Promise<void> {
+  if (!tx.lote?.findMany) return;
+
+  const lotes = await tx.lote.findMany({
+    where: { produtoId, deletedAt: null },
+    select: { id: true, quantidadeQuarentena: true },
+  });
+
+  for (const lote of lotes) {
+    await syncLoteStockBalanceCache(tx, lote);
+  }
 }
 
 /** @deprecated Use syncStockBalanceCache */

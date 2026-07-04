@@ -7,7 +7,7 @@ export class ListProductLotsUseCase {
 
     const produto = await prisma.produto.findUnique({
       where: { id: BigInt(produtoId) },
-      select: { id: true, nome: true },
+      select: { id: true, nomeComercial: true },
     });
 
     if (!produto) {
@@ -24,9 +24,14 @@ export class ListProductLotsUseCase {
         id: true,
         numeroLote: true,
         dataValidade: true,
-        quantidadeAtual: true,
         estadoSanitario: true,
         disponibilidade: true,
+        stockBalance: {
+          select: {
+            quantidadeTotal: true,
+            quantidadeDisponivel: true,
+          },
+        },
       },
       orderBy: { dataValidade: "asc" },
     });
@@ -35,8 +40,8 @@ export class ListProductLotsUseCase {
       id: lote.id.toString(),
       numeroLote: lote.numeroLote,
       dataValidade: lote.dataValidade,
-      quantidadeAtual: Number(lote.quantidadeAtual),
-      quantidadeDisponivel: Number(lote.quantidadeAtual),
+      quantidadeTotal: Number(lote.stockBalance?.quantidadeTotal ?? 0),
+      quantidadeDisponivel: Number(lote.stockBalance?.quantidadeDisponivel ?? 0),
       estadoSanitario: lote.estadoSanitario,
       disponibilidade: lote.disponibilidade,
     }));

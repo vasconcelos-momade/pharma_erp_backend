@@ -10,7 +10,10 @@ import {
   getQuantidadeTotalFromMovements,
   syncStockBalanceCache,
 } from "../../../stock/domain/produto-stock.service";
+import { consumeStockFefo } from "../../../stock/domain/fefo-allocation.service";
+import { getSellableQuantityFromLoteMovements } from "../../../stock/domain/lote-stock.service";
 import { resolveLotePrecoVenda } from "../../../stock/domain/fefo-lote.service";
+import { replaceItemLoteAllocations } from "../../../sales/domain/fatura-item-lote.service";
 
 export interface FinalizarVendaDTO {
   clienteId?: string;
@@ -148,7 +151,7 @@ export class FinalizarVendaUseCase {
                 id: { in: produtosDoCarrinho },
                 regulacao: { requiresPrescription: true },
               },
-              select: { id: true, nome: true },
+              select: { id: true, nomeComercial: true },
             })
           : [];
 
@@ -214,6 +217,17 @@ export class FinalizarVendaUseCase {
             if (!produtoRow) throw new Error(`Produto ${item.produtoId} não encontrado`);
             const produto = flattenProdutoForApi(produtoRow as Record<string, unknown>);
 
+            const complianceResult = await complianceEngine.validateVenda({
+              produto,
+              quantidade: item.quantidade,
+              receitaId: receitaFisicaId,
+              validatorUserId: data.validatorUserId,
+            });
+
+            if (!complianceResult.passed) {
+              throw new Error(complianceResult.message);
+            }
+
             const taxRule = produtoRow.taxRuleId
               ? await tx.taxRule.findUnique({ where: { id: produtoRow.taxRuleId } })
               : null;
@@ -226,106 +240,64 @@ export class FinalizarVendaUseCase {
                 }
               : null;
 
-            const lotes: any[] = await tx.$queryRaw`
-              SELECT *, (quantidadeAtual - quantidadeQuarentena) as qtdDisponivelReal 
-              FROM lotes 
-              WHERE produtoId = ${produto.id} 
-              AND ativo = true 
-              AND estadoSanitario = 'VALIDO'
-              AND disponibilidade = 'DISPONIVEL'
-              AND (quantidadeAtual - quantidadeQuarentena) > 0 
-              AND dataValidade > NOW() 
-              ORDER BY dataValidade ASC 
-              FOR UPDATE`;
-            
-            // 2.1 Validações Farmacêuticas Automatizadas via Compliance Engine
-            const complianceResult = await complianceEngine.validateVenda({
-                produto,
-                quantidade: item.quantidade,
-                receitaId: receitaFisicaId,
-                validatorUserId: data.validatorUserId
-            });
-
-            if (!complianceResult.passed) {
-                throw new Error(complianceResult.message);
-            }
-
-            const disponivelAntes = lotes.reduce(
-              (total: number, lote: any) => total + Number(lote.qtdDisponivelReal),
-              0,
+            const disponivelAntes = await getSellableQuantityFromLoteMovements(
+              tx,
+              produtoId,
             );
             if (disponivelAntes < item.quantidade) {
-              throw new Error(`Stock insuficiente para o produto ${produto.nome}`);
+              throw new Error(`Stock insuficiente para o produto ${produto.nomeComercial}`);
             }
+
+            await tx.$executeRaw`SELECT id FROM lotes WHERE produtoId = ${produto.id} AND deletedAt IS NULL FOR UPDATE`;
 
             const precoFinal =
               item.precoUnit ??
-              resolveLotePrecoVenda(lotes[0], String(produto.nome ?? ""));
+              resolveLotePrecoVenda(
+                (
+                  await tx.lote.findFirst({
+                    where: {
+                      produtoId: produto.id,
+                      ativo: true,
+                      estadoSanitario: "VALIDO",
+                      disponibilidade: "DISPONIVEL",
+                      dataValidade: { gt: new Date() },
+                    },
+                    orderBy: { dataValidade: "asc" },
+                    select: { precoVenda: true, numeroLote: true },
+                  })
+                ) ?? { precoVenda: 0, numeroLote: "" },
+                String(produto.nomeComercial ?? ""),
+              );
 
             // Cálculo fiscal usando utilitário
             const fiscalCalc = FiscalCalculatorUtil.calcularIVA({
               quantidade: item.quantidade,
               precoUnitario: precoFinal,
               taxRule: taxRuleSnapshot,
-              descricao: String(produto.nome ?? ""),
+              descricao: String(produto.nomeComercial ?? ""),
             });
 
             totalGeral += fiscalCalc.baseCalculo;
 
-            let runningProductStock = await getQuantidadeTotalFromMovements(tx, produtoId);
-            let totalCustoItem = 0;
-            let qtdRestante = item.quantidade;
-            const lotesUtilizados: Array<{ loteId: bigint; quantidade: number }> = [];
-            for (const lote of lotes) {
-              if (qtdRestante <= 0) break;
-              const disponivelNoLote = Number(lote.qtdDisponivelReal);
-              const qtdATirar = Math.min(disponivelNoLote, qtdRestante);
-              totalCustoItem += Number(lote.precoCompra) * qtdATirar;
+            const { allocations, totalCusto } = await consumeStockFefo(tx, {
+              produtoId: produto.id,
+              userId: BigInt(data.userId),
+              quantidade: item.quantidade,
+              origem: "POS_VENDA",
+              observacoes: `Venda no Terminal ${terminal.nome}`,
+              idempotencyKeyPrefix: `EM-FAT-${faturaNumero}`,
+            });
 
-              const estoqueAnteriorLote = runningProductStock;
-              runningProductStock -= qtdATirar;
-
-              await tx.lote.update({
-                where: { id: lote.id },
-                data: {
-                  quantidadeAtual: { decrement: qtdATirar },
-                  version: { increment: 1 },
-                },
-              });
-
-              await tx.estoqueMovimento.create({
-                data: {
-                  produtoId: produto.id,
-                  loteId: lote.id,
-                  userId: BigInt(data.userId),
-                  tipo: "SAIDA",
-                  quantidade: qtdATirar,
-                  estoqueAnterior: estoqueAnteriorLote,
-                  estoqueFinal: runningProductStock,
-                  origem: "POS_VENDA",
-                  idempotencyKey: `EM-FAT-${faturaNumero}-LOTE-${lote.id}`,
-                  observacoes: `Venda no Terminal ${terminal.nome}`,
-                },
-              });
-
-              lotesUtilizados.push({
-                loteId: lote.id,
-                quantidade: qtdATirar,
-              });
-              qtdRestante -= qtdATirar;
-            }
-
-            if (qtdRestante > 0) {
-              throw new Error(
-                `Não foi possível satisfazer a quantidade do produto ${produto.nome} com os lotes disponíveis.`,
-              );
-            }
+            const lotesUtilizados = allocations.map((a) => ({
+              loteId: a.lote.id,
+              quantidade: a.quantidade,
+            }));
 
             const stockSnapshotDepois = await syncStockBalanceCache(tx, produtoId);
             this.logStockCheckpoint("POS_CHECKOUT_STOCK_SYNC", {
               faturaNumero,
               produtoId: produtoId.toString(),
-              produtoNome: produto.nome,
+              produtoNomeComercial: produto.nomeComercial,
               quantidadeVendida: item.quantidade,
               disponivelAntes,
               disponivelDepois: stockSnapshotDepois.disponivel,
@@ -336,7 +308,7 @@ export class FinalizarVendaUseCase {
               })),
             });
 
-            const custoUnitarioFinal = totalCustoItem / item.quantidade;
+            const custoUnitarioFinal = totalCusto / item.quantidade;
             const lucroUnitario = precoFinal - custoUnitarioFinal;
 
             // 2.3 Preparar dados para Dispensação apenas se não for Venda Livre
@@ -368,8 +340,8 @@ export class FinalizarVendaUseCase {
             // Item com todos os campos fiscais de snapshot
             faturaItems.push({
               produtoId: produto.id,
-              loteId: lotes[0]?.id,
-              descricao: produto.nome,
+              lotesUtilizados,
+              descricao: produto.nomeComercial,
               quantidade: item.quantidade,
               precoUnit: precoFinal,
               custoUnitario: custoUnitarioFinal,
@@ -500,13 +472,17 @@ export class FinalizarVendaUseCase {
 
         // 3.1 Criar Itens de Fatura e Dispensações vinculadas de forma determinística
         for (const itemData of faturaItems) {
-          const { dispensacaoInfo, ...faturaItemPayload } = itemData as any;
+          const { dispensacaoInfo, lotesUtilizados, ...faturaItemPayload } = itemData as any;
           const faturaItem = await tx.faturaItem.create({
             data: {
               ...faturaItemPayload,
               faturaId: fatura.id,
             },
           });
+
+          if (lotesUtilizados?.length) {
+            await replaceItemLoteAllocations(tx, faturaItem.id, lotesUtilizados);
+          }
           const info = dispensacaoInfo;
           if (info) {
             const { receitaMetadata, ...cleanInfo } = info as any;

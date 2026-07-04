@@ -3,6 +3,7 @@ import {
   getQuantidadeTotalFromMovements,
   syncStockBalanceCache,
 } from "../../../domain/produto-stock.service";
+import { syncLoteStockBalanceCache } from "../../../domain/lote-stock.service";
 import { inventarioItemInclude, mapInventarioDetalhe } from "./inventory.mapper";
 
 export class ReconcileInventoryUseCase {
@@ -50,13 +51,6 @@ export class ReconcileInventoryUseCase {
           if (!item.loteId) continue;
 
           await tx.$executeRaw`SELECT id FROM lotes WHERE id = ${item.loteId} FOR UPDATE`;
-          await tx.lote.update({
-            where: { id: item.loteId },
-            data: {
-              quantidadeAtual: Number(item.estoqueContado),
-              version: { increment: 1 },
-            },
-          });
         }
 
         const novoEstoque = itensProduto.reduce(
@@ -81,6 +75,12 @@ export class ReconcileInventoryUseCase {
           });
 
           await syncStockBalanceCache(tx, produtoId);
+
+          for (const item of itensProduto) {
+            if (item.loteId) {
+              await syncLoteStockBalanceCache(tx, { id: item.loteId });
+            }
+          }
 
           await tx.produto.update({
             where: { id: produtoId },

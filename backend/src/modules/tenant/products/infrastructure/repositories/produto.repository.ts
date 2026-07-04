@@ -26,7 +26,7 @@ type ProdutoSearchFilters = {
   tipoDispensacao?: string;
   ativo?: boolean;
   includeInactive?: boolean;
-  sortBy?: "nome" | "estoqueAtual" | "createdAt";
+  sortBy?: "nomeComercial" | "nome" | "estoqueAtual" | "createdAt";
   sortOrder?: "asc" | "desc";
   page?: number;
   pageSize?: number;
@@ -39,12 +39,13 @@ function buildProdutoOrderBy(
   const direction: "asc" | "desc" = sortOrder === "desc" ? "desc" : "asc";
   switch (sortBy) {
     case "estoqueAtual":
-      return [{ stockBalance: { quantidadeDisponivel: direction } }, { nome: "asc" }];
+      return [{ stockBalance: { quantidadeDisponivel: direction } }, { nomeComercial: "asc" }];
     case "createdAt":
       return [{ createdAt: direction }, { id: direction }];
     case "nome":
+    case "nomeComercial":
     default:
-      return [{ nome: direction }, { id: direction }];
+      return [{ nomeComercial: direction }, { id: direction }];
   }
 }
 
@@ -54,9 +55,17 @@ export class ProdutoRepository {
   }
 
   async create(data: any, userId: bigint) {
+    const categoria = data.categoriaId
+      ? await this.prisma.categoria.findUnique({
+          where: { id: BigInt(data.categoriaId) },
+          select: { nome: true, codigoFNM: true },
+        })
+      : null;
     const { catalogData, policy } = prepareProdutoWrite(
       data as Record<string, unknown>,
       "api:create",
+      null,
+      categoria,
     );
 
     const created = await this.prisma.$transaction(async (tx: any) => {
@@ -96,7 +105,8 @@ export class ProdutoRepository {
     const barcode = filters.barcode?.trim() || undefined;
     const page = Math.max(1, filters.page ?? 1);
     const pageSize = Math.min(100, Math.max(1, filters.pageSize ?? 20));
-    const sortBy = filters.sortBy ?? "nome";
+    const sortBy =
+      filters.sortBy === "nome" ? "nomeComercial" : (filters.sortBy ?? "nomeComercial");
     const sortOrder = filters.sortOrder ?? "asc";
 
     const baseWhere: Record<string, unknown> = {
@@ -144,8 +154,8 @@ export class ProdutoRepository {
     const queryFilters = query
       ? {
           OR: [
-            { nome: { contains: query } },
-            { substanciaActiva: { contains: query } },
+            { nomeComercial: { contains: query } },
+            { nomeGenerico: { contains: query } },
             { barcode: { contains: query } },
             {
               categoria: {
@@ -242,7 +252,7 @@ export class ProdutoRepository {
               some: {
                 ativo: true,
                 deletedAt: null,
-                quantidadeAtual: { gt: 0 },
+                stockBalance: { quantidadeDisponivel: { gt: 0 } },
                 dataValidade: { lte: in30Days },
               },
             },
@@ -332,10 +342,22 @@ export class ProdutoRepository {
       throw new Error("Produto não encontrado");
     }
 
+    const categoriaId =
+      data.categoriaId != null
+        ? BigInt(data.categoriaId)
+        : (existing as { categoriaId?: bigint }).categoriaId;
+    const categoria = categoriaId
+      ? await this.prisma.categoria.findUnique({
+          where: { id: categoriaId },
+          select: { nome: true, codigoFNM: true },
+        })
+      : null;
+
     const { catalogData, policy } = prepareProdutoWrite(
       data as Record<string, unknown>,
       "api:update",
       policyInputFromProdutoRow(existing as Record<string, unknown>),
+      categoria,
     );
 
     const updated = await this.prisma.$transaction(async (tx: any) => {

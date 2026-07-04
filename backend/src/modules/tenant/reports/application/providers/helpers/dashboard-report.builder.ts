@@ -71,7 +71,7 @@ export function buildExecutiveDashboardReport(
         ["Produto", "Tipo", "Mensagem", "Data"],
         tables.alertasCriticos ?? [],
         [
-          (row) => row.produtoNome,
+          (row) => row.produtoNomeComercial,
           (row) => row.tipo,
           (row) => row.mensagem,
           (row) => formatDateTime(row.createdAt),
@@ -93,7 +93,7 @@ export function buildExecutiveDashboardReport(
         ["Produto", "Quantidade", "Total"],
         data.charts?.topProdutos ?? [],
         [
-          (row) => row.produtoNome,
+          (row) => row.produtoNomeComercial,
           (row) => row.quantidade,
           (row) => formatCurrency(row.total),
         ],
@@ -194,7 +194,7 @@ export function buildPharmacyDashboardReport(data: any): ModuleReportDefinition 
         ["Produto", "Disponivel", "Minimo"],
         tables.produtosCriticos ?? [],
         [
-          (row) => row.nome,
+          (row) => row.nomeComercial,
           (row) => row.disponivel,
           (row) => row.minimo,
         ],
@@ -204,7 +204,7 @@ export function buildPharmacyDashboardReport(data: any): ModuleReportDefinition 
         ["Produto", "Lote", "Quantidade", "Origem", "Data"],
         tables.ultimasEntradas ?? [],
         [
-          (row) => row.produtoNome,
+          (row) => row.produtoNomeComercial,
           (row) => row.numeroLote,
           (row) => row.quantidade,
           (row) => row.origem,
@@ -216,7 +216,7 @@ export function buildPharmacyDashboardReport(data: any): ModuleReportDefinition 
         ["Produto", "Lote", "Quantidade", "Tipo", "Data"],
         tables.ultimasDispensacoes ?? [],
         [
-          (row) => row.produtoNome,
+          (row) => row.produtoNomeComercial,
           (row) => row.numeroLote,
           (row) => row.quantidade,
           (row) => row.tipoDispensacao,
@@ -228,7 +228,7 @@ export function buildPharmacyDashboardReport(data: any): ModuleReportDefinition 
         ["Produto", "Tipo", "Mensagem", "Data"],
         tables.ultimosAlertas ?? [],
         [
-          (row) => row.produtoNome,
+          (row) => row.produtoNomeComercial,
           (row) => row.tipo,
           (row) => row.mensagem,
           (row) => formatDateTime(row.createdAt),
@@ -263,7 +263,7 @@ export function buildStockDashboardReport(data: any): ModuleReportDefinition {
         tables.ultimosMovimentos ?? [],
         [
           (row) => row.tipo,
-          (row) => row.produtoNome,
+          (row) => row.produtoNomeComercial,
           (row) => row.numeroLote,
           (row) => row.quantidade,
           (row) => row.origem,
@@ -275,7 +275,7 @@ export function buildStockDashboardReport(data: any): ModuleReportDefinition {
         ["Produto", "Disponivel", "Minimo"],
         tables.produtosCriticos ?? [],
         [
-          (row) => row.nome,
+          (row) => row.nomeComercial,
           (row) => row.disponivel,
           (row) => row.minimo,
         ],

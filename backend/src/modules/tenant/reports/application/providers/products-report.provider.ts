@@ -171,11 +171,11 @@ export class ProductsBySubstanciaReportProvider extends BaseProductsReportProvid
       kpis: {
         "Total de produtos": items.length,
         "Substancias distintas": new Set(
-          items.map((item) => toText(item.substanciaActiva, "Sem classificacao")),
+          items.map((item) => toText(item.nomeGenerico, "Sem classificacao")),
         ).size,
       },
       tables: [
-        groupProductsByField(items, "substanciaActiva"),
+        groupProductsByField(items, "nomeGenerico"),
         productTable("Detalhe de produtos", items),
       ],
       totals: { Registos: items.length },
@@ -275,7 +275,7 @@ export class ProductsNearExpiryReportProvider implements ReportDataProvider {
           title: "Lotes proximos da validade",
           columns: ["Produto", "Lote", "Validade", "Dias", "Qtd", "Estado"],
           rows: items.map((item) => [
-            toText(item.produtoNome),
+            toText(item.produtoNomeComercial),
             toText(item.numeroLote),
             toText(item.dataValidade),
             toText(item.diasRestantes),
@@ -323,7 +323,7 @@ export class ProductsExpiredReportProvider implements ReportDataProvider {
           title: "Lotes expirados",
           columns: ["Produto", "Lote", "Validade", "Qtd", "Valor", "Estado"],
           rows: items.map((item) => [
-            toText(item.produtoNome),
+            toText(item.produtoNomeComercial),
             toText(item.numeroLote),
             formatDateTime(item.dataValidade),
             toText(item.quantidadeDisponivel, "0"),

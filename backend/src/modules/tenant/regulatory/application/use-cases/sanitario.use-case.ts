@@ -23,7 +23,7 @@ type ListSanitarioParams = {
     | "PRECO_SUBIU"
     | "SEM_FORNECEDOR";
   produtoId?: string;
-  sortBy?: "dataValidade" | "produtoNome" | "quantidadeAtual" | "estadoSanitario";
+  sortBy?: "dataValidade" | "produtoNomeComercial" | "quantidadeAtual" | "quantidadeTotal" | "quantidadeDisponivel" | "estadoSanitario";
   sortDir?: "asc" | "desc";
   page?: number;
   pageSize?: number;
@@ -58,7 +58,7 @@ function buildSanitarioSearchWhere(params: SanitarioDashboardParams) {
       ? {
           OR: [
             { numeroLote: { contains: search } },
-            { produto: { nome: { contains: search } } },
+            { produto: { nomeComercial: { contains: search } } },
             { produto: { barcode: { contains: search } } },
           ],
         }
@@ -66,9 +66,17 @@ function buildSanitarioSearchWhere(params: SanitarioDashboardParams) {
   };
 }
 
+function readLoteStock(row: any) {
+  return {
+    quantidadeTotal: toNumber(row.stockBalance?.quantidadeTotal),
+    quantidadeDisponivel: toNumber(row.stockBalance?.quantidadeDisponivel),
+  };
+}
+
 function mapSanitarioRow(row: any, latestAlert: any) {
+  const { quantidadeTotal, quantidadeDisponivel } = readLoteStock(row);
   const criticalStock =
-    Number(row.quantidadeAtual) <= Number(row.produto?.estoqueMinimo ?? 0);
+    quantidadeDisponivel <= Number(row.produto?.estoqueMinimo ?? 0);
   const hasQuarantine = Number(row.quantidadeQuarentena ?? 0) > 0;
   const status =
     row.estadoSanitario === "EXPIRADO"
@@ -88,7 +96,8 @@ function mapSanitarioRow(row: any, latestAlert: any) {
     produtoId: row.produtoId.toString(),
     numeroLote: row.numeroLote,
     dataValidade: row.dataValidade.toISOString(),
-    quantidadeAtual: toNumber(row.quantidadeAtual),
+    quantidadeTotal,
+    quantidadeDisponivel,
     quantidadeQuarentena: toNumber(row.quantidadeQuarentena),
     quantidadeIncinerada: toNumber(row.quantidadeIncinerada),
     estadoSanitario: row.estadoSanitario,
@@ -97,7 +106,7 @@ function mapSanitarioRow(row: any, latestAlert: any) {
     produto: row.produto
       ? {
           id: row.produto.id.toString(),
-          nome: row.produto.nome,
+          nome: row.produto.nomeComercial,
           barcode: row.produto.barcode,
           estoqueMinimo: toNumber(row.produto.estoqueMinimo),
           regulacao: row.produto.regulacao
@@ -164,7 +173,12 @@ export class SanitarioDashboardUseCase {
             },
           },
           select: {
-            quantidadeAtual: true,
+            stockBalance: {
+              select: {
+                quantidadeTotal: true,
+                quantidadeDisponivel: true,
+              },
+            },
             produto: {
               select: {
                 estoqueMinimo: true,
@@ -178,7 +192,7 @@ export class SanitarioDashboardUseCase {
             ...(params.search?.trim()
               ? {
                   produto: {
-                    nome: { contains: params.search.trim() },
+                    nomeComercial: { contains: params.search.trim() },
                   },
                 }
               : {}),
@@ -198,7 +212,7 @@ export class SanitarioDashboardUseCase {
             produto: {
               select: {
                 id: true,
-                nome: true,
+                nomeComercial: true,
                 barcode: true,
                 estoqueMinimo: true,
                 regulacao: {
@@ -208,6 +222,12 @@ export class SanitarioDashboardUseCase {
                     requiresManualReview: true,
                   },
                 },
+              },
+            },
+            stockBalance: {
+              select: {
+                quantidadeTotal: true,
+                quantidadeDisponivel: true,
               },
             },
           },
@@ -234,9 +254,13 @@ export class SanitarioDashboardUseCase {
     }
 
     const stockCritico = stockCriticoRows.filter(
-      (item: any) =>
-        Number(item.produto?.estoqueMinimo ?? 0) > 0 &&
-        Number(item.quantidadeAtual ?? 0) <= Number(item.produto?.estoqueMinimo ?? 0),
+      (item: any) => {
+        const { quantidadeDisponivel } = readLoteStock(item);
+        return (
+          Number(item.produto?.estoqueMinimo ?? 0) > 0 &&
+          quantidadeDisponivel <= Number(item.produto?.estoqueMinimo ?? 0)
+        );
+      },
     ).length;
 
     return {
@@ -290,13 +314,16 @@ export class ListSanitarioUseCase {
     }
 
     const orderBy =
-      params.sortBy === "produtoNome"
-        ? [{ produto: { nome: sortDir } }, { id: "desc" }]
-        : params.sortBy === "quantidadeAtual"
-          ? [{ quantidadeAtual: sortDir }, { id: "desc" }]
-          : params.sortBy === "estadoSanitario"
-            ? [{ estadoSanitario: sortDir }, { id: "desc" }]
-            : [{ dataValidade: sortDir }, { id: "desc" }];
+      params.sortBy === "produtoNomeComercial"
+        ? [{ produto: { nomeComercial: sortDir } }, { id: "desc" }]
+        : params.sortBy === "quantidadeAtual" ||
+            params.sortBy === "quantidadeTotal"
+          ? [{ stockBalance: { quantidadeTotal: sortDir } }, { id: "desc" }]
+          : params.sortBy === "quantidadeDisponivel"
+            ? [{ stockBalance: { quantidadeDisponivel: sortDir } }, { id: "desc" }]
+            : params.sortBy === "estadoSanitario"
+              ? [{ estadoSanitario: sortDir }, { id: "desc" }]
+              : [{ dataValidade: sortDir }, { id: "desc" }];
 
     const requiresInMemoryPagination = params.estado === "CRITICO";
 
@@ -306,7 +333,7 @@ export class ListSanitarioUseCase {
         produto: {
           select: {
             id: true,
-            nome: true,
+            nomeComercial: true,
             barcode: true,
             estoqueMinimo: true,
             regulacao: {
@@ -316,6 +343,12 @@ export class ListSanitarioUseCase {
                 requiresManualReview: true,
               },
             },
+          },
+        },
+        stockBalance: {
+          select: {
+            quantidadeTotal: true,
+            quantidadeDisponivel: true,
           },
         },
       },
@@ -386,6 +419,12 @@ export class GetLoteSanitarioHistoryUseCase {
             regulacao: true,
           },
         },
+        stockBalance: {
+          select: {
+            quantidadeTotal: true,
+            quantidadeDisponivel: true,
+          },
+        },
       },
     });
 
@@ -427,19 +466,22 @@ export class GetLoteSanitarioHistoryUseCase {
       }),
     ]);
 
+    const { quantidadeTotal, quantidadeDisponivel } = readLoteStock(lote);
+
     return {
       lote: {
         id: lote.id.toString(),
         numeroLote: lote.numeroLote,
         dataValidade: lote.dataValidade.toISOString(),
-        quantidadeAtual: toNumber(lote.quantidadeAtual),
+        quantidadeTotal,
+        quantidadeDisponivel,
         quantidadeQuarentena: toNumber(lote.quantidadeQuarentena),
         quantidadeIncinerada: toNumber(lote.quantidadeIncinerada),
         estadoSanitario: lote.estadoSanitario,
         disponibilidade: lote.disponibilidade,
         produto: {
           id: lote.produto.id.toString(),
-          nome: lote.produto.nome,
+          nome: lote.produto.nomeComercial,
           barcode: lote.produto.barcode,
           regulacao: lote.produto.regulacao
             ? {

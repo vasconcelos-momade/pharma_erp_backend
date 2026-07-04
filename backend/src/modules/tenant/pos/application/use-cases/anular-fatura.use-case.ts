@@ -6,6 +6,7 @@ import {
   getQuantidadeTotalFromMovements,
   syncStockBalanceCache,
 } from "../../../stock/domain/produto-stock.service";
+import { restoreStockFromAllocations } from "../../../stock/domain/fefo-allocation.service";
 
 export interface AnularFaturaDTO {
   faturaId: string;
@@ -29,7 +30,13 @@ export class AnularFaturaUseCase {
       // Buscar itens e detalhes
       const items = await tx.faturaItem.findMany({
         where: { faturaId: fatura.id },
-        include: { produto: { include: { regulacao: true } }, lote: true },
+        include: {
+          produto: { include: { regulacao: true } },
+          lotesAlocacao: {
+            include: { lote: { select: { id: true, quantidadeQuarentena: true } } },
+            orderBy: { ordemFefo: "asc" },
+          },
+        },
       });
 
       const pagamentos = await tx.pagamento.findMany({
@@ -69,29 +76,35 @@ export class AnularFaturaUseCase {
       // 5. Reverter Estoque e Dispensações (STOCK LEDGER)
       for (const item of items) {
         if (item.produtoId && item.produto) {
-          // Bloqueio do Produto e Lote
           await tx.$queryRaw`SELECT id FROM produtos WHERE id = ${item.produtoId} FOR UPDATE`;
-          if (item.loteId) {
-            await tx.$queryRaw`SELECT id FROM lotes WHERE id = ${item.loteId} FOR UPDATE`;
+
+          const allocations = (item.lotesAlocacao ?? []).map((a: any) => ({
+            loteId: a.loteId,
+            quantidade: Number(a.quantidade),
+            quantidadeQuarentena: a.lote?.quantidadeQuarentena,
+          }));
+
+          if (allocations.length === 0) {
+            continue;
           }
 
-          const qty = Number(item.quantidade);
+          for (const alloc of allocations) {
+            await tx.$queryRaw`SELECT id FROM lotes WHERE id = ${alloc.loteId} FOR UPDATE`;
+          }
+
           const estoqueAnterior = await getQuantidadeTotalFromMovements(
             tx,
             item.produtoId,
           );
 
-          if (item.loteId) {
-            await tx.lote.update({
-              where: { id: item.loteId },
-              data: {
-                quantidadeAtual: { increment: item.quantidade },
-                version: { increment: 1 },
-              },
-            });
-          }
-
-          const estoqueFinal = estoqueAnterior + qty;
+          const estoqueFinal = await restoreStockFromAllocations(tx, {
+            produtoId: item.produtoId,
+            userId: BigInt(data.userId),
+            allocations,
+            origem: "ANULACAO_FATURA",
+            observacoes: `Estorno da Fatura #${fatura.numero}`,
+            idempotencyKeyPrefix: `REV-FAT-${fatura.id}-ITEM-${item.id}`,
+          });
 
           await tx.produto.update({
             where: { id: item.produtoId },
@@ -101,29 +114,16 @@ export class AnularFaturaUseCase {
           await tx.stockReversal.create({
             data: {
               faturaId: fatura.id,
+              faturaItemId: item.id,
               produtoId: item.produtoId,
-              loteId: item.loteId,
+              loteId: allocations[0]?.loteId,
               userId: BigInt(data.userId),
               quantidade: item.quantidade,
               motivo: data.motivo,
             },
           });
 
-          await tx.estoqueMovimento.create({
-            data: {
-              produtoId: item.produtoId,
-              loteId: item.loteId,
-              userId: BigInt(data.userId),
-              tipo: "DEVOLUCAO",
-              quantidade: item.quantidade,
-              estoqueAnterior,
-              estoqueFinal,
-              origem: "ANULACAO_FATURA",
-              observacoes: `Estorno da Fatura #${fatura.numero}`
-            }
-          });
-
-          await syncStockBalanceCache(tx, item.produtoId);
+          // Movimentos já criados por restoreStockFromAllocations
 
           const produtoFlat = flattenProdutoForApi(
             item.produto as Record<string, unknown>,
@@ -133,7 +133,7 @@ export class AnularFaturaUseCase {
             await tx.livroPsicotropico.create({
               data: {
                 produtoId: item.produtoId,
-                loteId: item.loteId,
+                loteId: allocations[0]?.loteId,
                 responsavelId: BigInt(data.userId),
                 tipoMovimento: "ENTRADA",
                 quantidade: item.quantidade,

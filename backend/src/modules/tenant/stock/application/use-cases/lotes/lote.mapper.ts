@@ -1,7 +1,6 @@
-import { loteQuantidadeDisponivel } from "../../../domain/fefo-lote.service";
-
 export function mapLoteListItem(lote: any, now = new Date()) {
-  const disponivel = loteQuantidadeDisponivel(lote);
+  const total = Number(lote.stockBalance?.quantidadeTotal ?? 0);
+  const disponivel = Number(lote.stockBalance?.quantidadeDisponivel ?? 0);
   const validade = new Date(lote.dataValidade);
   const diasRestantes = Math.ceil(
     (validade.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
@@ -19,7 +18,8 @@ export function mapLoteListItem(lote: any, now = new Date()) {
   return {
     id: lote.id.toString(),
     produtoId: lote.produtoId.toString(),
-    produtoNome: lote.produto?.nome ?? null,
+    produtoNome: lote.produto?.nomeComercial ?? null,
+    produtoNomeComercial: lote.produto?.nomeComercial ?? null,
     produtoBarcode: lote.produto?.barcode ?? null,
     fornecedorId: lote.fornecedorId?.toString() ?? null,
     fornecedorNome: lote.fornecedor?.nome ?? null,
@@ -27,7 +27,7 @@ export function mapLoteListItem(lote: any, now = new Date()) {
     dataValidade: lote.dataValidade.toISOString(),
     diasRestantes,
     indicadorValidade,
-    quantidadeAtual: Number(lote.quantidadeAtual),
+    quantidadeTotal: total,
     quantidadeQuarentena: Number(lote.quantidadeQuarentena ?? 0),
     quantidadeDisponivel: disponivel,
     precoCompra: Number(lote.precoCompra),

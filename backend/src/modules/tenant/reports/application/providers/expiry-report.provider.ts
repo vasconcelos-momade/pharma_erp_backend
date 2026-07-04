@@ -66,7 +66,7 @@ export class ExpiryReportProvider implements ReportDataProvider {
           title: "Lotes monitorizados",
           columns: ["Produto", "Lote", "Validade", "Dias", "Qtd", "Valor", "Estado"],
           rows: items.map((item) => [
-            item.produtoNome,
+            item.produtoNomeComercial,
             item.numeroLote,
             item.dataValidade,
             item.diasRestantes,
@@ -110,7 +110,7 @@ export class ExpiryReportProvider implements ReportDataProvider {
     }
 
     return items.map((item) => ({
-      produtoNome: toText(item.produtoNome),
+      produtoNomeComercial: toText(item.produtoNomeComercial),
       numeroLote: toText(item.numeroLote),
       dataValidade: toText(item.dataValidade),
       diasRestantes: toText(item.diasRestantes),

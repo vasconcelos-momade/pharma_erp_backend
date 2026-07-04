@@ -9,7 +9,7 @@ export class SearchProdutosUseCase {
     page?: number;
     pageSize?: number;
   }) {
-    const prisma = getPrisma();
+    const prisma = getPrisma() as any;
     const query = params?.query?.trim() || undefined;
     const barcode = params?.barcode?.trim() || undefined;
     const page = Math.max(1, params?.page ?? 1);
@@ -37,8 +37,8 @@ export class SearchProdutosUseCase {
     const queryFilters = query
       ? {
           OR: [
-            { nome: { contains: query } },
-            { substanciaActiva: { contains: query } },
+            { nomeComercial: { contains: query } },
+            { nomeGenerico: { contains: query } },
             { barcode: { contains: query } },
             {
               categoria: {
@@ -61,12 +61,14 @@ export class SearchProdutosUseCase {
     const items = await prisma.produto.findMany({
       where,
       select: produtoPosSelect,
-      orderBy: [{ nome: "asc" }, { id: "asc" }],
+      orderBy: [{ nomeComercial: "asc" }, { id: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize + 1,
     });
 
-    const mapped = items.map((row) => mapPosProduto(row as Record<string, unknown>));
+    const mapped = items.map((row: any) =>
+      mapPosProduto(row as Record<string, unknown>),
+    );
 
     return {
       items: mapped.slice(0, pageSize),

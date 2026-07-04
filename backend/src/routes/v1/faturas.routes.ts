@@ -169,7 +169,7 @@ async function handleSalesHistoryDashboard(req: Request) {
           select: { id: true, nome: true },
         })
       : [];
-    const produtoMap = new Map(produtos.map((p: any) => [p.id.toString(), p.nome]));
+    const produtoMap = new Map(produtos.map((p: any) => [p.id.toString(), p.nomeComercial]));
 
     return success(
       serialize({

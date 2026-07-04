@@ -15,6 +15,11 @@ import { isDraftCartServicoItem } from "./draft-cart.types";
 import { mapPosProduto } from "../../../products/domain/produto-presenter";
 import { getQuantidadeDisponivel } from "../../../stock/domain/produto-stock.service";
 import { selectFefoLoteForSale } from "../../../stock/domain/fefo-lote.service";
+import {
+  getPrimaryLoteIdForItem,
+  setDraftItemLoteAllocation,
+  syncDraftItemLoteQuantity,
+} from "../../../sales/domain/fatura-item-lote.service";
 
 export class DraftCartService {
   async assertCaixaAberta(tx: any, userId: string) {
@@ -194,7 +199,7 @@ export class DraftCartService {
     const disponivel = await this.getDisponivel(tx, produto);
     if (disponivel < delta) {
       throw new Error(
-        `Stock insuficiente (disponível: ${disponivel}) para o produto ${produto.nome}`,
+        `Stock insuficiente (disponível: ${disponivel}) para o produto ${produto.nomeComercial}`,
       );
     }
 
@@ -299,13 +304,13 @@ export class DraftCartService {
       tx,
       produto.id,
       loteIdInput,
-      produto.nome,
+      produto.nomeComercial,
     );
 
     const preco = item.precoUnit ?? precoVenda;
     if (!Number.isFinite(preco) || preco <= 0) {
       throw new Error(
-        `Preço inválido para o produto ${produto.nome}. O preço unitário deve ser superior a zero.`,
+        `Preço inválido para o produto ${produto.nomeComercial}. O preço unitário deve ser superior a zero.`,
       );
     }
 
@@ -314,7 +319,7 @@ export class DraftCartService {
       quantidade: delta,
       precoUnitario: preco,
       taxRule: taxRuleSnapshot,
-      descricao: produto.nome,
+      descricao: produto.nomeComercial,
     });
 
     const loteId = lote.id;
@@ -328,7 +333,7 @@ export class DraftCartService {
     });
 
     const existingItem = await tx.faturaItem.findFirst({
-      where: { faturaId, produtoId: produto.id, loteId },
+      where: { faturaId, produtoId: produto.id },
       select: { id: true },
     });
 
@@ -342,13 +347,22 @@ export class DraftCartService {
           total: { increment: fiscalCalc.totalItem },
         },
       });
+      const newQty =
+        Number(
+          (
+            await tx.faturaItem.findUnique({
+              where: { id: existingItem.id },
+              select: { quantidade: true },
+            })
+          )?.quantidade ?? delta,
+        );
+      await syncDraftItemLoteQuantity(tx, existingItem.id, newQty);
     } else {
-      await tx.faturaItem.create({
+      const created = await tx.faturaItem.create({
         data: {
           faturaId,
           produtoId: produto.id,
-          loteId,
-          descricao: produto.nome,
+          descricao: produto.nomeComercial,
           quantidade: delta,
           precoUnit: preco,
           baseCalculo: fiscalCalc.baseCalculo,
@@ -359,7 +373,9 @@ export class DraftCartService {
           tipoRegraFiscalSnapshot: fiscalCalc.tipoRegraFiscal,
           codigoRegraFiscal: fiscalCalc.codigoRegraFiscal,
         },
+        select: { id: true },
       });
+      await setDraftItemLoteAllocation(tx, created.id, loteId, delta);
     }
   }
 
@@ -440,9 +456,10 @@ export class DraftCartService {
         precoUnit: Number(faturaItem.precoUnit),
       });
     }
+    const primaryLoteId = await getPrimaryLoteIdForItem(tx, faturaItem.id);
     return this.addItemDelta(tx, faturaId, ctx, {
       produtoId: faturaItem.produtoId.toString(),
-      loteId: faturaItem.loteId ? faturaItem.loteId.toString() : undefined,
+      loteId: primaryLoteId?.toString(),
       quantidade: 1,
       precoUnit: Number(faturaItem.precoUnit),
     });
@@ -461,7 +478,7 @@ export class DraftCartService {
 
     if (faturaItem.produtoId) {
       const produtoId = faturaItem.produtoId as bigint;
-      const loteId = (faturaItem.loteId as bigint | null) ?? null;
+      const loteId = await getPrimaryLoteIdForItem(tx, faturaItem.id as bigint);
       await this.releaseStock(tx, {
         produtoId,
         loteId,
@@ -509,13 +526,13 @@ export class DraftCartService {
 
     const produto = await this.loadProdutoForUpdate(tx, faturaItem.produtoId.toString());
     const taxRuleSnapshot = await this.loadTaxRuleSnapshot(tx, produto);
-    const loteId = faturaItem.loteId as bigint | null;
+    const loteId = await getPrimaryLoteIdForItem(tx, faturaItem.id as bigint);
 
     const fiscalCalc = FiscalCalculatorUtil.calcularIVA({
       quantidade: newQty,
       precoUnitario: preco,
       taxRule: taxRuleSnapshot,
-      descricao: produto.nome,
+      descricao: produto.nomeComercial,
     });
 
     await tx.faturaItem.update({
@@ -531,6 +548,8 @@ export class DraftCartService {
         codigoRegraFiscal: fiscalCalc.codigoRegraFiscal,
       },
     });
+
+    await syncDraftItemLoteQuantity(tx, faturaItem.id as bigint, newQty);
 
     const key = this.reservaKey(ctx.idempotencyKey, produto.id, loteId);
     const reserva = await tx.estoqueReserva.findUnique({ where: { idempotencyKey: key } });
@@ -554,7 +573,7 @@ export class DraftCartService {
     if (faturaItem.produtoId) {
       const qty = Number(faturaItem.quantidade);
       const produtoId = faturaItem.produtoId as bigint;
-      const loteId = (faturaItem.loteId as bigint | null) ?? null;
+      const loteId = await getPrimaryLoteIdForItem(tx, faturaItem.id as bigint);
 
       await this.releaseStock(tx, {
         produtoId,
@@ -644,6 +663,12 @@ export class DraftCartService {
       include: {
         items: {
           orderBy: { id: "asc" },
+          include: {
+            lotesAlocacao: {
+              orderBy: { ordemFefo: "asc" },
+              select: { loteId: true },
+            },
+          },
         },
       },
     });
@@ -730,7 +755,7 @@ export class DraftCartService {
         tipo: "produto",
         produtoId: row.produtoId.toString(),
         servicoId: null,
-        loteId: row.loteId ? row.loteId.toString() : null,
+        loteId: row.lotesAlocacao?.[0]?.loteId?.toString() ?? null,
         nome: row.descricao,
         quantidade: Number(row.quantidade),
         precoUnit: Number(row.precoUnit),

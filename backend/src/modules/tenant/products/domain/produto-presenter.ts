@@ -1,8 +1,8 @@
 import type { ResolvedProdutoPolicy } from "./produto-dispensacao-policy";
 import { resolveProdutoPolicy, type ProdutoPolicyInput } from "./produto-dispensacao-policy";
+import { isAntimicrobianoFnm } from "./fnm-categorias";
 import {
   FEFO_LOTE_FILTER,
-  loteQuantidadeDisponivel,
   resolveLotePrecoVenda,
 } from "../../stock/domain/fefo-lote.service";
 
@@ -24,13 +24,14 @@ type FefoLotePreview = {
   numeroLote?: string;
   dataValidade?: Date;
   precoVenda?: unknown | null;
-  quantidadeAtual: unknown;
   quantidadeQuarentena?: unknown;
+  stockBalance?: { quantidadeDisponivel?: unknown; quantidadeTotal?: unknown } | null;
 };
 
 type CategoriaPreview = {
   id?: bigint;
   nome?: string;
+  codigoFNM?: string | null;
   descricao?: string | null;
   ativo?: boolean;
   createdAt?: Date;
@@ -42,7 +43,11 @@ function pickFefoLote(lotes?: FefoLotePreview[]): FefoLotePreview | null {
     return null;
   }
   return (
-    lotes.find((lote) => loteQuantidadeDisponivel(lote) > 0) ?? lotes[0] ?? null
+    lotes.find(
+      (lote) => Number(lote.stockBalance?.quantidadeDisponivel ?? 0) > 0,
+    ) ??
+    lotes[0] ??
+    null
   );
 }
 
@@ -69,20 +74,12 @@ export function flattenProdutoForApi<T extends Record<string, unknown>>(
     categoria?: CategoriaPreview | null;
   },
 ): T & ResolvedProdutoPolicy & { estoqueAtual: number; precoVenda: number } {
-  const policy = produto.regulacao
-    ? regulacaoToPolicyInput(produto.regulacao)
-    : {};
-  const resolved = resolveProdutoPolicy(policy);
-
-  const { regulacao: _regulacao, lotes: _lotes, ...base } = produto;
-  const disponivel = Number(produto.stockBalance?.quantidadeDisponivel ?? 0);
-  const fefoLote = pickFefoLote(produto.lotes);
-  const nome = typeof produto.nome === "string" ? produto.nome : undefined;
   const categoria =
     produto.categoria && produto.categoria.id !== undefined
       ? {
           id: produto.categoria.id,
           nome: produto.categoria.nome ?? "",
+          codigoFNM: produto.categoria.codigoFNM ?? null,
           descricao: produto.categoria.descricao ?? null,
           ativo: produto.categoria.ativo ?? true,
           createdAt: produto.categoria.createdAt,
@@ -90,13 +87,26 @@ export function flattenProdutoForApi<T extends Record<string, unknown>>(
         }
       : null;
 
+  const policyInput = produto.regulacao
+    ? regulacaoToPolicyInput(produto.regulacao)
+    : {};
+  policyInput.antimicrobiano = isAntimicrobianoFnm(categoria);
+  const resolved = resolveProdutoPolicy(policyInput);
+
+  const { regulacao: _regulacao, lotes: _lotes, ...base } = produto;
+  const disponivel = Number(produto.stockBalance?.quantidadeDisponivel ?? 0);
+  const fefoLote = pickFefoLote(produto.lotes);
+  const nomeComercial =
+    typeof produto.nomeComercial === "string" ? produto.nomeComercial : undefined;
+
   return {
     ...base,
     categoria,
     categoriaNome: categoria?.nome ?? null,
+    categoriaCodigoFNM: categoria?.codigoFNM ?? null,
     ...resolved,
     estoqueAtual: disponivel,
-    precoVenda: resolveApiPrecoVenda(fefoLote, nome),
+    precoVenda: resolveApiPrecoVenda(fefoLote, nomeComercial),
     regulacao: produto.regulacao ?? null,
   } as unknown as T & ResolvedProdutoPolicy & { estoqueAtual: number; precoVenda: number };
 }
@@ -106,7 +116,6 @@ export function regulacaoToPolicyInput(
 ): ProdutoPolicyInput {
   return {
     tipoDispensacao: regulacao.tipoDispensacao as ProdutoPolicyInput["tipoDispensacao"],
-    antimicrobiano: regulacao.antimicrobiano,
     requiresPrescription: regulacao.requiresPrescription,
     requiresDoubleCheck: regulacao.requiresDoubleCheck,
     requiresPsychotropicBook: regulacao.requiresPsychotropicBook,
@@ -138,27 +147,30 @@ const fefoLoteSelect = {
     dataValidade: true,
     precoVenda: true,
     precoCompra: true,
-    quantidadeAtual: true,
     quantidadeQuarentena: true,
+    stockBalance: {
+      select: { quantidadeDisponivel: true },
+    },
   },
 };
 
 export const produtoPosSelect = {
   id: true,
-  nome: true,
+  nomeComercial: true,
   barcode: true,
   categoriaId: true,
   categoria: {
     select: {
       id: true,
       nome: true,
+      codigoFNM: true,
       descricao: true,
       ativo: true,
       createdAt: true,
       updatedAt: true,
     },
   },
-  substanciaActiva: true,
+  nomeGenerico: true,
   dosagem: true,
   forma: true,
   apresentacao: true,
@@ -185,7 +197,9 @@ const masterProximaValidadeLoteSelect = {
   where: {
     ativo: true,
     deletedAt: null,
-    quantidadeAtual: { gt: 0 },
+    stockBalance: {
+      quantidadeDisponivel: { gt: 0 },
+    },
   },
   orderBy: { dataValidade: "asc" as const },
   take: 1,
@@ -198,19 +212,20 @@ const masterProximaValidadeLoteSelect = {
 
 export const produtoMasterListSelect = {
   id: true,
-  nome: true,
+  nomeComercial: true,
   barcode: true,
   categoriaId: true,
   categoria: {
     select: {
       id: true,
       nome: true,
+      codigoFNM: true,
       descricao: true,
       ativo: true,
     },
   },
   estoqueMinimo: true,
-  substanciaActiva: true,
+  nomeGenerico: true,
   dosagem: true,
   forma: true,
   apresentacao: true,
@@ -269,13 +284,14 @@ export function mapMasterProdutoListItem<T extends Record<string, unknown>>(
 
 export const produtoRequisicaoSelect = {
   id: true,
-  nome: true,
+  nomeComercial: true,
   barcode: true,
   categoriaId: true,
   categoria: {
     select: {
       id: true,
       nome: true,
+      codigoFNM: true,
       descricao: true,
       ativo: true,
       createdAt: true,
@@ -283,7 +299,7 @@ export const produtoRequisicaoSelect = {
     },
   },
   estoqueMinimo: true,
-  substanciaActiva: true,
+  nomeGenerico: true,
   dosagem: true,
   forma: true,
   apresentacao: true,

@@ -72,11 +72,11 @@ export class PharmacyDashboardUseCase {
         where: {
           deletedAt: null,
           ativo: true,
-          quantidadeAtual: { gt: 0 },
+          stockBalance: { quantidadeDisponivel: { gt: 0 } },
         },
         select: {
-          quantidadeAtual: true,
           quantidadeQuarentena: true,
+          stockBalance: { select: { quantidadeDisponivel: true } },
           precoCompra: true,
         },
       }),
@@ -94,7 +94,7 @@ export class PharmacyDashboardUseCase {
           quantidade: true,
           tipoDispensacao: true,
           createdAt: true,
-          produto: { select: { nome: true } },
+          produto: { select: { nomeComercial: true } },
           lote: { select: { numeroLote: true } },
         },
       }),
@@ -107,7 +107,7 @@ export class PharmacyDashboardUseCase {
           tipo: true,
           mensagem: true,
           createdAt: true,
-          produto: { select: { nome: true } },
+          produto: { select: { nomeComercial: true } },
         },
       }),
       prisma.produto.count({
@@ -141,7 +141,7 @@ export class PharmacyDashboardUseCase {
     const valorTotalStock = valorStockRows.reduce((sum: number, row: any) => {
       const qty = Math.max(
         0,
-        toNumber(row.quantidadeAtual) - toNumber(row.quantidadeQuarentena),
+        toNumber(row.stockBalance?.quantidadeDisponivel),
       );
       return sum + qty * toNumber(row.precoCompra);
     }, 0);
@@ -163,11 +163,11 @@ export class PharmacyDashboardUseCase {
       produtoIds.length > 0
         ? await prisma.produto.findMany({
             where: { id: { in: produtoIds } },
-            select: { id: true, nome: true },
+            select: { id: true, nomeComercial: true },
           })
         : [];
     const nomeMap = new Map(
-      produtoNomes.map((p: any) => [p.id.toString(), p.nome]),
+      produtoNomes.map((p: any) => [p.id.toString(), p.nomeComercial]),
     );
 
     const entradas =
@@ -215,7 +215,7 @@ export class PharmacyDashboardUseCase {
         ],
         produtosMaisDispensados: topDispensados.map((row: any) => ({
           produtoId: row.produtoId?.toString() ?? null,
-          produtoNome: nomeMap.get(row.produtoId?.toString() ?? "") ?? "—",
+          produtoNomeComercial: nomeMap.get(row.produtoId?.toString() ?? "") ?? "—",
           quantidade: round2(toNumber(row._sum.quantidade)),
         })),
         validades,
@@ -225,7 +225,7 @@ export class PharmacyDashboardUseCase {
         produtosCriticos: await this.listProdutosCriticos(prisma),
         ultimasDispensacoes: ultimasDispensacoes.map((row: any) => ({
           id: row.id.toString(),
-          produtoNome: row.produto?.nome ?? "—",
+          produtoNomeComercial: row.produto?.nomeComercial ?? "—",
           numeroLote: row.lote?.numeroLote ?? "—",
           quantidade: round2(toNumber(row.quantidade)),
           tipoDispensacao: row.tipoDispensacao,
@@ -235,7 +235,7 @@ export class PharmacyDashboardUseCase {
           id: row.id.toString(),
           tipo: row.tipo,
           mensagem: row.mensagem,
-          produtoNome: row.produto?.nome ?? "—",
+          produtoNomeComercial: row.produto?.nomeComercial ?? "—",
           createdAt: row.createdAt.toISOString(),
         })),
         ultimasEntradas: await this.listUltimasEntradas(prisma),
@@ -262,13 +262,10 @@ export class PharmacyDashboardUseCase {
         const where: any = { deletedAt: null, ativo: true };
         if (params.produtoId) where.id = BigInt(params.produtoId);
         if (params.categoriaId) where.categoriaId = BigInt(params.categoriaId);
-        if (search) where.nome = { contains: search, mode: "insensitive" };
+        if (search) where.nomeComercial = { contains: search, mode: "insensitive" };
         const rows = await prisma.produto.findMany({
           where,
-          select: {
-            id: true,
-            nome: true,
-            estoqueMinimo: true,
+          select: { id: true, nomeComercial: true, estoqueMinimo: true,
             stockBalance: { select: { quantidadeDisponivel: true } },
           },
           take: 500,
@@ -277,9 +274,7 @@ export class PharmacyDashboardUseCase {
           .map((row: any) => {
             const disponivel = toNumber(row.stockBalance?.quantidadeDisponivel);
             const minimo = toNumber(row.estoqueMinimo);
-            return {
-              id: row.id.toString(),
-              nome: row.nome,
+            return { id: row.id.toString(), nome: row.nomeComercial,
               disponivel: round2(disponivel),
               minimo: round2(minimo),
               critico: disponivel <= 0 || (disponivel > 0 && disponivel <= minimo),
@@ -308,7 +303,7 @@ export class PharmacyDashboardUseCase {
         if (params.tipoMovimentacao) where.origem = params.tipoMovimentacao;
         if (search) {
           where.OR = [
-            { produto: { nome: { contains: search, mode: "insensitive" } } },
+            { produto: { nomeComercial: { contains: search, mode: "insensitive" } } },
             { lote: { numeroLote: { contains: search, mode: "insensitive" } } },
             { origem: { contains: search, mode: "insensitive" } },
           ];
@@ -325,7 +320,7 @@ export class PharmacyDashboardUseCase {
               quantidade: true,
               origem: true,
               createdAt: true,
-              produto: { select: { nome: true } },
+              produto: { select: { nomeComercial: true } },
               lote: { select: { numeroLote: true } },
             },
           }),
@@ -337,7 +332,7 @@ export class PharmacyDashboardUseCase {
           totalCount,
           rows: rows.map((row: any) => ({
             id: row.id.toString(),
-            produtoNome: row.produto?.nome ?? "—",
+            produtoNomeComercial: row.produto?.nomeComercial ?? "—",
             numeroLote: row.lote?.numeroLote ?? "—",
             quantidade: round2(toNumber(row.quantidade)),
             origem: row.origem ?? "—",
@@ -353,7 +348,7 @@ export class PharmacyDashboardUseCase {
         if (params.estado) where.tipoDispensacao = params.estado;
         if (search) {
           where.OR = [
-            { produto: { nome: { contains: search, mode: "insensitive" } } },
+            { produto: { nomeComercial: { contains: search, mode: "insensitive" } } },
             { lote: { numeroLote: { contains: search, mode: "insensitive" } } },
           ];
         }
@@ -369,7 +364,7 @@ export class PharmacyDashboardUseCase {
               quantidade: true,
               tipoDispensacao: true,
               createdAt: true,
-              produto: { select: { nome: true } },
+              produto: { select: { nomeComercial: true } },
               lote: { select: { numeroLote: true } },
             },
           }),
@@ -381,7 +376,7 @@ export class PharmacyDashboardUseCase {
           totalCount,
           rows: rows.map((row: any) => ({
             id: row.id.toString(),
-            produtoNome: row.produto?.nome ?? "—",
+            produtoNomeComercial: row.produto?.nomeComercial ?? "—",
             numeroLote: row.lote?.numeroLote ?? "—",
             quantidade: round2(toNumber(row.quantidade)),
             tipoDispensacao: row.tipoDispensacao,
@@ -396,7 +391,7 @@ export class PharmacyDashboardUseCase {
         if (search) {
           where.OR = [
             { mensagem: { contains: search, mode: "insensitive" } },
-            { produto: { nome: { contains: search, mode: "insensitive" } } },
+            { produto: { nomeComercial: { contains: search, mode: "insensitive" } } },
           ];
         }
         const [totalCount, rows] = await prisma.$transaction([
@@ -411,7 +406,7 @@ export class PharmacyDashboardUseCase {
               tipo: true,
               mensagem: true,
               createdAt: true,
-              produto: { select: { nome: true } },
+              produto: { select: { nomeComercial: true } },
             },
           }),
         ]);
@@ -424,7 +419,7 @@ export class PharmacyDashboardUseCase {
             id: row.id.toString(),
             tipo: row.tipo,
             mensagem: row.mensagem,
-            produtoNome: row.produto?.nome ?? "—",
+            produtoNomeComercial: row.produto?.nomeComercial ?? "—",
             createdAt: row.createdAt.toISOString(),
           })),
         });
@@ -435,10 +430,7 @@ export class PharmacyDashboardUseCase {
   private async listProdutosCriticos(prisma: any) {
     const rows = await prisma.produto.findMany({
       where: { deletedAt: null, ativo: true },
-      select: {
-        id: true,
-        nome: true,
-        estoqueMinimo: true,
+      select: { id: true, nomeComercial: true, estoqueMinimo: true,
         stockBalance: { select: { quantidadeDisponivel: true } },
       },
       take: 200,
@@ -447,9 +439,7 @@ export class PharmacyDashboardUseCase {
       .map((row: any) => {
         const disponivel = toNumber(row.stockBalance?.quantidadeDisponivel);
         const minimo = toNumber(row.estoqueMinimo);
-        return {
-          id: row.id.toString(),
-          nome: row.nome,
+        return { id: row.id.toString(), nome: row.nomeComercial,
           disponivel: round2(disponivel),
           minimo: round2(minimo),
           critico: disponivel <= 0 || (disponivel > 0 && disponivel <= minimo),
@@ -469,13 +459,13 @@ export class PharmacyDashboardUseCase {
         quantidade: true,
         origem: true,
         createdAt: true,
-        produto: { select: { nome: true } },
+        produto: { select: { nomeComercial: true } },
         lote: { select: { numeroLote: true } },
       },
     });
     return rows.map((row: any) => ({
       id: row.id.toString(),
-      produtoNome: row.produto?.nome ?? "—",
+      produtoNomeComercial: row.produto?.nomeComercial ?? "—",
       numeroLote: row.lote?.numeroLote ?? "—",
       quantidade: round2(toNumber(row.quantidade)),
       origem: row.origem ?? "—",

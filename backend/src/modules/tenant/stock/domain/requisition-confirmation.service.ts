@@ -3,11 +3,16 @@ import {
   ValidationApiError,
 } from "../../../../shared/http/api-error";
 import {
-  getQuantidadeDisponivel,
   getQuantidadeTotalFromMovements,
+  getQuantidadeDisponivel,
   syncStockBalanceCache,
   type StockTx,
 } from "./produto-stock.service";
+import {
+  getLoteQuantidadeDisponivel,
+  getLoteQuantidadeFromMovements,
+  syncLoteStockBalanceCache,
+} from "./lote-stock.service";
 
 type RequisitionConfirmationTx = StockTx & {
   $executeRaw: (
@@ -35,14 +40,14 @@ type RequisitionConfirmationTx = StockTx & {
       select?: {
         id?: boolean;
         produtoId?: boolean;
-        quantidadeAtual?: boolean;
+        quantidadeQuarentena?: boolean;
         numeroLote?: boolean;
       };
     }) => Promise<
       | {
           id?: bigint;
           produtoId?: bigint;
-          quantidadeAtual?: unknown;
+          quantidadeQuarentena?: unknown;
           numeroLote?: string;
         }
       | null
@@ -51,10 +56,6 @@ type RequisitionConfirmationTx = StockTx & {
       where: { id: bigint };
       data: Record<string, unknown>;
     }) => Promise<unknown>;
-    findMany: (args: {
-      where: Record<string, unknown>;
-      select?: Record<string, boolean>;
-    }) => Promise<Array<{ quantidadeAtual: unknown }>>;
   };
   estoqueMovimento: {
     create: (args: { data: Record<string, unknown> }) => Promise<unknown>;
@@ -124,13 +125,14 @@ async function validateStockAvailability(
 ): Promise<void> {
   const quantidadeDisponivel =
     loteId != null
-      ? Number(
+      ? await getLoteQuantidadeDisponivel(
+          tx,
           (
             await tx.lote.findUnique({
               where: { id: loteId },
-              select: { quantidadeAtual: true },
+              select: { id: true, quantidadeQuarentena: true },
             })
-          )?.quantidadeAtual ?? 0,
+          ) ?? { id: loteId },
         )
       : await getQuantidadeDisponivel(tx, produtoId);
 
@@ -162,39 +164,29 @@ async function applyMovement(
   kind: MovementKind,
   observacaoBase: string,
 ): Promise<void> {
-  const estoqueAnterior =
+  const loteRow =
     item.loteId != null
-      ? Number(
-          (
-            await tx.lote.findUnique({
-              where: { id: item.loteId },
-              select: { quantidadeAtual: true },
-            })
-          )?.quantidadeAtual ?? 0,
-        )
+      ? await tx.lote.findUnique({
+          where: { id: item.loteId },
+          select: { id: true, quantidadeQuarentena: true },
+        })
+      : null;
+
+  const estoqueAnterior =
+    item.loteId != null && loteRow
+      ? await getLoteQuantidadeFromMovements(tx, item.loteId)
       : await getEstoqueTotalProdutoReference(tx, produto.id);
   const delta =
     kind === "SAIDA" ? -item.quantidadeSolicitada : item.quantidadeSolicitada;
 
-  if (item.loteId != null) {
-    if (kind === "SAIDA") {
-      await tx.lote.update({
-        where: { id: item.loteId },
-        data: {
-          quantidadeAtual: { decrement: item.quantidadeSolicitada },
-          version: { increment: 1 },
-        },
-      });
-    } else {
-      await tx.lote.update({
-        where: { id: item.loteId },
-        data: {
-          quantidadeAtual: { increment: item.quantidadeSolicitada },
-          quantidadeInicial: { increment: item.quantidadeSolicitada },
-          version: { increment: 1 },
-        },
-      });
-    }
+  if (item.loteId != null && kind === "ENTRADA") {
+    await tx.lote.update({
+      where: { id: item.loteId },
+      data: {
+        quantidadeInicial: { increment: item.quantidadeSolicitada },
+        version: { increment: 1 },
+      },
+    });
   }
 
   const estoqueFinal = estoqueAnterior + delta;
@@ -215,6 +207,9 @@ async function applyMovement(
   });
 
   await syncStockBalanceCache(tx, produto.id);
+  if (item.loteId != null && loteRow) {
+    await syncLoteStockBalanceCache(tx, loteRow);
+  }
 }
 
 export async function confirmRequisitionStockMovements(
@@ -247,7 +242,7 @@ export async function confirmRequisitionStockMovements(
 
     const produto = await tx.produto.findUnique({
       where: { id: item.produtoId },
-      select: { id: true, nome: true },
+      select: { id: true, nomeComercial: true },
     });
 
     if (!produto?.id) {
@@ -265,7 +260,7 @@ export async function confirmRequisitionStockMovements(
         select: {
           id: true,
           produtoId: true,
-          quantidadeAtual: true,
+          quantidadeQuarentena: true,
           numeroLote: true,
         },
       });
@@ -289,7 +284,7 @@ export async function confirmRequisitionStockMovements(
         produto.id,
         item.loteId,
         item.quantidadeSolicitada,
-        produto.nome ?? produto.id.toString(),
+        produto.nomeComercial ?? produto.id.toString(),
       );
     }
 

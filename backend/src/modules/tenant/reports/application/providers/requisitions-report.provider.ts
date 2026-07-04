@@ -181,7 +181,7 @@ export class RequisitionDetailReportProvider implements ReportDataProvider {
             "Subtotal",
           ],
           rows: detail.itens.map((item: any) => [
-            toText(item.produto?.nome),
+            toText(item.produto?.nomeComercial),
             toText(item.lote?.numeroLote ?? item.numeroLote),
             formatDateTime(item.lote?.dataValidade ?? item.dataValidade),
             toText(item.quantidadeSolicitada, "0"),

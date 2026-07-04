@@ -71,7 +71,7 @@ function buildQuotationDetailDefinition(cotacao: any): ModuleReportDefinition {
         title: "Itens da cotacao",
         columns: ["Descricao", "Qtd", "Preco Unit.", "IVA", "Total"],
         rows: (cotacao.items ?? []).map((item: any) => [
-          item.descricao ?? item.produto?.nome ?? item.servico?.nome ?? "-",
+          item.descricao ?? item.produto?.nomeComercial ?? item.servico?.nome ?? "-",
           item.quantidade,
           formatCurrency(item.precoUnit),
           formatCurrency(item.valorIva ?? item.iva),

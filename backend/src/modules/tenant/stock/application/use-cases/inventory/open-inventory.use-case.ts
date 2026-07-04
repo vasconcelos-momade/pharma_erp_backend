@@ -18,7 +18,7 @@ export class OpenInventoryUseCase {
         select: {
           id: true,
           produtoId: true,
-          quantidadeAtual: true,
+          stockBalance: { select: { quantidadeTotal: true } },
         },
         orderBy: [{ produtoId: "asc" }, { id: "asc" }],
       });
@@ -30,8 +30,8 @@ export class OpenInventoryUseCase {
           status: "ABERTO",
           iniciadoPorId: BigInt(data.userId),
           itens: {
-            create: lotes.map((lote: { id: bigint; produtoId: bigint; quantidadeAtual: unknown }) => {
-              const qty = Number(lote.quantidadeAtual ?? 0);
+            create: lotes.map((lote: { id: bigint; produtoId: bigint; stockBalance?: { quantidadeTotal?: unknown } | null }) => {
+              const qty = Number(lote.stockBalance?.quantidadeTotal ?? 0);
               return {
                 produtoId: lote.produtoId,
                 loteId: lote.id,

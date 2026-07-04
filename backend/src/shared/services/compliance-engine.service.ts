@@ -22,7 +22,7 @@ export class ComplianceEngineService {
     if (Boolean(produto.requiresPrescription) && !receitaId) {
       return {
         passed: false,
-        message: `O produto ${produto.nome} exige prescrição médica obrigatória.`,
+        message: `O produto ${produto.nomeComercial} exige prescrição médica obrigatória.`,
         errorCode: "MISSING_PRESCRIPTION"
       };
     }
@@ -35,7 +35,7 @@ export class ComplianceEngineService {
     ) {
         return {
           passed: false,
-          message: `O produto ${produto.nome} (psicotrópico) exige validação de um segundo profissional qualificado.`,
+          message: `O produto ${produto.nomeComercial} (psicotrópico) exige validação de um segundo profissional qualificado.`,
           errorCode: "MISSING_DOUBLE_CHECK"
         };
     }
@@ -44,7 +44,7 @@ export class ComplianceEngineService {
     if (produto.tipoDispensacao === "NARCOTICO" && !produto.requiresPsychotropicBook) {
         return {
             passed: false,
-            message: `Configuração inconsistente: Narcótico ${produto.nome} deve obrigatoriamente registar no Livro de Psicotrópicos.`,
+            message: `Configuração inconsistente: Narcótico ${produto.nomeComercial} deve obrigatoriamente registar no Livro de Psicotrópicos.`,
             errorCode: "INCONSISTENT_CONFIG"
         };
     }
