@@ -184,21 +184,12 @@ export function resolveProdutoPolicy(
   return applyAntimicrobianoOverrides(policy);
 }
 
-export function policyToRegulacaoRow(
-  policy: ResolvedProdutoPolicy,
-  classificadoPor: string,
-) {
+export function policyToRegulacaoRow(policy: ResolvedProdutoPolicy) {
   return {
-    antimicrobiano: policy.antimicrobiano,
     tipoDispensacao: policy.tipoDispensacao,
     requiresPrescription: policy.requiresPrescription,
-    requiresDoubleCheck: policy.requiresDoubleCheck,
     requiresPsychotropicBook: policy.requiresPsychotropicBook,
-    requiresManualReview: policy.requiresManualReview,
-    riskLevel: policy.riskLevel,
     policyVersion: policy.policyVersion,
-    classificadoPor,
-    classificadoEm: new Date(),
   };
 }
 

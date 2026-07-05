@@ -1,5 +1,9 @@
 import { getPrisma } from "../../../../../infrastructure/prisma/tenant-prisma.factory";
-import { mapPosProduto, produtoPosSelect } from "../../../products/domain/produto-presenter";
+import {
+  mapPosProduto,
+  produtoPosSelect,
+  produtoPosStockWhere,
+} from "../../../products/domain/produto-presenter";
 
 export class SearchProdutosUseCase {
   async execute(params?: {
@@ -18,6 +22,7 @@ export class SearchProdutosUseCase {
     const baseWhere = {
       ativo: true,
       deletedAt: null,
+      ...produtoPosStockWhere,
       ...(params?.categoriaId ? { categoriaId: params.categoriaId } : {}),
     };
 

@@ -53,6 +53,26 @@ ON DUPLICATE KEY UPDATE
   `ativo` = true,
   `updatedAt` = NOW(3);
 
+-- Tabela criada via db push em tenants existentes; em bases novas ainda não existe.
+CREATE TABLE IF NOT EXISTS `produto_regulacao` (
+    `produtoId` BIGINT UNSIGNED NOT NULL,
+    `antimicrobiano` BOOLEAN NOT NULL DEFAULT false,
+    `tipoDispensacao` ENUM('VENDA_LIVRE', 'RECEITA_SIMPLES', 'RECEITA_CONTROLADA', 'RECEITA_OBRIGATORIA', 'RECEITA_RETIDA', 'PSICOTROPICO', 'NARCOTICO') NOT NULL DEFAULT 'VENDA_LIVRE',
+    `requiresPrescription` BOOLEAN NOT NULL DEFAULT false,
+    `requiresDoubleCheck` BOOLEAN NOT NULL DEFAULT false,
+    `requiresPsychotropicBook` BOOLEAN NOT NULL DEFAULT false,
+    `requiresManualReview` BOOLEAN NOT NULL DEFAULT false,
+    `riskLevel` ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL') NOT NULL DEFAULT 'LOW',
+    `policyVersion` INTEGER NOT NULL DEFAULT 2,
+    `classificadoEm` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `classificadoPor` VARCHAR(100) NULL,
+    `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (`produtoId`),
+    INDEX `produto_regulacao_tipoDispensacao_idx`(`tipoDispensacao`),
+    INDEX `produto_regulacao_requiresManualReview_idx`(`requiresManualReview`),
+    CONSTRAINT `produto_regulacao_produtoId_fkey` FOREIGN KEY (`produtoId`) REFERENCES `produtos`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- Remapear produtos: antimicrobianos → categoria FNM ANTMIICROBIANOS
 UPDATE `produtos` p
 INNER JOIN `produto_regulacao` pr ON pr.`produtoId` = p.`id`

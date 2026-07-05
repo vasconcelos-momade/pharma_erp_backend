@@ -11,11 +11,13 @@ ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "$ROOT"
 
 BASE_URL="${BASE_URL:-http://localhost:3300/api/v1}"
-LOGIN_EMAIL="${LOGIN_EMAIL:-dono.1779294744@teste.com}"
+LOGIN_EMAIL="${LOGIN_EMAIL:-dono.1783200600@demo.com}"
 LOGIN_PASSWORD="${LOGIN_PASSWORD:-123456}"
 MYSQL_CONTAINER="${MYSQL_CONTAINER:-skalway_pharm_mysql}"
 MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-root_password}"
-TENANT_DB="${TENANT_DB:-tenant_farmacia_1779294744}"
+TENANT_DB="${TENANT_DB:-tenant_farmacia_1783200600}"
+PRODUCT_ID="${PRODUCT_ID:-1}"
+VALOR_RECEBIDO="${VALOR_RECEBIDO:-5000}"
 SKIP_CANCEL="${SKIP_CANCEL:-0}"
 
 fail() { echo "    FALHA: $*"; exit 1; }
@@ -25,7 +27,7 @@ ensure_cliente() {
   count=$(docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -D "$TENANT_DB" -e \
     "SELECT COUNT(*) FROM clientes WHERE deletedAt IS NULL;" 2>/dev/null | tail -1)
   if [[ "${count:-0}" == "0" ]]; then
-    echo "    Criando cliente de teste na base ${TENANT_DB}..."
+    echo "    Criando cliente de teste na base ${TENANT_DB}..." >&2
     docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -D "$TENANT_DB" -e \
       "INSERT INTO clientes (nome, tipo, saldoAtual, createdAt, updatedAt) VALUES ('Cliente Teste POS', 'PACIENTE', 0, NOW(), NOW());" \
       2>/dev/null
@@ -50,8 +52,8 @@ HDR=(-H "Authorization: Bearer ${TOKEN}" -H "x-tenant-id: ${TENANT_ID}" -H "x-br
 CLIENTE_ID=$(ensure_cliente)
 echo "    tenant=${TENANT_ID} branch=${BRANCH_ID} user=${USER_ID} cliente=${CLIENTE_ID}"
 
-echo "==> 2. Stock inicial produto 10000"
-STOCK_INI=$(curl -sf "${BASE_URL}/tenant/produtos/10000" "${HDR[@]}" | jq -r '.data.estoqueAtual')
+echo "==> 2. Stock inicial produto ${PRODUCT_ID}"
+STOCK_INI=$(curl -sf "${BASE_URL}/tenant/produtos/${PRODUCT_ID}" "${HDR[@]}" | jq -r '.data.estoqueAtual')
 echo "    estoqueAtual=${STOCK_INI}"
 
 echo "==> 3. Abrir sessão de caixa (caixaId=1)"
@@ -68,13 +70,14 @@ else
   echo "    sessão aberta (HTTP ${HTTP}) id=${SESSAO_ID:-ok}"
 fi
 
-echo "==> 4. Validar dispensação (produto 10000)"
+echo "==> 4. Validar dispensação (produto ${PRODUCT_ID})"
 curl -sf -X POST "${BASE_URL}/tenant/pos/validar-dispensacao" \
   "${HDR[@]}" -H "Content-Type: application/json" \
-  -d '{"produtoId":"10000","quantidade":1}' | jq -c '{success, data: .data}' || fail "validar dispensação"
+  -d "{\"produtoId\":\"${PRODUCT_ID}\",\"quantidade\":1}" | jq -c '{success, data: .data}' || fail "validar dispensação"
 
 SERVICO_ID=$(docker exec "$MYSQL_CONTAINER" mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -D "$TENANT_DB" -e \
-  "SELECT id FROM servicos WHERE deletedAt IS NULL ORDER BY id LIMIT 1;" 2>/dev/null | tail -1)
+  "SELECT id FROM servicos WHERE ativo = 1 ORDER BY id LIMIT 1;" 2>/dev/null | tail -1)
+[[ -n "${SERVICO_ID}" ]] || fail "nenhum serviço activo encontrado"
 echo "    servicoId=${SERVICO_ID}"
 
 echo "==> 5. Finalizar venda"
@@ -84,11 +87,12 @@ VENDA=$(curl -s -w "\n%{http_code}" -X POST "${BASE_URL}/tenant/pos/finalizar" \
     \"clienteId\": \"${CLIENTE_ID}\",
     \"terminalId\": \"1\",
     \"metodoPagamento\": \"DINHEIRO\",
+    \"valorRecebido\": ${VALOR_RECEBIDO},
     \"idempotencyKey\": \"test-pos-$(date +%s)\",
     \"items\": [
       {
         \"tipo\": \"produto\",
-        \"produtoId\": \"10000\",
+        \"produtoId\": \"${PRODUCT_ID}\",
         \"quantidade\": 2,
         \"receita\": { \"numero\": \"RX-TEST-001\", \"medicoNome\": \"Dr. Teste\" }
       },
@@ -102,11 +106,11 @@ VENDA=$(curl -s -w "\n%{http_code}" -X POST "${BASE_URL}/tenant/pos/finalizar" \
 HTTP=$(echo "$VENDA" | tail -n1)
 BODY=$(echo "$VENDA" | sed '$d')
 [[ "$HTTP" == "200" || "$HTTP" == "201" ]] || fail "finalizar HTTP ${HTTP}: $(echo "$BODY" | head -c 500)"
-FATURA_ID=$(echo "$BODY" | jq -r '.data.faturaId // .faturaId // .data.id // empty')
-echo "$BODY" | jq '{success, faturaId: (.data.faturaId // .faturaId), numero: (.data.numero // .numero), total: (.data.total // .total)}'
+FATURA_ID=$(echo "$BODY" | jq -r '.faturaId // .data.faturaId // .data.id // empty')
+echo "$BODY" | jq '{success, faturaId: (.faturaId // .data.faturaId), numero: (.numero // .data.numero), total: (.total // .data.total), troco: (.troco // .data.troco)}'
 [[ -n "$FATURA_ID" && "$FATURA_ID" != "null" ]] || fail "sem faturaId"
 
-STOCK_POS=$(curl -sf "${BASE_URL}/tenant/produtos/10000" "${HDR[@]}" | jq -r '.data.estoqueAtual')
+STOCK_POS=$(curl -sf "${BASE_URL}/tenant/produtos/${PRODUCT_ID}" "${HDR[@]}" | jq -r '.data.estoqueAtual')
 echo "    stock após venda: ${STOCK_POS} (era ${STOCK_INI})"
 
 if [[ "$SKIP_CANCEL" == "1" ]]; then
@@ -124,7 +128,7 @@ BODY=$(echo "$ANUL" | sed '$d')
 [[ "$HTTP" == "200" ]] || fail "anular HTTP ${HTTP}: $(echo "$BODY" | head -c 300)"
 echo "$BODY" | jq -c '{success, data: .data}'
 
-STOCK_FIM=$(curl -sf "${BASE_URL}/tenant/produtos/10000" "${HDR[@]}" | jq -r '.data.estoqueAtual')
+STOCK_FIM=$(curl -sf "${BASE_URL}/tenant/produtos/${PRODUCT_ID}" "${HDR[@]}" | jq -r '.data.estoqueAtual')
 echo "    stock final: ${STOCK_FIM}"
 if [[ "$STOCK_FIM" == "$STOCK_INI" ]]; then
   echo "    OK estoque revertido após anulação"

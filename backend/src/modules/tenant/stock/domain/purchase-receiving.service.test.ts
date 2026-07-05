@@ -5,10 +5,24 @@ import {
   receivePurchaseItemStock,
 } from "./purchase-receiving.service";
 
-function createTx(overrides: Partial<any> = {}) {
-  const movements: Array<{ estoqueFinal: number }> = [];
+type MovementRow = {
+  produtoId: bigint;
+  loteId: bigint | null;
+  tipo: string;
+  quantidade: number;
+  estoqueAnterior: number;
+  estoqueFinal: number;
+  deletedAt: null;
+  createdAt: Date;
+  id: bigint;
+};
 
-  return {
+function createTx(overrides: Partial<any> = {}) {
+  const movements: MovementRow[] = [];
+  let nextMovementId = 1n;
+  const loteBalances = new Map<string, { quantidadeTotal: number; quantidadeDisponivel: number }>();
+
+  const tx = {
     $executeRaw: mock(async () => []),
     produto: {
       findUnique: mock(async () => ({
@@ -30,14 +44,84 @@ function createTx(overrides: Partial<any> = {}) {
       updateMany: mock(async () => ({})),
       ...(overrides.stockBalance ?? {}),
     },
-    estoqueMovimento: {
-      findFirst: mock(async () =>
-        movements.length > 0 ? movements[movements.length - 1] : null,
-      ),
-      create: mock(async ({ data }: { data: { estoqueFinal: number } }) => {
-        movements.push({ estoqueFinal: data.estoqueFinal });
-        return {};
+    loteStockBalance: {
+      findUnique: mock(async ({ where }: { where: { loteId: bigint } }) => {
+        return loteBalances.get(where.loteId.toString()) ?? null;
       }),
+      upsert: mock(
+        async ({
+          where,
+          create,
+          update,
+        }: {
+          where: { loteId: bigint };
+          create: { quantidadeTotal: number; quantidadeDisponivel: number };
+          update: { quantidadeTotal: number; quantidadeDisponivel: number };
+        }) => {
+          const key = where.loteId.toString();
+          const next = loteBalances.has(key)
+            ? {
+                quantidadeTotal: Number(update.quantidadeTotal),
+                quantidadeDisponivel: Number(update.quantidadeDisponivel),
+              }
+            : {
+                quantidadeTotal: Number(create.quantidadeTotal),
+                quantidadeDisponivel: Number(create.quantidadeDisponivel),
+              };
+          loteBalances.set(key, next);
+          return next;
+        },
+      ),
+      ...(overrides.loteStockBalance ?? {}),
+    },
+    estoqueMovimento: {
+      findFirst: mock(async ({ where }: { where: { produtoId?: bigint; loteId?: bigint } }) => {
+        const filtered = movements
+          .filter((movement) => {
+            if (movement.deletedAt != null) return false;
+            if (where.produtoId != null && movement.produtoId !== where.produtoId) return false;
+            if (where.loteId != null && movement.loteId !== where.loteId) return false;
+            return true;
+          })
+          .sort((a, b) => Number(b.id - a.id));
+        return filtered[0] ?? null;
+      }),
+      findMany: mock(async ({ where }: { where: { produtoId?: bigint; loteId?: bigint } }) => {
+        return movements.filter((movement) => {
+          if (movement.deletedAt != null) return false;
+          if (where.produtoId != null && movement.produtoId !== where.produtoId) return false;
+          if (where.loteId != null && movement.loteId !== where.loteId) return false;
+          return true;
+        });
+      }),
+      create: mock(
+        async ({
+          data,
+        }: {
+          data: {
+            produtoId: bigint;
+            loteId: bigint | null;
+            tipo: string;
+            quantidade: number;
+            estoqueAnterior: number;
+            estoqueFinal: number;
+          };
+        }) => {
+          const movement: MovementRow = {
+            id: nextMovementId++,
+            produtoId: data.produtoId,
+            loteId: data.loteId,
+            tipo: data.tipo,
+            quantidade: data.quantidade,
+            estoqueAnterior: data.estoqueAnterior,
+            estoqueFinal: data.estoqueFinal,
+            deletedAt: null,
+            createdAt: new Date(),
+          };
+          movements.push(movement);
+          return movement;
+        },
+      ),
       ...(overrides.estoqueMovimento ?? {}),
     },
     historicoPreco: {
@@ -45,6 +129,8 @@ function createTx(overrides: Partial<any> = {}) {
       ...(overrides.historicoPreco ?? {}),
     },
   };
+
+  return tx;
 }
 
 describe("normalizeExpiryDate", () => {
@@ -62,11 +148,7 @@ describe("normalizeExpiryDate", () => {
 
 describe("receivePurchaseItemStock", () => {
   test("cria lote novo, reconcilia stock e gera movimento", async () => {
-    const tx = createTx({
-      lote: {
-        findMany: mock(async () => [{ quantidadeAtual: 10, quantidadeQuarentena: 0 }]),
-      },
-    });
+    const tx = createTx();
 
     const result = await receivePurchaseItemStock(
       tx,
@@ -88,6 +170,7 @@ describe("receivePurchaseItemStock", () => {
     expect(tx.lote.create).toHaveBeenCalledTimes(1);
     expect(tx.lote.update).toHaveBeenCalledTimes(0);
     expect(tx.stockBalance.upsert).toHaveBeenCalledTimes(1);
+    expect(tx.loteStockBalance.upsert).toHaveBeenCalledTimes(1);
     expect(tx.estoqueMovimento.create).toHaveBeenCalledTimes(1);
     expect(tx.historicoPreco.create).toHaveBeenCalledTimes(1);
 
@@ -95,6 +178,7 @@ describe("receivePurchaseItemStock", () => {
     expect(loteCreatePayload.numeroLote).toBe("LT-001");
     expect(loteCreatePayload.precoVenda).toBe(60);
     expect(loteCreatePayload.dataValidade.toISOString()).toBe("2026-06-08T00:00:00.000Z");
+    expect(loteCreatePayload.quantidadeInicial).toBe(10);
 
     const movimentoPayload = tx.estoqueMovimento.create.mock.calls[0]![0].data;
     expect(movimentoPayload.tipo).toBe("ENTRADA");
@@ -110,13 +194,9 @@ describe("receivePurchaseItemStock", () => {
           id: 900n,
           fornecedorId: null,
           quantidadeInicial: 5,
-          quantidadeAtual: 5,
           precoVenda: 50,
         })),
         update: mock(async () => ({ id: 900n })),
-        findMany: mock(async () => [
-          { quantidadeAtual: 15, quantidadeQuarentena: 0 },
-        ]),
       },
       stockBalance: {
         findUnique: mock(async () => ({
@@ -124,6 +204,17 @@ describe("receivePurchaseItemStock", () => {
           quantidadeReservada: 1,
           quantidadeDisponivel: 4,
         })),
+      },
+      estoqueMovimento: {
+        findFirst: mock(async () => ({ estoqueFinal: 5 })),
+        findMany: mock(async () => [
+          {
+            tipo: "ENTRADA",
+            quantidade: 5,
+            estoqueAnterior: 0,
+            estoqueFinal: 5,
+          },
+        ]),
       },
     });
 
@@ -148,9 +239,9 @@ describe("receivePurchaseItemStock", () => {
 
     const loteUpdatePayload = tx.lote.update.mock.calls[0]![0].data;
     expect(loteUpdatePayload.quantidadeInicial).toEqual({ increment: 10 });
-    expect(loteUpdatePayload.quantidadeAtual).toEqual({ increment: 10 });
     expect(loteUpdatePayload.precoVenda).toBe(55);
     expect(loteUpdatePayload.fornecedorId).toBe(20n);
+    expect(loteUpdatePayload.quantidadeAtual).toBeUndefined();
   });
 
   test("múltiplos recebimentos do mesmo lote reutilizam o registo normalizado", async () => {
@@ -161,15 +252,16 @@ describe("receivePurchaseItemStock", () => {
       numeroLote: string;
       dataValidade: Date;
       quantidadeInicial: number;
-      quantidadeAtual: number;
       quantidadeQuarentena: number;
       ativo: boolean;
       deletedAt: Date | null;
       precoCompra: number;
       precoVenda: number;
     }> = [];
-    const movements: Array<{ estoqueFinal: number }> = [];
+    const movements: MovementRow[] = [];
+    const loteBalances = new Map<string, { quantidadeTotal: number; quantidadeDisponivel: number }>();
     let nextLoteId = 1n;
+    let nextMovementId = 1n;
     let stockBalance: {
       quantidadeTotal: number;
       quantidadeReservada: number;
@@ -202,7 +294,6 @@ describe("receivePurchaseItemStock", () => {
             numeroLote: data.numeroLote,
             dataValidade: data.dataValidade,
             quantidadeInicial: data.quantidadeInicial,
-            quantidadeAtual: data.quantidadeAtual,
             quantidadeQuarentena: 0,
             ativo: data.ativo,
             deletedAt: null,
@@ -215,7 +306,6 @@ describe("receivePurchaseItemStock", () => {
         update: mock(async ({ where, data }: { where: { id: bigint }; data: any }) => {
           const lote = lotes.find((current) => current.id === where.id)!;
           lote.quantidadeInicial += data.quantidadeInicial.increment;
-          lote.quantidadeAtual += data.quantidadeAtual.increment;
           lote.fornecedorId = data.fornecedorId;
           lote.precoCompra = data.precoCompra;
           lote.precoVenda = data.precoVenda;
@@ -224,7 +314,7 @@ describe("receivePurchaseItemStock", () => {
         }),
         findMany: mock(async () =>
           lotes.map((lote) => ({
-            quantidadeAtual: lote.quantidadeAtual,
+            id: lote.id,
             quantidadeQuarentena: lote.quantidadeQuarentena,
           })),
         ),
@@ -247,14 +337,73 @@ describe("receivePurchaseItemStock", () => {
         }),
         updateMany: mock(async () => ({})),
       },
-      estoqueMovimento: {
-        findFirst: mock(async () =>
-          movements.length > 0 ? movements[movements.length - 1] : null,
-        ),
-        create: mock(async ({ data }: { data: { estoqueFinal: number } }) => {
-          movements.push({ estoqueFinal: data.estoqueFinal });
-          return {};
+      loteStockBalance: {
+        findUnique: mock(async ({ where }: { where: { loteId: bigint } }) => {
+          return loteBalances.get(where.loteId.toString()) ?? null;
         }),
+        upsert: mock(
+          async ({
+            where,
+            create,
+            update,
+          }: {
+            where: { loteId: bigint };
+            create: { quantidadeTotal: number; quantidadeDisponivel: number };
+            update: { quantidadeTotal: number; quantidadeDisponivel: number };
+          }) => {
+            const key = where.loteId.toString();
+            const next = loteBalances.has(key)
+              ? {
+                  quantidadeTotal: Number(update.quantidadeTotal),
+                  quantidadeDisponivel: Number(update.quantidadeDisponivel),
+                }
+              : {
+                  quantidadeTotal: Number(create.quantidadeTotal),
+                  quantidadeDisponivel: Number(create.quantidadeDisponivel),
+                };
+            loteBalances.set(key, next);
+            return next;
+          },
+        ),
+      },
+      estoqueMovimento: {
+        findFirst: mock(async ({ where }: { where: { produtoId?: bigint } }) => {
+          const filtered = movements
+            .filter((movement) => movement.produtoId === where.produtoId)
+            .sort((a, b) => Number(b.id - a.id));
+          return filtered[0] ?? null;
+        }),
+        findMany: mock(async ({ where }: { where: { loteId?: bigint } }) => {
+          return movements.filter((movement) => movement.loteId === where.loteId);
+        }),
+        create: mock(
+          async ({
+            data,
+          }: {
+            data: {
+              produtoId: bigint;
+              loteId: bigint | null;
+              tipo: string;
+              quantidade: number;
+              estoqueAnterior: number;
+              estoqueFinal: number;
+            };
+          }) => {
+            const movement: MovementRow = {
+              id: nextMovementId++,
+              produtoId: data.produtoId,
+              loteId: data.loteId,
+              tipo: data.tipo,
+              quantidade: data.quantidade,
+              estoqueAnterior: data.estoqueAnterior,
+              estoqueFinal: data.estoqueFinal,
+              deletedAt: null,
+              createdAt: new Date(),
+            };
+            movements.push(movement);
+            return movement;
+          },
+        ),
       },
       historicoPreco: {
         create: mock(async () => ({})),
@@ -295,7 +444,6 @@ describe("receivePurchaseItemStock", () => {
     expect(second.loteId).toBe(1n);
     expect(lotes).toHaveLength(1);
     expect(lotes[0]!.quantidadeInicial).toBe(15);
-    expect(lotes[0]!.quantidadeAtual).toBe(15);
     expect(first.estoqueAnterior).toBe(0);
     expect(first.estoqueFinal).toBe(10);
     expect(second.estoqueAnterior).toBe(10);

@@ -8,6 +8,7 @@ import {
   loteQuantidadeDisponivelFromTotal,
   type LoteStockTx,
 } from "./lote-stock.service";
+import { LOTE_COM_STOCK_DISPONIVEL_WHERE } from "./lote-stock-read.util";
 
 export const FEFO_LOTE_FILTER = {
   ativo: true,
@@ -15,6 +16,15 @@ export const FEFO_LOTE_FILTER = {
   estadoSanitario: "VALIDO" as const,
   disponibilidade: "DISPONIVEL" as const,
 };
+
+/** Lote elegível para venda no PDV: FEFO + validade + stock disponível. */
+export function buildFefoLoteWhereForPos(now = new Date()) {
+  return {
+    ...FEFO_LOTE_FILTER,
+    dataValidade: { gte: now },
+    ...LOTE_COM_STOCK_DISPONIVEL_WHERE,
+  };
+}
 
 export type FefoLoteRow = {
   id: bigint;
@@ -27,19 +37,11 @@ export type FefoLoteRow = {
 
 export type FefoLoteTx = LoteStockTx;
 
-/** @deprecated Use getLoteQuantidadeDisponivel — mantido para compatibilidade em testes. */
+/** @deprecated Use readLoteDisponivel — mantido para compatibilidade em testes. */
 export function loteQuantidadeDisponivel(lote: {
-  quantidadeAtual?: unknown;
-  quantidadeQuarentena?: unknown;
   stockBalance?: { quantidadeDisponivel?: unknown } | null;
 }): number {
-  if (lote.stockBalance?.quantidadeDisponivel != null) {
-    return Math.max(0, Number(lote.stockBalance.quantidadeDisponivel) || 0);
-  }
-  return loteQuantidadeDisponivelFromTotal(
-    Number(lote.quantidadeAtual ?? 0),
-    lote.quantidadeQuarentena,
-  );
+  return Math.max(0, Number(lote.stockBalance?.quantidadeDisponivel ?? 0) || 0);
 }
 
 export function resolveLotePrecoVenda(

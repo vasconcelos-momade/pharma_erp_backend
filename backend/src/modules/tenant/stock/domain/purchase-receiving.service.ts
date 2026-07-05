@@ -1,4 +1,5 @@
 import {
+  getQuantidadeTotalFromMovements,
   syncStockBalanceCache,
   type StockTx,
 } from "./produto-stock.service";

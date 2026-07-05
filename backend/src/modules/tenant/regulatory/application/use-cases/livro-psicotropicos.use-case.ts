@@ -1,5 +1,6 @@
 import { getPrisma } from "../../../../../infrastructure/prisma/tenant-prisma.factory";
 import { NotFoundApiError } from "../../../../../shared/http/api-error";
+import { resolveRegulacaoPolicyForProduto } from "../../../products/domain/produto-presenter";
 import {
   normalizePage,
   parseDateRange,
@@ -49,6 +50,22 @@ function buildLivroPsicotropicoWhere(params: ListLivroPsicotropicosParams) {
   };
 }
 
+function mapLivroRegulacaoSummary(produto: any) {
+  if (!produto?.regulacao) {
+    return null;
+  }
+  const policy = resolveRegulacaoPolicyForProduto({
+    regulacao: produto.regulacao,
+    categoria: produto.categoria ?? null,
+  });
+  return {
+    tipoDispensacao: policy.tipoDispensacao,
+    requiresPsychotropicBook:
+      produto.regulacao.requiresPsychotropicBook ?? policy.requiresPsychotropicBook,
+    riskLevel: policy.riskLevel,
+  };
+}
+
 function mapLivroPsicotropicoRow(row: any) {
   return {
     id: row.id.toString(),
@@ -68,14 +85,7 @@ function mapLivroPsicotropicoRow(row: any) {
           id: row.produto.id.toString(),
           nome: row.produto.nomeComercial,
           barcode: row.produto.barcode,
-          regulacao: row.produto.regulacao
-            ? {
-                tipoDispensacao: row.produto.regulacao.tipoDispensacao,
-                requiresPsychotropicBook:
-                  row.produto.regulacao.requiresPsychotropicBook,
-                riskLevel: row.produto.regulacao.riskLevel,
-              }
-            : null,
+          regulacao: mapLivroRegulacaoSummary(row.produto),
         }
       : null,
     lote: row.lote
@@ -133,9 +143,12 @@ export class LivroPsicotropicosDashboardUseCase {
                 regulacao: {
                   select: {
                     tipoDispensacao: true,
+                    requiresPrescription: true,
                     requiresPsychotropicBook: true,
-                    riskLevel: true,
                   },
+                },
+                categoria: {
+                  select: { id: true, nome: true, codigoFNM: true },
                 },
               },
             },
@@ -187,9 +200,12 @@ export class ListLivroPsicotropicosUseCase {
               regulacao: {
                 select: {
                   tipoDispensacao: true,
+                  requiresPrescription: true,
                   requiresPsychotropicBook: true,
-                  riskLevel: true,
                 },
+              },
+              categoria: {
+                select: { id: true, nome: true, codigoFNM: true },
               },
             },
           },

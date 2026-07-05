@@ -231,38 +231,31 @@ model Produto {
   @@map("produtos")
 }
 
-/// Política regulatória e de dispensação (fonte de verdade).
+/// Política regulatória: campos legais essenciais + tipoDispensacao; demais flags derivadas em runtime.
 model ProdutoRegulacao {
-  produtoId                BigInt                  @id @db.UnsignedBigInt
-  antimicrobiano           Boolean                 @default(false)
-  tipoDispensacao          TipoDispensacao         @default(VENDA_LIVRE)
-  requiresPrescription     Boolean                 @default(false)
-  requiresDoubleCheck      Boolean                 @default(false)
-  requiresPsychotropicBook Boolean                 @default(false)
-  requiresManualReview     Boolean                 @default(false)
-  riskLevel                RiskLevel               @default(LOW)
-  policyVersion            Int                     @default(1)
-  classificadoEm           DateTime                @default(now())
-  classificadoPor          String?                 @db.VarChar(100)
-  produto                  Produto                 @relation(fields: [produtoId], references: [id], onDelete: Cascade)
-  updatedAt                DateTime                @updatedAt
+  produtoId                BigInt          @id @db.UnsignedBigInt
+  tipoDispensacao          TipoDispensacao @default(VENDA_LIVRE)
+  requiresPrescription     Boolean         @default(false)
+  requiresPsychotropicBook Boolean         @default(false)
+  policyVersion            Int             @default(1)
+  produto                  Produto         @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  updatedAt                DateTime        @updatedAt
 
   @@index([tipoDispensacao])
-  @@index([requiresManualReview])
+  @@index([requiresPrescription])
+  @@index([requiresPsychotropicBook])
   @@map("produto_regulacao")
 }
 
 /// Histórico append-only de classificação (auditoria / seed / reclassificação).
 model ProdutoClassificacaoEvento {
-  id              BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
-  produtoId       BigInt   @db.UnsignedBigInt
-  rule            String   @db.VarChar(100)
-  reason          String?  @db.Text
-  matchedTerm     String?  @db.VarChar(191)
-  source          String   @db.VarChar(100)
-  policySnapshot  Json?
-  createdAt       DateTime @default(now())
-  produto         Produto  @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  id         BigInt              @id @default(autoincrement()) @db.UnsignedBigInt
+  produtoId  BigInt              @db.UnsignedBigInt
+  source     ClassificacaoSource
+  observacao String?             @db.Text
+  snapshot   Json?
+  createdAt  DateTime            @default(now())
+  produto    Produto             @relation(fields: [produtoId], references: [id], onDelete: Cascade)
 
   @@index([produtoId, createdAt])
   @@map("produto_classificacao_eventos")
@@ -1336,11 +1329,11 @@ enum FinancialMovementType {
   DEBT_PAYMENT
 }
 
-enum RiskLevel {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
+enum ClassificacaoSource {
+  MANUAL
+  REGRA
+  IMPORTACAO
+  IA
 }
 
 enum TipoRelatorioSanitario {

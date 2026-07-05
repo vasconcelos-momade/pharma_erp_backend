@@ -1,11 +1,22 @@
 import { z } from "zod";
+import { queryBooleanSchema } from "../../../../../shared/http/zod-query";
 
 export const categoriaIdSchema = z
   .string()
   .trim()
   .regex(/^\d+$/, "categoriaId inválido");
 
-const ativoSchema = z.coerce.boolean().optional();
+const ativoSchema = queryBooleanSchema;
+
+const tipoDispensacaoCreateSchema = z.enum([
+  "VENDA_LIVRE",
+  "RECEITA_SIMPLES",
+  "RECEITA_CONTROLADA",
+  "RECEITA_OBRIGATORIA",
+  "RECEITA_RETIDA",
+  "PSICOTROPICO",
+  "NARCOTICO",
+]);
 
 const produtoBaseSchema = z.looseObject({
   nomeComercial: z.string().trim().min(1),
@@ -18,11 +29,13 @@ const produtoBaseSchema = z.looseObject({
   forma: z.string().trim().min(1).optional(),
   apresentacao: z.string().trim().min(1).optional(),
   estoqueMinimo: z.coerce.number().nonnegative().optional(),
-  tipoDispensacao: z.string().trim().min(1).optional(),
-  requiresManualReview: z.coerce.boolean().optional(),
+  tipoDispensacao: tipoDispensacaoCreateSchema.optional(),
 });
 
-export const createProdutoSchema = produtoBaseSchema;
+export const createProdutoSchema = produtoBaseSchema.extend({
+  categoriaId: categoriaIdSchema,
+  tipoDispensacao: tipoDispensacaoCreateSchema,
+});
 
 export const updateProdutoSchema = produtoBaseSchema.partial().refine(
   (data: Record<string, unknown>) => Object.keys(data).length > 0,
@@ -36,16 +49,7 @@ const sortBySchema = z
 
 const sortOrderSchema = z.enum(["asc", "desc"]).optional();
 
-const tipoDispensacaoSchema = z
-  .enum([
-    "VENDA_LIVRE",
-    "RECEITA_SIMPLES",
-    "RECEITA_CONTROLADA",
-    "RECEITA_OBRIGATORIA",
-    "PSICOTROPICO",
-    "NARCOTICO",
-  ])
-  .optional();
+const tipoDispensacaoSchema = tipoDispensacaoCreateSchema.optional();
 
 export const searchProdutosQuerySchema = z.object({
   q: z.string().trim().min(1).optional(),
@@ -55,8 +59,8 @@ export const searchProdutosQuerySchema = z.object({
   categoria: categoriaIdSchema.optional(),
   fornecedorId: categoriaIdSchema.optional(),
   tipoDispensacao: tipoDispensacaoSchema,
-  ativo: z.coerce.boolean().optional(),
-  includeInactive: z.coerce.boolean().optional(),
+  ativo: queryBooleanSchema,
+  includeInactive: queryBooleanSchema,
   sortBy: sortBySchema,
   sortOrder: sortOrderSchema,
   page: z.coerce.number().int().positive().optional(),

@@ -1,5 +1,6 @@
 import { getPrisma } from "../../../../../infrastructure/prisma/tenant-prisma.factory";
 import { NotFoundApiError } from "../../../../../shared/http/api-error";
+import { resolveRegulacaoPolicyForProduto } from "../../../products/domain/produto-presenter";
 import {
   normalizePage,
   parseDateRange,
@@ -73,6 +74,21 @@ function readLoteStock(row: any) {
   };
 }
 
+function mapRegulacaoSummary(produto: any) {
+  if (!produto?.regulacao) {
+    return null;
+  }
+  const policy = resolveRegulacaoPolicyForProduto({
+    regulacao: produto.regulacao,
+    categoria: produto.categoria ?? null,
+  });
+  return {
+    tipoDispensacao: policy.tipoDispensacao,
+    riskLevel: policy.riskLevel,
+    requiresManualReview: policy.requiresManualReview,
+  };
+}
+
 function mapSanitarioRow(row: any, latestAlert: any) {
   const { quantidadeTotal, quantidadeDisponivel } = readLoteStock(row);
   const criticalStock =
@@ -109,13 +125,7 @@ function mapSanitarioRow(row: any, latestAlert: any) {
           nome: row.produto.nomeComercial,
           barcode: row.produto.barcode,
           estoqueMinimo: toNumber(row.produto.estoqueMinimo),
-          regulacao: row.produto.regulacao
-            ? {
-                tipoDispensacao: row.produto.regulacao.tipoDispensacao,
-                riskLevel: row.produto.regulacao.riskLevel,
-                requiresManualReview: row.produto.regulacao.requiresManualReview,
-              }
-            : null,
+          regulacao: mapRegulacaoSummary(row.produto),
         }
       : null,
     latestAlert: latestAlert
@@ -216,11 +226,10 @@ export class SanitarioDashboardUseCase {
                 barcode: true,
                 estoqueMinimo: true,
                 regulacao: {
-                  select: {
-                    tipoDispensacao: true,
-                    riskLevel: true,
-                    requiresManualReview: true,
-                  },
+                  select: { tipoDispensacao: true },
+                },
+                categoria: {
+                  select: { id: true, nome: true, codigoFNM: true },
                 },
               },
             },
@@ -337,11 +346,10 @@ export class ListSanitarioUseCase {
             barcode: true,
             estoqueMinimo: true,
             regulacao: {
-              select: {
-                tipoDispensacao: true,
-                riskLevel: true,
-                requiresManualReview: true,
-              },
+              select: { tipoDispensacao: true },
+            },
+            categoria: {
+              select: { id: true, nome: true, codigoFNM: true },
             },
           },
         },
@@ -417,6 +425,9 @@ export class GetLoteSanitarioHistoryUseCase {
         produto: {
           include: {
             regulacao: true,
+            categoria: {
+              select: { id: true, nome: true, codigoFNM: true },
+            },
           },
         },
         stockBalance: {
@@ -483,13 +494,7 @@ export class GetLoteSanitarioHistoryUseCase {
           id: lote.produto.id.toString(),
           nome: lote.produto.nomeComercial,
           barcode: lote.produto.barcode,
-          regulacao: lote.produto.regulacao
-            ? {
-                tipoDispensacao: lote.produto.regulacao.tipoDispensacao,
-                riskLevel: lote.produto.regulacao.riskLevel,
-                requiresManualReview: lote.produto.regulacao.requiresManualReview,
-              }
-            : null,
+          regulacao: mapRegulacaoSummary(lote.produto),
         },
       },
       movimentos: movimentos.map((item: any) => ({

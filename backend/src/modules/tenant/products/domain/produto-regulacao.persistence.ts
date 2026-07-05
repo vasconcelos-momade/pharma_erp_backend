@@ -3,7 +3,6 @@ import { isAntimicrobianoFnm } from "./fnm-categorias";
 import { regulacaoToPolicyInput } from "./produto-presenter";
 import {
   extractPolicyInput,
-  hasRegulatoryInput,
   policyToRegulacaoRow,
   resolveProdutoPolicy,
   type ProdutoPolicyInput,
@@ -15,6 +14,8 @@ export type ProdutoRegulacaoSource =
   | "api:update"
   | "seed:anarme"
   | "backfill:legacy";
+
+type ClassificacaoSourceValue = "MANUAL" | "REGRA" | "IMPORTACAO" | "IA";
 
 export type ProdutoRegulacaoPersistenceClient = {
   produtoRegulacao: {
@@ -31,6 +32,21 @@ export type ProdutoRegulacaoPersistenceClient = {
 
 export function toProdutoRegulacaoTx(tx: unknown): ProdutoRegulacaoPersistenceClient {
   return tx as ProdutoRegulacaoPersistenceClient;
+}
+
+export function mapRegulacaoSourceToClassificacaoSource(
+  source: ProdutoRegulacaoSource,
+): ClassificacaoSourceValue {
+  switch (source) {
+    case "seed:anarme":
+      return "IMPORTACAO";
+    case "api:create":
+    case "api:update":
+      return "MANUAL";
+    case "backfill:legacy":
+    default:
+      return "REGRA";
+  }
 }
 
 export type PrepareProdutoWriteResult = {
@@ -64,7 +80,7 @@ export async function persistProdutoRegulacao(
   policy: ResolvedProdutoPolicy,
   source: ProdutoRegulacaoSource,
 ): Promise<void> {
-  const regulacaoRow = policyToRegulacaoRow(policy, source);
+  const regulacaoRow = policyToRegulacaoRow(policy);
 
   await tx.produtoRegulacao.upsert({
     where: { produtoId },
@@ -79,19 +95,22 @@ export async function persistProdutoRegulacao(
     await tx.produtoClassificacaoEvento.create({
       data: {
         produtoId,
-        rule: policy.classificacaoRule,
-        reason: policy.classificacaoReason,
-        matchedTerm: policy.classificacaoMatchedTerm,
-        source,
-        policySnapshot: {
-          antimicrobiano: policy.antimicrobiano,
+        source: mapRegulacaoSourceToClassificacaoSource(source),
+        observacao: policy.classificacaoReason ?? null,
+        snapshot: {
+          rule: policy.classificacaoRule,
+          reason: policy.classificacaoReason,
+          matchedTerm: policy.classificacaoMatchedTerm,
           tipoDispensacao: policy.tipoDispensacao,
-          requiresPrescription: policy.requiresPrescription,
-          requiresDoubleCheck: policy.requiresDoubleCheck,
-          requiresPsychotropicBook: policy.requiresPsychotropicBook,
-          requiresManualReview: policy.requiresManualReview,
-          riskLevel: policy.riskLevel,
           policyVersion: policy.policyVersion,
+          resolved: {
+            antimicrobiano: policy.antimicrobiano,
+            requiresPrescription: policy.requiresPrescription,
+            requiresDoubleCheck: policy.requiresDoubleCheck,
+            requiresPsychotropicBook: policy.requiresPsychotropicBook,
+            requiresManualReview: policy.requiresManualReview,
+            riskLevel: policy.riskLevel,
+          },
         },
       },
     });

@@ -483,11 +483,9 @@ export class ProdutoRepository {
     return {
       items: rows.slice(0, safeSize).map((row: any) => ({
         id: row.id.toString(),
-        rule: row.rule,
-        reason: row.reason ?? null,
-        matchedTerm: row.matchedTerm ?? null,
         source: row.source,
-        policySnapshot: row.policySnapshot ?? null,
+        observacao: row.observacao ?? null,
+        snapshot: row.snapshot ?? null,
         createdAt: row.createdAt.toISOString(),
       })),
       page: safePage,

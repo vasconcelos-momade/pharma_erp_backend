@@ -5,7 +5,7 @@ import { FiscalCalculatorUtil } from "../../../../../shared/utils/fiscal-calcula
 import type { TaxRuleSnapshot } from "../../../../../shared/utils/fiscal-calculator.util";
 import { serializeForJson } from "../../../../../shared/http/serialize-json";
 import { draftCartService } from "../services/draft-cart.service";
-import { flattenProdutoForApi } from "../../../products/domain/produto-presenter";
+import { flattenProdutoForApi, resolveRegulacaoPolicyForProduto } from "../../../products/domain/produto-presenter";
 import {
   getQuantidadeTotalFromMovements,
   syncStockBalanceCache,
@@ -146,13 +146,34 @@ export class FinalizarVendaUseCase {
           );
 
         const produtosComReceitaObrigatoria = produtosDoCarrinho.length
-          ? await tx.produto.findMany({
-              where: {
-                id: { in: produtosDoCarrinho },
-                regulacao: { requiresPrescription: true },
-              },
-              select: { id: true, nomeComercial: true },
-            })
+          ? (
+              await tx.produto.findMany({
+                where: { id: { in: produtosDoCarrinho } },
+                select: {
+                  id: true,
+                  nomeComercial: true,
+                  regulacao: {
+                    select: {
+                      tipoDispensacao: true,
+                      requiresPrescription: true,
+                    },
+                  },
+                  categoria: {
+                    select: { id: true, nome: true, codigoFNM: true },
+                  },
+                },
+              })
+            ).filter(
+              (produto: {
+                regulacao?: {
+                  requiresPrescription?: boolean;
+                  tipoDispensacao?: string;
+                } | null;
+                categoria?: { id?: bigint; nome?: string; codigoFNM?: string | null } | null;
+              }) =>
+                produto.regulacao?.requiresPrescription === true ||
+                resolveRegulacaoPolicyForProduto(produto).requiresPrescription,
+            )
           : [];
 
         const requerPacienteReceita = produtosComReceitaObrigatoria.length > 0;

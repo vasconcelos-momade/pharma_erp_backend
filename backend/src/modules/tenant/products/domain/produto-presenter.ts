@@ -2,21 +2,16 @@ import type { ResolvedProdutoPolicy } from "./produto-dispensacao-policy";
 import { resolveProdutoPolicy, type ProdutoPolicyInput } from "./produto-dispensacao-policy";
 import { isAntimicrobianoFnm } from "./fnm-categorias";
 import {
-  FEFO_LOTE_FILTER,
+  buildFefoLoteWhereForPos,
   resolveLotePrecoVenda,
 } from "../../stock/domain/fefo-lote.service";
 
 export type ProdutoRegulacaoRow = {
-  antimicrobiano: boolean;
   tipoDispensacao: string;
-  requiresPrescription: boolean;
-  requiresDoubleCheck: boolean;
-  requiresPsychotropicBook: boolean;
-  requiresManualReview: boolean;
-  riskLevel: string;
+  requiresPrescription?: boolean;
+  requiresPsychotropicBook?: boolean;
   policyVersion?: number;
-  classificadoEm?: Date;
-  classificadoPor?: string | null;
+  updatedAt?: Date;
 };
 
 type FefoLotePreview = {
@@ -63,6 +58,28 @@ function resolveApiPrecoVenda(
   } catch {
     return 0;
   }
+}
+
+export function resolveRegulacaoPolicyForProduto(produto: {
+  regulacao?: ProdutoRegulacaoRow | null;
+  categoria?: CategoriaPreview | null;
+}): ResolvedProdutoPolicy {
+  const categoria =
+    produto.categoria && produto.categoria.id !== undefined
+      ? {
+          id: produto.categoria.id,
+          nome: produto.categoria.nome ?? "",
+          codigoFNM: produto.categoria.codigoFNM ?? null,
+          descricao: produto.categoria.descricao ?? null,
+          ativo: produto.categoria.ativo ?? true,
+        }
+      : null;
+
+  const policyInput = produto.regulacao
+    ? regulacaoToPolicyInput(produto.regulacao)
+    : {};
+  policyInput.antimicrobiano = isAntimicrobianoFnm(categoria);
+  return resolveProdutoPolicy(policyInput);
 }
 
 /** API: campos regulatórios flat + `estoqueAtual` (cache) + `precoVenda` (lote FEFO). */
@@ -117,10 +134,7 @@ export function regulacaoToPolicyInput(
   return {
     tipoDispensacao: regulacao.tipoDispensacao as ProdutoPolicyInput["tipoDispensacao"],
     requiresPrescription: regulacao.requiresPrescription,
-    requiresDoubleCheck: regulacao.requiresDoubleCheck,
     requiresPsychotropicBook: regulacao.requiresPsychotropicBook,
-    requiresManualReview: regulacao.requiresManualReview,
-    riskLevel: regulacao.riskLevel as ProdutoPolicyInput["riskLevel"],
   };
 }
 
@@ -138,7 +152,7 @@ export const produtoWithRegulacaoInclude = {
 } as const;
 
 const fefoLoteSelect = {
-  where: FEFO_LOTE_FILTER,
+  where: buildFefoLoteWhereForPos(),
   orderBy: { dataValidade: "asc" as const },
   take: 3,
   select: {
@@ -153,6 +167,12 @@ const fefoLoteSelect = {
     },
   },
 };
+
+/** Filtro Prisma: produtos com stock disponível e lote FEFO válido para venda. */
+export const produtoPosStockWhere = {
+  stockBalance: { quantidadeDisponivel: { gt: 0 } },
+  lotes: { some: buildFefoLoteWhereForPos() },
+} as const;
 
 export const produtoPosSelect = {
   id: true,
