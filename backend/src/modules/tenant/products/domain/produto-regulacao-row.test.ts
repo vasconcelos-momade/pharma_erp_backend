@@ -2,19 +2,13 @@ import { describe, expect, test } from "bun:test";
 import { policyToRegulacaoRow, resolveProdutoPolicy } from "./produto-dispensacao-policy";
 
 describe("policyToRegulacaoRow", () => {
-  test("persiste apenas campos legais essenciais", () => {
-    const policy = resolveProdutoPolicy({ tipoDispensacao: "PSICOTROPICO" });
-    const row = policyToRegulacaoRow(policy);
-
-    expect(row).toEqual({
-      tipoDispensacao: "PSICOTROPICO",
+  test("persiste apenas campos legais derivados", () => {
+    const policy = resolveProdutoPolicy({ tipoDispensacao: "RECEITA_ESPECIAL" });
+    expect(policyToRegulacaoRow(policy)).toEqual({
+      tipoDispensacao: "RECEITA_ESPECIAL",
       requiresPrescription: true,
       requiresPsychotropicBook: true,
-      policyVersion: policy.policyVersion,
+      policyVersion: 3,
     });
-    expect(row).not.toHaveProperty("antimicrobiano");
-    expect(row).not.toHaveProperty("requiresDoubleCheck");
-    expect(row).not.toHaveProperty("requiresManualReview");
-    expect(row).not.toHaveProperty("riskLevel");
   });
 });

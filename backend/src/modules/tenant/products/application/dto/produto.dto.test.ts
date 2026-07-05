@@ -7,20 +7,26 @@ import {
 } from "./produto.dto";
 
 describe("produto.dto", () => {
-  test("create mantém campos extra para compatibilidade transitória", () => {
+  test("create exige nomeComercial, categoriaId e tipoDispensacao", () => {
     const parsed = createProdutoSchema.parse({
-      nome: "Sabonete",
-      categoria: "MEDICAMENTO",
-    });
-    expect(parsed.categoria).toBe("MEDICAMENTO");
-  });
-
-  test("create aceita apenas categoriaId", () => {
-    const parsed = createProdutoSchema.parse({
-      nome: "Sabonete",
+      nomeComercial: "Sabonete",
       categoriaId: "12",
+      tipoDispensacao: "VENDA_LIVRE",
     });
     expect(parsed.categoriaId).toBe("12");
+    expect(parsed.tipoDispensacao).toBe("VENDA_LIVRE");
+  });
+
+  test("create aceita taxRuleId e campos opcionais", () => {
+    const parsed = createProdutoSchema.parse({
+      nomeComercial: "Sabonete",
+      categoriaId: "12",
+      tipoDispensacao: "RECEITA_NORMAL",
+      taxRuleId: "2",
+      estoqueMinimo: 5,
+    });
+    expect(parsed.taxRuleId).toBe("2");
+    expect(parsed.estoqueMinimo).toBe(5);
   });
 
   test("update aceita apenas categoriaId", () => {
@@ -33,11 +39,19 @@ describe("produto.dto", () => {
     expect(parsed.categoriaId).toBe("9");
   });
 
-  test("search ignora categoria legada fora do contrato", () => {
-    const parsed = searchProdutosQuerySchema.parse({
-      categoria: "MEDICAMENTO",
-    });
-    expect("categoria" in parsed).toBe(false);
+  test("search interpreta ativo=false correctamente", () => {
+    const parsed = searchProdutosQuerySchema.parse({ ativo: "false" });
+    expect(parsed.ativo).toBe(false);
+  });
+
+  test("search interpreta includeInactive=true correctamente", () => {
+    const parsed = searchProdutosQuerySchema.parse({ includeInactive: "true" });
+    expect(parsed.includeInactive).toBe(true);
+  });
+
+  test("search preserva alias categoria para o controller", () => {
+    const parsed = searchProdutosQuerySchema.parse({ categoria: "9" });
+    expect(parsed.categoria).toBe("9");
   });
 
   test("schema de categoriaId rejeita valor inválido", () => {

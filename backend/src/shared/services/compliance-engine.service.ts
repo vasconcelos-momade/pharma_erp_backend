@@ -27,24 +27,24 @@ export class ComplianceEngineService {
       };
     }
 
-    // 2. Regra: Psicotrópicos exigem dupla validação (Diretor Técnico/Farmacêutico)
+    // 2. Regra: Receita especial exige dupla validação (Diretor Técnico/Farmacêutico)
     if (
-      produto.tipoDispensacao === "PSICOTROPICO" &&
+      produto.tipoDispensacao === "RECEITA_ESPECIAL" &&
       Boolean(produto.requiresDoubleCheck) &&
       !validatorUserId
     ) {
         return {
           passed: false,
-          message: `O produto ${produto.nomeComercial} (psicotrópico) exige validação de um segundo profissional qualificado.`,
+          message: `O produto ${produto.nomeComercial} (receita especial) exige validação de um segundo profissional qualificado.`,
           errorCode: "MISSING_DOUBLE_CHECK"
         };
     }
 
-    // 3. Regra: Narcóticos exigem livro de psicotrópicos
-    if (produto.tipoDispensacao === "NARCOTICO" && !produto.requiresPsychotropicBook) {
+    // 3. Regra: Receita especial deve registar no Livro de Psicotrópicos
+    if (produto.tipoDispensacao === "RECEITA_ESPECIAL" && !produto.requiresPsychotropicBook) {
         return {
             passed: false,
-            message: `Configuração inconsistente: Narcótico ${produto.nomeComercial} deve obrigatoriamente registar no Livro de Psicotrópicos.`,
+            message: `Configuração inconsistente: Receita especial ${produto.nomeComercial} deve obrigatoriamente registar no Livro de Psicotrópicos.`,
             errorCode: "INCONSISTENT_CONFIG"
         };
     }

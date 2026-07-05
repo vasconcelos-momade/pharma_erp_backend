@@ -63,13 +63,16 @@ export class SearchProdutosUseCase {
       ...(query ? queryFilters : {}),
     };
 
-    const items = await prisma.produto.findMany({
-      where,
-      select: produtoPosSelect,
-      orderBy: [{ nomeComercial: "asc" }, { id: "asc" }],
-      skip: (page - 1) * pageSize,
-      take: pageSize + 1,
-    });
+    const [items, totalCount] = await Promise.all([
+      prisma.produto.findMany({
+        where,
+        select: produtoPosSelect,
+        orderBy: [{ nomeComercial: "asc" }, { id: "asc" }],
+        skip: (page - 1) * pageSize,
+        take: pageSize + 1,
+      }),
+      prisma.produto.count({ where }),
+    ]);
 
     const mapped = items.map((row: any) =>
       mapPosProduto(row as Record<string, unknown>),
@@ -80,6 +83,7 @@ export class SearchProdutosUseCase {
       page,
       pageSize,
       hasMore: items.length > pageSize,
+      totalCount,
     };
   }
 }

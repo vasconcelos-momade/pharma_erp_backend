@@ -44,20 +44,10 @@ export class ValidarDispensacaoUseCase {
     };
 
     switch (produto.tipoDispensacao) {
-      case "RECEITA_SIMPLES":
+      case "RECEITA_NORMAL":
         response.necessitaReceita = true;
         break;
-      case "RECEITA_CONTROLADA":
-        response.necessitaReceita = true;
-        response.necessitaValidacao = true;
-        break;
-      case "RECEITA_OBRIGATORIA":
-      case "RECEITA_RETIDA":
-        response.necessitaReceita = true;
-        response.necessitaValidacao = true;
-        break;
-      case "PSICOTROPICO":
-      case "NARCOTICO":
+      case "RECEITA_ESPECIAL":
         response.necessitaReceita = true;
         response.necessitaValidacao = true;
         response.necessitaLote = true;

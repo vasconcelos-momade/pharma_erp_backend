@@ -81,7 +81,7 @@ export class CreateSaleUseCase {
         const totalItem = precoMedio * item.quantidade;
 
         if (produto.tipoDispensacao !== "VENDA_LIVRE") {
-          await tx.dispensacao.create({
+          const dispensacao = await tx.dispensacao.create({
             data: {
               produtoId: produtoRow.id,
               loteId: lotesUtilizados[0]?.loteId ?? produtoRow.id,
@@ -94,15 +94,11 @@ export class CreateSaleUseCase {
           });
 
           if (produto.requiresPsychotropicBook) {
-            const now = new Date();
             await tx.livroPsicotropico.create({
               data: {
-                produtoId: produtoRow.id,
+                dispensacaoId: dispensacao.id,
                 responsavelId: BigInt(data.userId),
                 tipoMovimento: "SAIDA",
-                quantidade: item.quantidade,
-                saldoAnterior: disponivel,
-                saldoAtual: disponivel - item.quantidade,
                 numeroDocumento: item.receita?.numero || "RECEITA_INTERNA",
                 observacoes: `Venda para cliente ${data.clienteId}`,
               },
@@ -173,20 +169,15 @@ export class CreateSaleUseCase {
     produto: ReturnType<typeof flattenProdutoForApi>,
     receita?: CreateSaleDTO["items"][0]["receita"],
   ) {
-    if (produto.tipoDispensacao === "NARCOTICO") {
-      if (!receita?.numero) {
-        throw new Error(
-          `[ANARME] Bloqueio: Narcóticos exigem receita especial e registo obrigatório.`,
-        );
-      }
+    if (produto.requiresPrescription && !receita?.numero) {
+      throw new Error(
+        `[ANARME] Bloqueio: Medicamentos sujeitos a receita exigem prescrição médica.`,
+      );
     }
 
-    if (
-      produto.tipoDispensacao === "PSICOTROPICO" &&
-      !receita?.numero
-    ) {
+    if (produto.requiresPsychotropicBook && !receita?.numero) {
       throw new Error(
-        `[ANARME] Bloqueio: Psicotrópicos exigem receita controlada.`,
+        `[ANARME] Bloqueio: Receita especial exige prescrição controlada.`,
       );
     }
   }

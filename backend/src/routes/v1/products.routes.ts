@@ -3,7 +3,6 @@ import {
   CategoriaController,
   ProdutoController,
 } from "../../modules/tenant/products";
-import { ListTaxRulesUseCase } from "../../modules/tenant/pos/application/use-cases/list-tax-rules.use-case";
 import { LotesController } from "../../modules/tenant/stock/presentation/controllers/lotes.controller";
 import {
   tenantAuthMiddleware,
@@ -19,7 +18,6 @@ import type { Router } from "../../shared/http/router";
 const produtoController = new ProdutoController();
 const categoriaController = new CategoriaController();
 const lotesController = new LotesController();
-const listTaxRulesUseCase = new ListTaxRulesUseCase();
 const productIdParamSchema = z.object({
   productId: z.string().regex(/^\d+$/, "productId inválido"),
 });
@@ -168,10 +166,7 @@ export function registerProductRoutes(router: Router, prefix: string): void {
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
     requirePermission("PRODUTOS", "VIEW"),
-    async () => {
-      const rules = await listTaxRulesUseCase.execute();
-      return Response.json({ success: true, data: rules });
-    },
+    async () => produtoController.listTaxRules(),
   );
 
   registerCategoryResource(router, `${prefix}/tenant/categories`);

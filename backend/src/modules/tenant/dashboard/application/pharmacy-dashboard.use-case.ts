@@ -147,13 +147,11 @@ export class PharmacyDashboardUseCase {
     }, 0);
 
     const antimicrobianos = produtosRegulacao
-      .filter((row: any) =>
-        ["RECEITA_OBRIGATORIA", "RECEITA_CONTROLADA"].includes(row.tipoDispensacao),
-      )
+      .filter((row: any) => row.tipoDispensacao === "RECEITA_NORMAL")
       .reduce((sum: number, row: any) => sum + (row._count._all ?? 0), 0);
 
     const psicotropicos = produtosRegulacao
-      .filter((row: any) => row.tipoDispensacao === "PSICOTROPICO")
+      .filter((row: any) => row.tipoDispensacao === "RECEITA_ESPECIAL")
       .reduce((sum: number, row: any) => sum + (row._count._all ?? 0), 0);
 
     const produtoIds = topDispensados

@@ -4,7 +4,6 @@ import {
   ValidationApiError,
 } from "../../../../../shared/http/api-error";
 import {
-  inferReceitaOrigem,
   inferReceitaStatus,
   normalizePage,
   parseDateRange,
@@ -80,7 +79,7 @@ function buildReceitaListWhere(params: ListReceitasParams) {
     appendAnd({
       OR: [
         { dispensacoes: { some: {} } },
-        { livroReceitas: { some: { tipoMovimento: "SAIDA" } } },
+        { livroReceitas: { some: {} } },
       ],
     });
   } else if (params.status === "EXPIRADA") {
@@ -88,7 +87,7 @@ function buildReceitaListWhere(params: ListReceitasParams) {
       AND: [
         { dataReceita: { lt: expiryCutoff } },
         { dispensacoes: { none: {} } },
-        { livroReceitas: { none: { tipoMovimento: "SAIDA" } } },
+        { livroReceitas: { none: {} } },
       ],
     });
   } else if (params.status === "PENDENTE") {
@@ -96,50 +95,34 @@ function buildReceitaListWhere(params: ListReceitasParams) {
       AND: [
         { dataReceita: { gte: expiryCutoff } },
         { dispensacoes: { none: {} } },
-        { livroReceitas: { none: { tipoMovimento: "SAIDA" } } },
+        { livroReceitas: { none: {} } },
       ],
     });
   }
 
   if (params.origem === "DIGITAL") {
-    appendAnd({
-      livroReceitas: {
-        some: { origemReceita: "DIGITAL" },
-      },
-    });
+    appendAnd({ origemReceita: "DIGITAL" });
   } else if (params.origem === "SISTEMA_INTERNO") {
-    appendAnd({
-      livroReceitas: {
-        some: { origemReceita: "SISTEMA_INTERNO" },
-      },
-    });
+    appendAnd({ origemReceita: "SISTEMA_INTERNO" });
   } else if (params.origem === "FISICA") {
-    appendAnd({
-      NOT: {
-        livroReceitas: {
-          some: { origemReceita: { in: ["DIGITAL", "SISTEMA_INTERNO"] } },
-        },
-      },
-    });
+    appendAnd({ origemReceita: "FISICA" });
   }
 
   return where;
 }
 
 function mapReceitaRow(row: any, now = new Date()) {
-  const livroSaidasCount = row._count?.livroReceitas ?? 0;
+  const livroMovimentosCount = row._count?.livroReceitas ?? 0;
   const dispensacoesCount = row._count?.dispensacoes ?? 0;
-  const origem = inferReceitaOrigem(
-    (row.livroReceitas ?? []).map((item: any) => String(item.origemReceita)),
-  );
+  const origem = String(row.origemReceita ?? "FISICA");
   const status =
-    dispensacoesCount > 0 || livroSaidasCount > 0
+    dispensacoesCount > 0 || livroMovimentosCount > 0
       ? "UTILIZADA"
       : inferReceitaStatus(
           {
             dataReceita: row.dataReceita,
             dispensacoesCount,
-            livroSaidasCount,
+            livroSaidasCount: livroMovimentosCount,
           },
           now,
         );
@@ -177,34 +160,22 @@ export class ReceitasDashboardUseCase {
     const expiryCutoff = new Date(now);
     expiryCutoff.setDate(expiryCutoff.getDate() - 30);
 
-    const [rows, digitalAggRows, latestRows] = await Promise.all([
+    const [rows, digitalCount, latestRows] = await Promise.all([
       prisma.receita.findMany({
         where,
-        include: {
-          livroReceitas: {
-            select: { origemReceita: true, tipoMovimento: true },
-          },
-          dispensacoes: {
-            select: { id: true },
-          },
+        select: {
+          id: true,
+          dataReceita: true,
+          origemReceita: true,
+          dispensacoes: { select: { id: true } },
+          livroReceitas: { select: { id: true } },
         },
       }),
-      prisma.livroReceita.findMany({
+      prisma.receita.count({
         where: {
-          ...(params.clienteId ? { clienteId: BigInt(params.clienteId) } : {}),
-          ...(params.search?.trim()
-            ? {
-                OR: [
-                  { numeroReceita: { contains: params.search.trim() } },
-                  { medicoNome: { contains: params.search.trim() } },
-                ],
-              }
-            : {}),
+          ...where,
           origemReceita: "DIGITAL",
-          ...(where.dataReceita ? { dataReceita: where.dataReceita } : {}),
         },
-        distinct: ["receitaId"],
-        select: { receitaId: true },
       }),
       prisma.receita.findMany({
         where,
@@ -215,13 +186,6 @@ export class ReceitasDashboardUseCase {
               nome: true,
               documento: true,
             },
-          },
-          livroReceitas: {
-            select: {
-              origemReceita: true,
-            },
-            orderBy: { createdAt: "desc" },
-            take: 1,
           },
           dispensacoes: {
             select: {
@@ -251,13 +215,9 @@ export class ReceitasDashboardUseCase {
     for (const row of rows) {
       const used =
         (row.dispensacoes?.length ?? 0) > 0 ||
-        (row.livroReceitas?.some((item: any) => item.tipoMovimento === "SAIDA") ?? false);
-      const origem = inferReceitaOrigem(
-        (row.livroReceitas ?? []).map((item: any) => String(item.origemReceita)),
-      );
-      if (origem === "DIGITAL") {
-        // counted separately below
-      } else {
+        (row.livroReceitas?.length ?? 0) > 0;
+      const origem = String(row.origemReceita ?? "FISICA");
+      if (origem !== "DIGITAL") {
         fisicas += 1;
       }
       if (used) {
@@ -276,7 +236,7 @@ export class ReceitasDashboardUseCase {
         pendentes,
         expiradas,
         fisicas,
-        digitais: digitalAggRows.length,
+        digitais: digitalCount,
       },
       latest: latestRows.map((row: any) => mapReceitaRow(row, now)),
     };
@@ -313,8 +273,16 @@ export class ListReceitasUseCase {
           },
           livroReceitas: {
             select: {
-              origemReceita: true,
-              tipoMovimento: true,
+              id: true,
+              createdAt: true,
+              dispensacao: {
+                select: {
+                  quantidade: true,
+                  produto: { select: { id: true, nomeComercial: true } },
+                  lote: { select: { id: true, numeroLote: true } },
+                },
+              },
+              responsavel: { select: { id: true, name: true, role: true } },
             },
             orderBy: { createdAt: "desc" },
             take: 5,
@@ -372,10 +340,15 @@ export class GetReceitaDetailUseCase {
         },
         livroReceitas: {
           include: {
-            produto: { select: { id: true, nomeComercial: true } },
-            lote: { select: { id: true, numeroLote: true } },
+            dispensacao: {
+              select: {
+                quantidade: true,
+                produto: { select: { id: true, nomeComercial: true } },
+                lote: { select: { id: true, numeroLote: true } },
+                fatura: { select: { id: true, numero: true, total: true } },
+              },
+            },
             responsavel: { select: { id: true, name: true, role: true } },
-            fatura: { select: { id: true, numero: true, total: true } },
           },
           orderBy: { createdAt: "desc" },
         },
@@ -410,11 +383,13 @@ export class GetReceitaDetailUseCase {
         description: `Receita ${receita.numeroReceita || `#${receita.id}` } criada`,
       },
       ...receita.livroReceitas.map((item: any) => ({
-        type: `LIVRO_${item.tipoMovimento}`,
+        type: "LIVRO_SAIDA",
         at: item.createdAt.toISOString(),
-        description: `Movimento ${item.tipoMovimento} no livro de receitas`,
-        productName: item.produto?.nomeComercial ?? null,
-        quantity: item.quantidade,
+        description: "Movimento SAIDA no livro de receitas",
+        productName: item.dispensacao?.produto?.nomeComercial ?? null,
+        quantity: item.dispensacao?.quantidade != null
+          ? Number(item.dispensacao.quantidade)
+          : null,
       })),
       ...receita.dispensacoes.map((item: any) => ({
         type: "DISPENSACAO",
@@ -432,10 +407,6 @@ export class GetReceitaDetailUseCase {
           livroReceitas: receita.livroReceitas.length,
           dispensacoes: receita.dispensacoes.length,
         },
-        livroReceitas: receita.livroReceitas.map((item: any) => ({
-          ...item,
-          origemReceita: item.origemReceita,
-        })),
       }),
       dispensacoes: receita.dispensacoes.map((item: any) => ({
         id: item.id.toString(),
@@ -473,20 +444,26 @@ export class GetReceitaDetailUseCase {
       })),
       livroReceitas: receita.livroReceitas.map((item: any) => ({
         id: item.id.toString(),
-        tipoMovimento: item.tipoMovimento,
-        origemReceita: item.origemReceita,
-        quantidade: Number(item.quantidade),
-        saldoAnterior: Number(item.saldoAnterior),
-        saldoAtual: Number(item.saldoAtual),
-        numeroReceita: item.numeroReceita,
-        medicoNome: item.medicoNome,
-        observacoes: item.observacoes,
+        tipoMovimento: "SAIDA",
+        origemReceita: receita.origemReceita,
+        quantidade: Number(item.dispensacao?.quantidade ?? 0),
+        saldoAnterior: null,
+        saldoAtual: null,
+        numeroReceita: receita.numeroReceita,
+        medicoNome: receita.medicoNome,
+        observacoes: null,
         createdAt: item.createdAt.toISOString(),
-        produto: item.produto
-          ? { id: item.produto.id.toString(), nome: item.produto.nomeComercial }
+        produto: item.dispensacao?.produto
+          ? {
+              id: item.dispensacao.produto.id.toString(),
+              nome: item.dispensacao.produto.nomeComercial,
+            }
           : null,
-        lote: item.lote
-          ? { id: item.lote.id.toString(), numeroLote: item.lote.numeroLote }
+        lote: item.dispensacao?.lote
+          ? {
+              id: item.dispensacao.lote.id.toString(),
+              numeroLote: item.dispensacao.lote.numeroLote,
+            }
           : null,
         responsavel: item.responsavel
           ? {
@@ -495,11 +472,11 @@ export class GetReceitaDetailUseCase {
               role: item.responsavel.role,
             }
           : null,
-        fatura: item.fatura
+        fatura: item.dispensacao?.fatura
           ? {
-              id: item.fatura.id.toString(),
-              numero: item.fatura.numero,
-              total: Number(item.fatura.total),
+              id: item.dispensacao.fatura.id.toString(),
+              numero: item.dispensacao.fatura.numero,
+              total: Number(item.dispensacao.fatura.total),
             }
           : null,
       })),
@@ -552,7 +529,7 @@ export class CreateReceitaUseCase {
         cliente: {
           select: { id: true, nome: true, documento: true, telefone: true },
         },
-        livroReceitas: { select: { origemReceita: true }, take: 1 },
+        livroReceitas: { select: { id: true }, take: 1 },
         _count: { select: { livroReceitas: true, dispensacoes: true } },
         dispensacoes: {
           select: { createdAt: true },
@@ -615,7 +592,7 @@ export class UpdateReceitaUseCase {
         cliente: {
           select: { id: true, nome: true, documento: true, telefone: true },
         },
-        livroReceitas: { select: { origemReceita: true }, take: 1 },
+        livroReceitas: { select: { id: true }, take: 1 },
         _count: { select: { livroReceitas: true, dispensacoes: true } },
         dispensacoes: {
           select: { createdAt: true },

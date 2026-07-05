@@ -1,4 +1,5 @@
 import { ProdutoService } from "../../application/services/produto.service";
+import { ListTaxRulesUseCase } from "../../../pos/application/use-cases/list-tax-rules.use-case";
 import {
   createProdutoSchema,
   searchProdutosQuerySchema,
@@ -13,6 +14,7 @@ import { z } from "zod";
 
 export class ProdutoController {
   private service = new ProdutoService();
+  private listTaxRulesUseCase = new ListTaxRulesUseCase();
 
   async create(req: Request, userId: string) {
     try {
@@ -138,6 +140,15 @@ export class ProdutoController {
       return Response.json({ message: "Produto desativado com sucesso" });
     } catch (error: any) {
       return controllerErrorResponse(error);
+    }
+  }
+
+  async listTaxRules() {
+    try {
+      const result = await this.listTaxRulesUseCase.execute();
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error, 500);
     }
   }
 

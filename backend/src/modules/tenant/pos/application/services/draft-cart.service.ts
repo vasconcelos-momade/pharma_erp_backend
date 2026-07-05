@@ -12,7 +12,7 @@ import type {
   DraftCartView,
 } from "./draft-cart.types";
 import { isDraftCartServicoItem } from "./draft-cart.types";
-import { mapPosProduto } from "../../../products/domain/produto-presenter";
+import { mapPosProduto, produtoPosSelect } from "../../../products/domain/produto-presenter";
 import { getQuantidadeDisponivel } from "../../../stock/domain/produto-stock.service";
 import { selectFefoLoteForSale } from "../../../stock/domain/fefo-lote.service";
 import {
@@ -730,18 +730,7 @@ export class DraftCartService {
 
       const produtoRow = await tx.produto.findUnique({
         where: { id: row.produtoId },
-        select: {
-          id: true,
-          nome: true,
-          regulacao: true,
-          taxRule: { select: { tipo: true, taxa: true, codigo: true } },
-          stockBalance: {
-            select: {
-              quantidadeDisponivel: true,
-              quantidadeTotal: true,
-            },
-          },
-        },
+        select: produtoPosSelect,
       });
       const produto = produtoRow
         ? mapPosProduto(produtoRow as Record<string, unknown>)

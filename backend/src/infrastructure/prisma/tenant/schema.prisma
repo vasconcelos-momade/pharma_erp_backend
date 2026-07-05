@@ -133,7 +133,6 @@ model Cliente {
   faturas        Fatura[]
   cotacoes       Cotacao[]
   contasReceber  ContaReceber[]
-  livroReceitas  LivroReceita[]
   receitas       Receita[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
@@ -208,14 +207,12 @@ model Produto {
   reservas                 EstoqueReserva[]
   historicoPrecos          HistoricoPreco[]
   alertasEstoque           AlertaEstoque[]
-  livroPsicotropicos       LivroPsicotropico[]
   stockValuation           StockValuation?
   stockBalance             StockBalance?
   dispensacoes             Dispensacao[]
   faturaItens              FaturaItem[]
   cotacaoItens             CotacaoItem[]
   stockReversals           StockReversal[]
-  livroReceitas            LivroReceita[]
   regulacao                ProdutoRegulacao?
   classificacaoEventos     ProdutoClassificacaoEvento[]
   inventarioItens          InventarioItem[]
@@ -382,8 +379,6 @@ model Lote {
   reservas             EstoqueReserva[]
   dispensacoes         Dispensacao[]
   stockReversals       StockReversal[]
-  livroPsicotropicos   LivroPsicotropico[]
-  livroReceitas        LivroReceita[]
   movimentosSanitarios LoteMovimentoSanitario[]
   incineracaoItens     IncineracaoItem[]
   inventarioItens    InventarioItem[]
@@ -535,7 +530,6 @@ model Fatura {
   contasReceber      ContaReceber[]
   reservas           EstoqueReserva[]
   dispensacoes       Dispensacao[]
-  livroReceitas      LivroReceita[]
   financialMovements FinancialMovement[]
 
   @@index([clienteId, estado])
@@ -569,7 +563,6 @@ model FaturaItem {
   produto                 Produto?                 @relation(fields: [produtoId], references: [id])
   servico                 Servico?                 @relation(fields: [servicoId], references: [id])
   dispensacao             Dispensacao?
-  livroReceitas           LivroReceita[]
   cancelamentos           FaturaItemCancelamento[]
   stockReversals          StockReversal[]
   lotesAlocacao           FaturaItemLote[]
@@ -791,20 +784,13 @@ model Pagamento {
 
 model LivroPsicotropico {
   id              BigInt                    @id @default(autoincrement()) @db.UnsignedBigInt
-  produtoId       BigInt                    @db.UnsignedBigInt
-  loteId          BigInt?                   @db.UnsignedBigInt
   dispensacaoId   BigInt?                   @unique @db.UnsignedBigInt
   tipoMovimento   TipoMovimentoPsicotropico
-  quantidade      Decimal                   @db.Decimal(10, 2)
-  saldoAnterior   Decimal                   @db.Decimal(10, 2)
-  saldoAtual      Decimal                   @db.Decimal(10, 2)
   numeroDocumento String?
   idempotencyKey  String?                   @unique
   observacoes     String?
   responsavelId   BigInt                    @db.UnsignedBigInt
   responsavel     User                      @relation(fields: [responsavelId], references: [id])
-  produto         Produto                   @relation(fields: [produtoId], references: [id])
-  lote            Lote?                     @relation(fields: [loteId], references: [id])
   dispensacao     Dispensacao?              @relation(fields: [dispensacaoId], references: [id])
   createdAt       DateTime                  @default(now())
 
@@ -1312,12 +1298,8 @@ enum TipoMovimentoPsicotropico {
 
 enum TipoDispensacao {
   VENDA_LIVRE
-  RECEITA_SIMPLES
-  RECEITA_CONTROLADA
-  RECEITA_OBRIGATORIA
-  RECEITA_RETIDA
-  PSICOTROPICO
-  NARCOTICO
+  RECEITA_NORMAL
+  RECEITA_ESPECIAL
 }
 
 enum FinancialMovementType {
@@ -1444,14 +1426,15 @@ model FinancialSummary {
 }
 
 model Receita {
-  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
-  clienteId     BigInt   @db.UnsignedBigInt
-  medicoNome    String?
-  numeroReceita String?
+  id               BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  clienteId        BigInt        @db.UnsignedBigInt
+  medicoNome       String?
+  numeroReceita    String?
   unidadeSanitaria String?
-  dataReceita   DateTime
-  observacoes   String?
-  createdAt     DateTime @default(now())
+  dataReceita      DateTime
+  origemReceita    OrigemReceita @default(FISICA)
+  observacoes      String?
+  createdAt        DateTime      @default(now())
 
   cliente       Cliente        @relation(fields: [clienteId], references: [id])
   livroReceitas LivroReceita[]
@@ -1461,40 +1444,17 @@ model Receita {
 }
 
 model LivroReceita {
-  id             BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
-  receitaId      BigInt               @db.UnsignedBigInt
-  clienteId      BigInt               @db.UnsignedBigInt
-  faturaId       BigInt?              @db.UnsignedBigInt
-  faturaItemId   BigInt?              @db.UnsignedBigInt
-  dispensacaoId  BigInt?              @unique @db.UnsignedBigInt
-  produtoId      BigInt               @db.UnsignedBigInt
-  loteId         BigInt?              @db.UnsignedBigInt
-  tipoMovimento  TipoMovimentoReceita
-  quantidade     Decimal              @db.Decimal(14, 2)
-  saldoAnterior  Decimal              @db.Decimal(14, 2)
-  saldoAtual     Decimal              @db.Decimal(14, 2)
-  medicoNome     String?
-  numeroReceita  String?
-  dataReceita    DateTime
-  origemReceita  OrigemReceita        @default(FISICA)
-  idempotencyKey String?              @unique
-  observacoes    String?
-  responsavelId  BigInt               @db.UnsignedBigInt
-  responsavel    User                 @relation(fields: [responsavelId], references: [id])
-  receita        Receita              @relation(fields: [receitaId], references: [id])
-  cliente        Cliente              @relation(fields: [clienteId], references: [id])
-  produto        Produto              @relation(fields: [produtoId], references: [id])
-  lote           Lote?                @relation(fields: [loteId], references: [id])
-  fatura         Fatura?              @relation(fields: [faturaId], references: [id])
-  faturaItem     FaturaItem?          @relation(fields: [faturaItemId], references: [id])
-  dispensacao    Dispensacao?         @relation(fields: [dispensacaoId], references: [id])
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
-  version        Int                  @default(0)
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  dispensacaoId BigInt   @unique @db.UnsignedBigInt
+  receitaId     BigInt   @db.UnsignedBigInt
+  responsavelId BigInt   @db.UnsignedBigInt
+  createdAt     DateTime @default(now())
+
+  dispensacao Dispensacao @relation(fields: [dispensacaoId], references: [id])
+  receita     Receita     @relation(fields: [receitaId], references: [id])
+  responsavel User        @relation(fields: [responsavelId], references: [id])
 
   @@index([receitaId])
-  @@index([clienteId])
-  @@index([produtoId])
   @@index([createdAt])
   @@map("livro_receitas")
 }

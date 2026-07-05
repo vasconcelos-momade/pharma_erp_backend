@@ -10,12 +10,8 @@ const ativoSchema = queryBooleanSchema;
 
 const tipoDispensacaoCreateSchema = z.enum([
   "VENDA_LIVRE",
-  "RECEITA_SIMPLES",
-  "RECEITA_CONTROLADA",
-  "RECEITA_OBRIGATORIA",
-  "RECEITA_RETIDA",
-  "PSICOTROPICO",
-  "NARCOTICO",
+  "RECEITA_NORMAL",
+  "RECEITA_ESPECIAL",
 ]);
 
 const produtoBaseSchema = z.looseObject({

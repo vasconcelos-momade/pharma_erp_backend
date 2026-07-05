@@ -7,6 +7,38 @@ import {
   toNumber,
 } from "./regulatory.helpers";
 
+const livroPsicotropicoInclude = {
+  responsavel: { select: { id: true, name: true, role: true } },
+  dispensacao: {
+    select: {
+      id: true,
+      produtoId: true,
+      loteId: true,
+      quantidade: true,
+      tipoDispensacao: true,
+      createdAt: true,
+      produto: {
+        select: {
+          id: true,
+          nomeComercial: true,
+          barcode: true,
+          regulacao: {
+            select: {
+              tipoDispensacao: true,
+              requiresPrescription: true,
+              requiresPsychotropicBook: true,
+            },
+          },
+          categoria: {
+            select: { id: true, nome: true, codigoFNM: true },
+          },
+        },
+      },
+      lote: { select: { id: true, numeroLote: true, dataValidade: true } },
+    },
+  },
+} as const;
+
 type ListLivroPsicotropicosParams = {
   search?: string;
   produtoId?: string;
@@ -25,7 +57,9 @@ function buildLivroPsicotropicoWhere(params: ListLivroPsicotropicosParams) {
   const search = params.search?.trim();
 
   return {
-    ...(params.produtoId ? { produtoId: BigInt(params.produtoId) } : {}),
+    ...(params.produtoId
+      ? { dispensacao: { produtoId: BigInt(params.produtoId) } }
+      : {}),
     ...(params.responsavelId ? { responsavelId: BigInt(params.responsavelId) } : {}),
     ...(params.tipoMovimento ? { tipoMovimento: params.tipoMovimento } : {}),
     ...(from || to
@@ -41,8 +75,8 @@ function buildLivroPsicotropicoWhere(params: ListLivroPsicotropicosParams) {
           OR: [
             { numeroDocumento: { contains: search } },
             { observacoes: { contains: search } },
-            { produto: { nomeComercial: { contains: search } } },
-            { lote: { numeroLote: { contains: search } } },
+            { dispensacao: { produto: { nomeComercial: { contains: search } } } },
+            { dispensacao: { lote: { numeroLote: { contains: search } } } },
             { responsavel: { name: { contains: search } } },
           ],
         }
@@ -67,32 +101,36 @@ function mapLivroRegulacaoSummary(produto: any) {
 }
 
 function mapLivroPsicotropicoRow(row: any) {
+  const dispensacao = row.dispensacao;
+  const produto = dispensacao?.produto;
+  const lote = dispensacao?.lote;
+
   return {
     id: row.id.toString(),
-    produtoId: row.produtoId.toString(),
-    loteId: row.loteId?.toString() ?? null,
+    produtoId: dispensacao?.produtoId?.toString() ?? null,
+    loteId: dispensacao?.loteId?.toString() ?? null,
     dispensacaoId: row.dispensacaoId?.toString() ?? null,
     responsavelId: row.responsavelId.toString(),
     tipoMovimento: row.tipoMovimento,
-    quantidade: toNumber(row.quantidade),
-    saldoAnterior: toNumber(row.saldoAnterior),
-    saldoAtual: toNumber(row.saldoAtual),
+    quantidade: toNumber(dispensacao?.quantidade),
+    saldoAnterior: null,
+    saldoAtual: null,
     numeroDocumento: row.numeroDocumento,
     observacoes: row.observacoes,
     createdAt: row.createdAt.toISOString(),
-    produto: row.produto
+    produto: produto
       ? {
-          id: row.produto.id.toString(),
-          nome: row.produto.nomeComercial,
-          barcode: row.produto.barcode,
-          regulacao: mapLivroRegulacaoSummary(row.produto),
+          id: produto.id.toString(),
+          nome: produto.nomeComercial,
+          barcode: produto.barcode,
+          regulacao: mapLivroRegulacaoSummary(produto),
         }
       : null,
-    lote: row.lote
+    lote: lote
       ? {
-          id: row.lote.id.toString(),
-          numeroLote: row.lote.numeroLote,
-          dataValidade: row.lote.dataValidade?.toISOString?.() ?? null,
+          id: lote.id.toString(),
+          numeroLote: lote.numeroLote,
+          dataValidade: lote.dataValidade?.toISOString?.() ?? null,
         }
       : null,
     responsavel: row.responsavel
@@ -102,12 +140,12 @@ function mapLivroPsicotropicoRow(row: any) {
           role: row.responsavel.role,
         }
       : null,
-    dispensacao: row.dispensacao
+    dispensacao: dispensacao
       ? {
-          id: row.dispensacao.id.toString(),
-          quantidade: toNumber(row.dispensacao.quantidade),
-          tipoDispensacao: row.dispensacao.tipoDispensacao,
-          createdAt: row.dispensacao.createdAt.toISOString(),
+          id: dispensacao.id.toString(),
+          quantidade: toNumber(dispensacao.quantidade),
+          tipoDispensacao: dispensacao.tipoDispensacao,
+          createdAt: dispensacao.createdAt.toISOString(),
         }
       : null,
   };
@@ -128,45 +166,33 @@ export class LivroPsicotropicosDashboardUseCase {
           where: { ...where, tipoMovimento: "SAIDA" },
         }),
         prisma.livroPsicotropico.findMany({
-          where,
-          distinct: ["produtoId"],
-          select: { produtoId: true },
+          where: {
+            ...where,
+            dispensacaoId: { not: null },
+          },
+          distinct: ["dispensacaoId"],
+          select: { dispensacao: { select: { produtoId: true } } },
         }),
         prisma.livroPsicotropico.findMany({
           where,
-          include: {
-            produto: {
-              select: {
-                id: true,
-                nomeComercial: true,
-                barcode: true,
-                regulacao: {
-                  select: {
-                    tipoDispensacao: true,
-                    requiresPrescription: true,
-                    requiresPsychotropicBook: true,
-                  },
-                },
-                categoria: {
-                  select: { id: true, nome: true, codigoFNM: true },
-                },
-              },
-            },
-            lote: { select: { id: true, numeroLote: true, dataValidade: true } },
-            responsavel: { select: { id: true, name: true, role: true } },
-            dispensacao: { select: { id: true, quantidade: true, tipoDispensacao: true, createdAt: true } },
-          },
+          include: livroPsicotropicoInclude,
           orderBy: { createdAt: "desc" },
           take: 5,
         }),
       ]);
+
+    const uniqueProdutos = new Set(
+      produtosMonitorados
+        .map((row: any) => row.dispensacao?.produtoId?.toString())
+        .filter(Boolean),
+    );
 
     return {
       kpis: {
         totalMovimentos,
         entradas,
         saidas,
-        produtosMonitorados: produtosMonitorados.length,
+        produtosMonitorados: uniqueProdutos.size,
       },
       latest: latest.map(mapLivroPsicotropicoRow),
     };
@@ -183,36 +209,15 @@ export class ListLivroPsicotropicosUseCase {
       params.sortBy === "numeroDocumento"
         ? [{ numeroDocumento: sortDir }, { id: "desc" }]
         : params.sortBy === "produtoNomeComercial"
-          ? [{ produto: { nomeComercial: sortDir } }, { id: "desc" }]
+          ? [{ dispensacao: { produto: { nomeComercial: sortDir } } }, { id: "desc" }]
           : params.sortBy === "quantidade"
-            ? [{ quantidade: sortDir }, { id: "desc" }]
+            ? [{ dispensacao: { quantidade: sortDir } }, { id: "desc" }]
             : [{ createdAt: sortDir }, { id: "desc" }];
 
     const [rows, totalCount] = await Promise.all([
       prisma.livroPsicotropico.findMany({
         where,
-        include: {
-          produto: {
-            select: {
-              id: true,
-              nomeComercial: true,
-              barcode: true,
-              regulacao: {
-                select: {
-                  tipoDispensacao: true,
-                  requiresPrescription: true,
-                  requiresPsychotropicBook: true,
-                },
-              },
-              categoria: {
-                select: { id: true, nome: true, codigoFNM: true },
-              },
-            },
-          },
-          lote: { select: { id: true, numeroLote: true, dataValidade: true } },
-          responsavel: { select: { id: true, name: true, role: true } },
-          dispensacao: { select: { id: true, quantidade: true, tipoDispensacao: true, createdAt: true } },
-        },
+        include: livroPsicotropicoInclude,
         orderBy,
         skip: (page - 1) * pageSize,
         take: pageSize + 1,
@@ -237,13 +242,7 @@ export class GetLivroPsicotropicoDetailUseCase {
     const row = await prisma.livroPsicotropico.findUnique({
       where: { id },
       include: {
-        produto: {
-          include: {
-            regulacao: true,
-          },
-        },
-        lote: true,
-        responsavel: true,
+        ...livroPsicotropicoInclude,
         dispensacao: {
           include: {
             receita: {
@@ -256,6 +255,8 @@ export class GetLivroPsicotropicoDetailUseCase {
             user: { select: { id: true, name: true, role: true } },
             validadoPor: { select: { id: true, name: true, role: true } },
             fatura: { select: { id: true, numero: true, total: true, createdAt: true } },
+            produto: { include: { regulacao: true } },
+            lote: true,
           },
         },
       },

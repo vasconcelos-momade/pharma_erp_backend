@@ -6,6 +6,7 @@ import type { TaxRuleSnapshot } from "../../../../../shared/utils/fiscal-calcula
 import { serializeForJson } from "../../../../../shared/http/serialize-json";
 import { draftCartService } from "../services/draft-cart.service";
 import { flattenProdutoForApi, resolveRegulacaoPolicyForProduto } from "../../../products/domain/produto-presenter";
+import { requiresLivroReceita } from "../../../products/domain/produto-dispensacao-policy";
 import {
   getQuantidadeTotalFromMovements,
   syncStockBalanceCache,
@@ -518,49 +519,26 @@ export class FinalizarVendaUseCase {
               }
             });
 
-            // Se houver receita vinculada, registramos no Livro de Receitas (Geral de Receitas)
-            if (cleanInfo.receitaId && receitaMetadata) {
+            if (cleanInfo.receitaId && requiresLivroReceita(cleanInfo.tipoDispensacao)) {
               await tx.livroReceita.create({
                 data: {
-                  receitaId: cleanInfo.receitaId,
-                  clienteId,
-                  produtoId: cleanInfo.produtoId,
-                  loteId: cleanInfo.loteId,
-                  faturaId: fatura.id,
-                  faturaItemId: faturaItem.id,
                   dispensacaoId: dispensacao.id,
+                  receitaId: cleanInfo.receitaId,
                   responsavelId: BigInt(data.userId),
-                  tipoMovimento: "SAIDA",
-                  quantidade: cleanInfo.quantidade,
-                  saldoAnterior: receitaMetadata.saldoAnterior,
-                  saldoAtual: receitaMetadata.saldoAtual,
-                  medicoNome: receitaMetadata.medicoNome,
-                  numeroReceita: receitaMetadata.numeroReceita,
-                  dataReceita: receitaMetadata.dataReceita,
-                  origemReceita: "FISICA",
-                  idempotencyKey: `LR-DISP-${dispensacao.id}`,
-                  observacoes: `Dispensação vinculada à Fatura #${fatura.numero}${receitaMetadata.unidadeSanitaria ? ` | Unidade Sanitária: ${receitaMetadata.unidadeSanitaria}` : ""}`
-                }
+                },
               });
             }
 
-            // REGRA FUNDAMENTAL: Se for Psicotrópico, registrar no Livro de Psicotrópicos (Legal LIII/LIV)
-            // Este registro é INDEPENDENTE de estar ou não no Livro de Receitas.
             if (cleanInfo.isPsicotropico) {
               await tx.livroPsicotropico.create({
                 data: {
-                  produtoId: cleanInfo.produtoId,
-                  loteId: cleanInfo.loteId,
                   dispensacaoId: dispensacao.id,
                   responsavelId: BigInt(data.validatorUserId || data.userId),
                   tipoMovimento: "SAIDA",
-                  quantidade: cleanInfo.quantidade,
-                  saldoAnterior: receitaMetadata?.saldoAnterior || 0,
-                  saldoAtual: receitaMetadata?.saldoAtual || 0,
                   numeroDocumento: receitaMetadata?.numeroReceita || `FAT-${fatura.numero}`,
                   idempotencyKey: `LP-DISP-${dispensacao.id}`,
-                  observacoes: `Venda Psicotrópico. Fatura: #${fatura.numero} | Médico: ${receitaMetadata?.medicoNome || 'N/A'}`
-                }
+                  observacoes: `Venda receita especial. Fatura #${fatura.numero} | Médico: ${receitaMetadata?.medicoNome || "N/A"}`,
+                },
               });
             }
           }

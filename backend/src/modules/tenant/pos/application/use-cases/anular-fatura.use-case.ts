@@ -130,18 +130,20 @@ export class AnularFaturaUseCase {
           );
 
           if (produtoFlat.requiresPsychotropicBook) {
+            const dispensacao = await tx.dispensacao.findFirst({
+              where: { faturaItemId: item.id },
+              select: { id: true },
+            });
+
             await tx.livroPsicotropico.create({
               data: {
-                produtoId: item.produtoId,
-                loteId: allocations[0]?.loteId,
+                dispensacaoId: dispensacao?.id,
                 responsavelId: BigInt(data.userId),
                 tipoMovimento: "ENTRADA",
-                quantidade: item.quantidade,
-                saldoAnterior: estoqueAnterior,
-                saldoAtual: estoqueFinal,
                 numeroDocumento: fatura.numero,
-                observacoes: `ESTORNO (Anulação da Fatura #${fatura.numero})`
-              }
+                idempotencyKey: `LP-REV-${fatura.id}-${item.id}`,
+                observacoes: `ESTORNO (Anulação da Fatura #${fatura.numero})`,
+              },
             });
           }
         }
