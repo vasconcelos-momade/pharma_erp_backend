@@ -3,10 +3,31 @@
  * LoteStockBalance é cache de leitura (total, disponível).
  */
 
-import type { FefoLoteRow, FefoLoteTx } from "./fefo-lote.service";
 import { FEFO_LOTE_FILTER } from "./fefo-lote.service";
+import { startOfUtcDay } from "./expiry-date.util";
+import type { FefoLoteRow } from "./lote.types";
 
-export type LoteStockTx = FefoLoteTx & {
+type LoteRow = {
+  id: bigint;
+  numeroLote: string;
+  dataValidade: Date;
+  quantidadeQuarentena?: unknown;
+  precoCompra: unknown;
+  precoVenda?: unknown | null;
+};
+
+export type LoteStockTx = {
+  lote?: {
+    findFirst?: (args: {
+      where: Record<string, unknown>;
+      select?: Record<string, boolean>;
+    }) => Promise<LoteRow | null>;
+    findMany: (args: {
+      where: Record<string, unknown>;
+      orderBy?: Array<Record<string, "asc" | "desc">> | Record<string, "asc" | "desc">;
+      select?: Record<string, unknown>;
+    }) => Promise<LoteRow[]>;
+  };
   estoqueMovimento?: {
     findMany: (args: {
       where: Record<string, unknown>;
@@ -83,7 +104,10 @@ export async function getLoteQuantidadeFromMovements(
     },
   });
 
-  return movements.reduce((sum, m) => sum + signedMovementDelta(m), 0);
+  return movements.reduce<number>(
+    (sum, m) => sum + signedMovementDelta(m),
+    0,
+  );
 }
 
 export function loteQuantidadeDisponivelFromTotal(
@@ -162,7 +186,7 @@ export async function allocateFefoLotes(
     where: {
       produtoId,
       ...FEFO_LOTE_FILTER,
-      dataValidade: { gt: new Date() },
+      dataValidade: { gte: startOfUtcDay() },
     },
     orderBy: [{ dataValidade: "asc" }, { createdAt: "asc" }],
     select: {
@@ -209,7 +233,7 @@ export async function getSellableQuantityFromLoteMovements(
     where: {
       produtoId,
       ...FEFO_LOTE_FILTER,
-      dataValidade: { gt: new Date() },
+      dataValidade: { gte: startOfUtcDay() },
     },
     select: { id: true, quantidadeQuarentena: true },
   });

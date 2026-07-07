@@ -23,6 +23,7 @@ model User {
   estoqueMovimentos       EstoqueMovimento[]
   faturas                 Fatura[]
   cotacoes                Cotacao[]
+  cotacoesAprovadas       Cotacao[]                @relation("CotacaoAprovador")
   dispensacoes            Dispensacao[]
   livroPsicotropicos      LivroPsicotropico[]
   livroReceitas           LivroReceita[]
@@ -601,22 +602,29 @@ model LoteStockBalance {
 }
 
 model Cotacao {
-  id          BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
-  numero      String        @unique
-  clienteId   BigInt        @db.UnsignedBigInt
-  cliente     Cliente       @relation(fields: [clienteId], references: [id])
-  userId      BigInt        @db.UnsignedBigInt
-  user        User          @relation(fields: [userId], references: [id])
-  desconto    Decimal       @default(0) @db.Decimal(14, 2)
-  moeda       String        @default("MZN")
-  estado      EstadoCotacao @default(PENDENTE)
-  validade    DateTime
-  observacoes String?       @db.Text
-  deletedAt   DateTime?
-  version     Int           @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  items       CotacaoItem[]
+  id                BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
+  numero            String        @unique
+  clienteNome       String        @map("cliente")
+  clienteId         BigInt?       @db.UnsignedBigInt
+  clienteCadastrado Cliente?      @relation(fields: [clienteId], references: [id])
+  userId            BigInt        @db.UnsignedBigInt
+  user              User          @relation(fields: [userId], references: [id])
+  subtotal          Decimal       @default(0) @db.Decimal(14, 2)
+  desconto          Decimal       @default(0) @db.Decimal(14, 2)
+  ivaTotal          Decimal       @default(0) @db.Decimal(14, 2)
+  total             Decimal       @default(0) @db.Decimal(14, 2)
+  moeda             String        @default("MZN")
+  estado            EstadoCotacao @default(PENDENTE)
+  validade          DateTime
+  observacoes       String?       @db.Text
+  aprovadoPorId     BigInt?       @db.UnsignedBigInt
+  aprovadoPor       User?         @relation("CotacaoAprovador", fields: [aprovadoPorId], references: [id])
+  aprovadoEm        DateTime?
+  deletedAt         DateTime?
+  version           Int           @default(0)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  items             CotacaoItem[]
 
   @@index([clienteId, estado])
   @@index([createdAt])
@@ -624,19 +632,27 @@ model Cotacao {
   @@map("cotacoes")
 }
 
-/// Snapshot de negociação: preço e quantidade acordados. Dados de produto/serviço
-/// (nome, IVA, regulação) resolvem-se via FK; totais fiscais calculam-se no service.
+/// Snapshot comercial por item — valores persistidos no momento da negociação.
 model CotacaoItem {
-  id        BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
-  cotacaoId BigInt   @db.UnsignedBigInt
-  produtoId BigInt?  @db.UnsignedBigInt
-  servicoId BigInt?  @db.UnsignedBigInt
-  quantidade Decimal @db.Decimal(14, 2)
-  precoUnit  Decimal @db.Decimal(14, 2)
-  cotacao   Cotacao  @relation(fields: [cotacaoId], references: [id], onDelete: Cascade)
-  produto   Produto? @relation(fields: [produtoId], references: [id])
-  servico   Servico? @relation(fields: [servicoId], references: [id])
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  cotacaoId  BigInt   @db.UnsignedBigInt
+  produtoId  BigInt?  @db.UnsignedBigInt
+  servicoId  BigInt?  @db.UnsignedBigInt
+  descricao  String
+  quantidade Decimal  @db.Decimal(14, 2)
+  precoUnit  Decimal  @db.Decimal(14, 2)
+  desconto   Decimal  @default(0) @db.Decimal(14, 2)
+  iva        Decimal  @default(0) @db.Decimal(5, 2)
+  valorIva   Decimal  @default(0) @db.Decimal(14, 2)
+  subtotal   Decimal  @default(0) @db.Decimal(14, 2)
+  total      Decimal  @default(0) @db.Decimal(14, 2)
+  cotacao    Cotacao  @relation(fields: [cotacaoId], references: [id], onDelete: Cascade)
+  produto    Produto? @relation(fields: [produtoId], references: [id])
+  servico    Servico? @relation(fields: [servicoId], references: [id])
 
+  @@index([cotacaoId])
+  @@index([produtoId])
+  @@index([servicoId])
   @@map("cotacao_itens")
 }
 

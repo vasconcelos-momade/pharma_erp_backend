@@ -2,6 +2,7 @@ import { type CentralPayload } from "../../infrastructure/auth/jwt.service";
 import { prismaCentralUnscoped } from "../../infrastructure/prisma/prisma-central.service";
 import { branchContext } from "../context/branch-context";
 import { authenticateCentralRequest } from "./central-auth";
+import { isSuperAdminRole } from "./central-auth-roles";
 
 export class TenantAuthError extends Error {
   constructor(
@@ -50,12 +51,53 @@ export function resolveTenantSelection(
   };
 }
 
+async function assertBranchBelongsToTenant(
+  tenantId: string,
+  branchId: string,
+): Promise<void> {
+  const branch = await prismaCentralUnscoped.branch.findUnique({
+    where: { id: BigInt(branchId) },
+    select: { tenantId: true, active: true },
+  });
+
+  if (!branch) {
+    throw new TenantAuthError("Branch not found", 404);
+  }
+  if (String(branch.tenantId) !== String(tenantId)) {
+    throw new TenantAuthError("Branch does not belong to tenant", 403);
+  }
+  if (!branch.active) {
+    throw new TenantAuthError("Branch is not active", 403);
+  }
+}
+
 export async function authenticateTenantRequest(req: Request): Promise<TenantAuthContext> {
   const auth = await authenticateCentralRequest(req);
+  const requestedTenantId = req.headers.get("x-tenant-id");
+  const requestedBranchId = req.headers.get("x-branch-id");
+
+  // SUPER_ADMIN: não usa lista de tenants do JWT; exige headers explícitos.
+  if (isSuperAdminRole(auth.role)) {
+    if (!requestedTenantId || !requestedBranchId) {
+      throw new TenantAuthError(
+        "SUPER_ADMIN must provide x-tenant-id and x-branch-id for tenant routes",
+        403,
+      );
+    }
+    await assertBranchBelongsToTenant(requestedTenantId, requestedBranchId);
+    return {
+      payload: auth.payload,
+      tenantId: requestedTenantId,
+      branchId: requestedBranchId,
+      userId: auth.userId,
+      centralUserId: auth.userId,
+    };
+  }
+
   const selection = resolveTenantSelection(
     auth.payload,
-    req.headers.get("x-tenant-id"),
-    req.headers.get("x-branch-id"),
+    requestedTenantId,
+    requestedBranchId,
   );
 
   if (!selection) {

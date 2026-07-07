@@ -4,8 +4,10 @@ import {
   buildCotacaoTotals,
 } from "../helpers/cotacao-calculator";
 import type {
+  AddCotacaoItemDTO,
   CreateCotacaoDTO,
   UpdateCotacaoDTO,
+  UpdateCotacaoItemDTO,
 } from "../dto/cotacao.dto";
 
 export class CotacaoService {
@@ -39,6 +41,28 @@ export class CotacaoService {
 
   update(id: string, data: UpdateCotacaoDTO, userId: string) {
     return this.repo.update(BigInt(id), data, BigInt(userId));
+  }
+
+  addItem(cotacaoId: string, data: AddCotacaoItemDTO, userId: string) {
+    return this.repo.addItem(BigInt(cotacaoId), data, BigInt(userId));
+  }
+
+  updateItem(
+    cotacaoId: string,
+    itemId: string,
+    data: UpdateCotacaoItemDTO,
+    userId: string,
+  ) {
+    return this.repo.updateItem(
+      BigInt(cotacaoId),
+      BigInt(itemId),
+      data,
+      BigInt(userId),
+    );
+  }
+
+  removeItem(cotacaoId: string, itemId: string, userId: string) {
+    return this.repo.removeItem(BigInt(cotacaoId), BigInt(itemId), BigInt(userId));
   }
 
   delete(id: string, userId: string) {

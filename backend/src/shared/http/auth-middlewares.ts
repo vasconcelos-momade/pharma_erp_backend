@@ -3,6 +3,8 @@ import {
   assertTenantAccess,
   authenticateCentralRequest,
   type CentralAuthContext,
+  isSuperAdminRole,
+  requiresTenantContext,
 } from "./central-auth";
 import { getPrisma } from "../../infrastructure/prisma/tenant-prisma.factory";
 import { resolveTenantUserId, TenantUserNotFoundError } from "../../modules/tenant/shared/resolve-tenant-user";
@@ -102,15 +104,45 @@ export function superadminMiddleware(): RouteMiddleware {
 
 export function tenantAccessMiddleware(paramName = "tenantId"): RouteMiddleware {
   return async (context, next) => {
-    assertTenantAccess(requireCentralAuthFromState(context), context.params[paramName]);
+    const auth = requireCentralAuthFromState(context);
+    // SUPER_ADMIN ignora obrigatoriedade de tenant no JWT
+    if (!isSuperAdminRole(auth.role)) {
+      assertTenantAccess(auth, context.params[paramName]);
+    }
     return next();
   };
+}
+
+/** Exige contexto tenant para papéis tenant; SUPER_ADMIN passa sem validação JWT. */
+export function requireTenantMiddleware(paramName = "tenantId"): RouteMiddleware {
+  return tenantAccessMiddleware(paramName);
+}
+
+/** Rotas exclusivas da plataforma — apenas SUPER_ADMIN. */
+export function platformAdminMiddleware(): RouteMiddleware {
+  return superadminMiddleware();
 }
 
 export function tenantAuthMiddleware(): RouteMiddleware {
   return async (context, next) => {
     const auth = await authenticateTenantRequest(context.req);
     context.state.tenantAuth = auth;
+    return next();
+  };
+}
+
+/** Bloqueia utilizadores tenant sem headers de contexto em rotas que exigem tenant. */
+export function requireTenantHeadersMiddleware(): RouteMiddleware {
+  return async (context, next) => {
+    const auth = requireCentralAuthFromState(context);
+    if (!requiresTenantContext(auth.role)) {
+      return next();
+    }
+    const tenantId = context.req.headers.get("x-tenant-id");
+    const branchId = context.req.headers.get("x-branch-id");
+    if (!tenantId || !branchId) {
+      throw new ForbiddenApiError("Contexto tenant obrigatório (x-tenant-id, x-branch-id)");
+    }
     return next();
   };
 }

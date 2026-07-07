@@ -1,5 +1,8 @@
 import { CotacaoController } from "../../modules/tenant/sales";
-import { cotacaoIdParamSchema } from "../../modules/tenant/sales/application/dto/cotacao.dto";
+import {
+  cotacaoIdParamSchema,
+  cotacaoItemIdParamSchema,
+} from "../../modules/tenant/sales/application/dto/cotacao.dto";
 import {
   getTenantAuth,
   requirePermission,
@@ -52,6 +55,61 @@ function registerResourceRoutes(router: Router, basePath: string): void {
       return controller.update(
         cotacaoId,
         context.req,
+        getTenantAuth(context).userId,
+      );
+    },
+  );
+
+  router.post(
+    `${basePath}/:cotacaoId/itens`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("COTACOES", "UPDATE"),
+    auditMiddleware,
+    async (context) => {
+      const { cotacaoId } = parseRouteParams(context.params, cotacaoIdParamSchema);
+      return controller.addItem(
+        cotacaoId,
+        context.req,
+        getTenantAuth(context).userId,
+      );
+    },
+  );
+
+  router.put(
+    `${basePath}/:cotacaoId/itens/:itemId`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("COTACOES", "UPDATE"),
+    auditMiddleware,
+    async (context) => {
+      const { cotacaoId, itemId } = parseRouteParams(
+        context.params,
+        cotacaoItemIdParamSchema,
+      );
+      return controller.updateItem(
+        cotacaoId,
+        itemId,
+        context.req,
+        getTenantAuth(context).userId,
+      );
+    },
+  );
+
+  router.delete(
+    `${basePath}/:cotacaoId/itens/:itemId`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("COTACOES", "UPDATE"),
+    auditMiddleware,
+    async (context) => {
+      const { cotacaoId, itemId } = parseRouteParams(
+        context.params,
+        cotacaoItemIdParamSchema,
+      );
+      return controller.removeItem(
+        cotacaoId,
+        itemId,
         getTenantAuth(context).userId,
       );
     },

@@ -5,10 +5,11 @@
 
 import {
   getLoteQuantidadeDisponivel,
-  loteQuantidadeDisponivelFromTotal,
   type LoteStockTx,
 } from "./lote-stock.service";
 import { LOTE_COM_STOCK_DISPONIVEL_WHERE } from "./lote-stock-read.util";
+import { startOfUtcDay } from "./expiry-date.util";
+import type { FefoLoteRow } from "./lote.types";
 
 export const FEFO_LOTE_FILTER = {
   ativo: true,
@@ -21,19 +22,10 @@ export const FEFO_LOTE_FILTER = {
 export function buildFefoLoteWhereForPos(now = new Date()) {
   return {
     ...FEFO_LOTE_FILTER,
-    dataValidade: { gte: now },
+    dataValidade: { gte: startOfUtcDay(now) },
     ...LOTE_COM_STOCK_DISPONIVEL_WHERE,
   };
 }
-
-export type FefoLoteRow = {
-  id: bigint;
-  numeroLote: string;
-  dataValidade: Date;
-  quantidadeQuarentena?: unknown;
-  precoCompra: unknown;
-  precoVenda?: unknown | null;
-};
 
 export type FefoLoteTx = LoteStockTx;
 
@@ -78,7 +70,7 @@ export async function findFefoLote(
         id: loteId,
         produtoId,
         ...FEFO_LOTE_FILTER,
-        dataValidade: { gt: new Date() },
+        dataValidade: { gte: startOfUtcDay() },
       },
       select,
     });
@@ -91,7 +83,7 @@ export async function findFefoLote(
     where: {
       produtoId,
       ...FEFO_LOTE_FILTER,
-      dataValidade: { gt: new Date() },
+      dataValidade: { gte: startOfUtcDay() },
     },
     orderBy: [{ dataValidade: "asc" }, { createdAt: "asc" }],
     select,

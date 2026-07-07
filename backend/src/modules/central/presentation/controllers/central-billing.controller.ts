@@ -6,6 +6,7 @@ import { ListTenantPaymentsUseCase } from "../../billing/application/use-cases/l
 import { SubmitPaymentUseCase } from "../../billing/application/use-cases/submit-payment.use-case";
 import { ConfirmPaymentUseCase } from "../../billing/application/use-cases/confirm-payment.use-case";
 import { GenerateMonthlyBillingService } from "../../billing/application/services/generate-monthly-billing.service";
+import { generateCentralInvoicePdf } from "../../billing/application/services/generate-invoice-pdf.service";
 import { ProcessSubscriptionLifecycleService } from "../../billing/application/services/process-subscription-lifecycle.service";
 import { JobQueueService } from "../../../../infrastructure/queue/job-queue.service";
 import { serializeForJson } from "../../../../shared/http/serialize-json";
@@ -82,6 +83,17 @@ export class CentralBillingController {
     const useCase = new GetInvoiceUseCase();
     const invoice = await useCase.execute({ tenantId, invoiceId });
     return Response.json(serializeForJson(invoice));
+  }
+
+  async getInvoicePdf(tenantId: string, invoiceId: string): Promise<Response> {
+    const pdf = await generateCentralInvoicePdf(tenantId, invoiceId);
+    return new Response(pdf, {
+      status: 200,
+      headers: {
+        "content-type": "application/pdf",
+        "content-disposition": `inline; filename="fatura-${invoiceId}.pdf"`,
+      },
+    });
   }
 
   async listPayments(tenantId: string, url: URL): Promise<Response> {

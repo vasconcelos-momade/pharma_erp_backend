@@ -119,6 +119,16 @@ export function registerAdminRoutes(router: Router, prefix: string): void {
   );
 
   router.get(
+    `${prefix}/central/tenants/:tenantId/invoices/:invoiceId/pdf`,
+    centralAuthMiddleware(),
+    tenantAccessMiddleware("tenantId"),
+    async (context) => {
+      const { tenantId, invoiceId } = parseRouteParams(context.params, tenantInvoiceParamSchema);
+      return billingController.getInvoicePdf(tenantId, invoiceId);
+    },
+  );
+
+  router.get(
     `${prefix}/central/tenants/:tenantId/payments`,
     centralAuthMiddleware(),
     tenantAccessMiddleware("tenantId"),

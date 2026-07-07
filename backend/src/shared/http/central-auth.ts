@@ -1,6 +1,10 @@
 import { prismaCentralUnscoped } from "../../infrastructure/prisma/prisma-central.service";
 import { JwtService, type CentralPayload } from "../../infrastructure/auth/jwt.service";
 import { Role } from "../../infrastructure/prisma/central/generated/central";
+import { isSuperAdminRole } from "./central-auth-roles";
+
+export { isSuperAdminRole, normalizeCentralRole, requiresTenantContext } from "./central-auth-roles";
+export type { NormalizedCentralRole } from "./central-auth-roles";
 
 export class CentralAuthError extends Error {
   constructor(
@@ -58,7 +62,7 @@ export async function authenticateCentralRequest(req: Request): Promise<CentralA
 }
 
 export function assertTenantAccess(auth: CentralAuthContext, tenantId: string): void {
-  if (auth.role === Role.superadmin) {
+  if (isSuperAdminRole(auth.role)) {
     return;
   }
 
@@ -69,7 +73,7 @@ export function assertTenantAccess(auth: CentralAuthContext, tenantId: string): 
 }
 
 export function assertSuperadmin(auth: CentralAuthContext): void {
-  if (auth.role !== Role.superadmin) {
+  if (!isSuperAdminRole(auth.role)) {
     throw new CentralAuthError("Superadmin role required", 403);
   }
 }

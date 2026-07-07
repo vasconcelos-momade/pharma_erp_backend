@@ -5,14 +5,19 @@ import {
   parseSearchParams,
 } from "../../../../../shared/http/request-validation";
 import type {
+  AddCotacaoItemDTO,
   CreateCotacaoDTO,
   UpdateCotacaoDTO,
+  UpdateCotacaoItemDTO,
 } from "../../application/dto/cotacao.dto";
 import {
+  addCotacaoItemSchema,
   createCotacaoSchema,
+  cotacaoItemIdParamSchema,
   listCotacaoAuditQuerySchema,
   mutateCotacaoStatusSchema,
   searchCotacoesQuerySchema,
+  updateCotacaoItemSchema,
   updateCotacaoSchema,
 } from "../../application/dto/cotacao.dto";
 import { CotacaoService } from "../../application/services/cotacao.service";
@@ -46,6 +51,7 @@ export class CotacaoController {
         query: params.q ?? params.search,
         estado: params.estado,
         clienteId: params.clienteId ? BigInt(params.clienteId) : undefined,
+        userId: params.userId ? BigInt(params.userId) : undefined,
         validadeFrom: params.validadeFrom,
         validadeTo: params.validadeTo,
         createdFrom: params.createdFrom,
@@ -80,6 +86,38 @@ export class CotacaoController {
     try {
       const body = await parseJsonBody<UpdateCotacaoDTO>(req, updateCotacaoSchema);
       const result = await this.service.update(cotacaoId, body, userId);
+      return success(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async addItem(cotacaoId: string, req: Request, userId: string) {
+    try {
+      const body = await parseJsonBody<AddCotacaoItemDTO>(req, addCotacaoItemSchema);
+      const result = await this.service.addItem(cotacaoId, body, userId);
+      return success(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async updateItem(cotacaoId: string, itemId: string, req: Request, userId: string) {
+    try {
+      const body = await parseJsonBody<UpdateCotacaoItemDTO>(
+        req,
+        updateCotacaoItemSchema,
+      );
+      const result = await this.service.updateItem(cotacaoId, itemId, body, userId);
+      return success(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async removeItem(cotacaoId: string, itemId: string, userId: string) {
+    try {
+      const result = await this.service.removeItem(cotacaoId, itemId, userId);
       return success(this.serialize(result));
     } catch (error: any) {
       return controllerErrorResponse(error);

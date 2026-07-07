@@ -11,11 +11,18 @@ export type CotacaoItemRow = {
   cotacaoId: bigint;
   produtoId?: bigint | null;
   servicoId?: bigint | null;
+  descricao?: string | null;
   quantidade: unknown;
   precoUnit: unknown;
+  desconto?: unknown;
+  iva?: unknown;
+  valorIva?: unknown;
+  subtotal?: unknown;
+  total?: unknown;
   produto?: {
     id: bigint;
-    nome: string;
+    nomeComercial?: string;
+    nome?: string;
     barcode?: string | null;
     taxRule?: TaxRuleRow | null;
   } | null;
@@ -32,17 +39,20 @@ export type CotacaoItemApi = {
   cotacaoId: string;
   produtoId: string | null;
   servicoId: string | null;
+  tipo: "PRODUTO" | "SERVICO";
   descricao: string;
   quantidade: number;
   precoUnit: number;
-  baseCalculo: number;
+  desconto: number;
+  subtotal: number;
   iva: number;
   valorIva: number;
+  total: number;
+  baseCalculo: number;
   taxaAplicada: number;
   tipoRegraFiscalSnapshot: string | null;
   codigoRegraFiscal: string | null;
   motivoIsencao: string | null;
-  total: number;
   produto: {
     id: string;
     nome: string;
@@ -55,15 +65,31 @@ export type CotacaoItemApi = {
   } | null;
 };
 
-function resolveTaxRule(row: CotacaoItemRow) {
-  const taxRule = row.produto?.taxRule ?? row.servico?.taxRule ?? null;
+export type CotacaoItemSnapshotInput = {
+  quantidade: number;
+  precoUnit: number;
+  desconto?: number;
+  descontoPercent?: number;
+  descricao?: string | null;
+  taxRule?: TaxRuleRow | null;
+};
+
+function resolveTaxRule(row: CotacaoItemRow | CotacaoItemSnapshotInput) {
+  const taxRule =
+    "produto" in row
+      ? row.produto?.taxRule ?? row.servico?.taxRule ?? null
+      : row.taxRule ?? null;
   if (!taxRule) {
     return null;
   }
 
   return {
     codigo: taxRule.codigo,
-    tipo: taxRule.tipo as "IVA_NORMAL" | "IVA_REDUZIDO" | "IVA_ISENTO" | "NAO_TRIBUTAVEL",
+    tipo: taxRule.tipo as
+      | "IVA_NORMAL"
+      | "IVA_REDUZIDO"
+      | "IVA_ISENTO"
+      | "NAO_TRIBUTAVEL",
     taxa: Number(taxRule.taxa),
   };
 }
@@ -72,52 +98,115 @@ export function resolveCotacaoItemDescricao(
   row: CotacaoItemRow,
   overrideDescricao?: string | null,
 ): string {
-  const custom = overrideDescricao?.trim();
+  const custom = overrideDescricao?.trim() || row.descricao?.trim();
   if (custom) {
     return custom;
   }
 
-  return row.produto?.nomeComercial ?? row.servico?.nome ?? "Item";
+  return (
+    row.produto?.nomeComercial ??
+    row.produto?.nome ??
+    row.servico?.nome ??
+    "Item"
+  );
 }
 
-export function computeCotacaoItemFiscal(
-  row: CotacaoItemRow,
-  overrideDescricao?: string | null,
-) {
-  return FiscalCalculatorUtil.calcularIVA({
-    quantidade: Number(row.quantidade),
-    precoUnitario: Number(row.precoUnit),
-    taxRule: resolveTaxRule(row),
-    descricao: resolveCotacaoItemDescricao(row, overrideDescricao),
+export function computeCotacaoItemSnapshot(input: CotacaoItemSnapshotInput) {
+  const quantidade = Number(input.quantidade);
+  const precoUnit = Number(input.precoUnit);
+  const baseBruta = quantidade * precoUnit;
+
+  let descontoValor = Number(input.desconto ?? 0);
+  if (input.descontoPercent != null && Number.isFinite(input.descontoPercent)) {
+    descontoValor = baseBruta * (Math.max(0, input.descontoPercent) / 100);
+  }
+  descontoValor = Math.min(baseBruta, Math.max(0, descontoValor));
+
+  const baseCalculo = baseBruta - descontoValor;
+  const taxRule = resolveTaxRule(input);
+  const fiscal = FiscalCalculatorUtil.calcularIVA({
+    quantidade: 1,
+    precoUnitario: baseCalculo,
+    taxRule,
+    descricao: input.descricao ?? "Item",
   });
+
+  return {
+    descricao: input.descricao?.trim() || "Item",
+    quantidade,
+    precoUnit,
+    desconto: descontoValor,
+    subtotal: baseCalculo,
+    iva: fiscal.taxaAplicadaPercentual,
+    valorIva: fiscal.valorIva,
+    total: fiscal.totalItem,
+    baseCalculo,
+    taxaAplicada: fiscal.taxaAplicadaPercentual,
+    tipoRegraFiscalSnapshot: fiscal.tipoRegraFiscal ?? null,
+    codigoRegraFiscal: fiscal.codigoRegraFiscal ?? null,
+    motivoIsencao: fiscal.motivoIsencao ?? null,
+  };
+}
+
+function hasPersistedSnapshot(row: CotacaoItemRow) {
+  return row.subtotal != null && row.total != null && row.descricao != null;
 }
 
 export function buildCotacaoItemApi(
   row: CotacaoItemRow,
   overrideDescricao?: string | null,
 ): CotacaoItemApi {
-  const fiscal = computeCotacaoItemFiscal(row, overrideDescricao);
+  const descricao = resolveCotacaoItemDescricao(row, overrideDescricao);
+  const quantidade = Number(row.quantidade);
+  const precoUnit = Number(row.precoUnit);
+
+  const snapshot = hasPersistedSnapshot(row)
+    ? {
+        descricao,
+        quantidade,
+        precoUnit,
+        desconto: Number(row.desconto ?? 0),
+        subtotal: Number(row.subtotal ?? 0),
+        iva: Number(row.iva ?? 0),
+        valorIva: Number(row.valorIva ?? 0),
+        total: Number(row.total ?? 0),
+        baseCalculo: Number(row.subtotal ?? 0),
+        taxaAplicada: Number(row.iva ?? 0),
+        tipoRegraFiscalSnapshot: null as string | null,
+        codigoRegraFiscal: null as string | null,
+        motivoIsencao: null as string | null,
+      }
+    : computeCotacaoItemSnapshot({
+        quantidade,
+        precoUnit,
+        desconto: Number(row.desconto ?? 0),
+        descricao,
+        taxRule: resolveTaxRule(row),
+      });
 
   return {
     id: row.id.toString(),
     cotacaoId: row.cotacaoId.toString(),
     produtoId: row.produtoId?.toString() ?? null,
     servicoId: row.servicoId?.toString() ?? null,
-    descricao: resolveCotacaoItemDescricao(row, overrideDescricao),
-    quantidade: Number(row.quantidade),
-    precoUnit: Number(row.precoUnit),
-    baseCalculo: fiscal.baseCalculo,
-    iva: fiscal.taxaAplicadaPercentual,
-    valorIva: fiscal.valorIva,
-    taxaAplicada: fiscal.taxaAplicadaPercentual,
-    tipoRegraFiscalSnapshot: fiscal.tipoRegraFiscal ?? null,
-    codigoRegraFiscal: fiscal.codigoRegraFiscal ?? null,
-    motivoIsencao: fiscal.motivoIsencao ?? null,
-    total: fiscal.totalItem,
+    tipo: row.produtoId ? "PRODUTO" : "SERVICO",
+    descricao: snapshot.descricao,
+    quantidade: snapshot.quantidade,
+    precoUnit: snapshot.precoUnit,
+    desconto: snapshot.desconto,
+    subtotal: snapshot.subtotal,
+    iva: snapshot.iva,
+    valorIva: snapshot.valorIva,
+    total: snapshot.total,
+    baseCalculo: snapshot.baseCalculo,
+    taxaAplicada: snapshot.taxaAplicada,
+    tipoRegraFiscalSnapshot: snapshot.tipoRegraFiscalSnapshot,
+    codigoRegraFiscal: snapshot.codigoRegraFiscal,
+    motivoIsencao: snapshot.motivoIsencao,
     produto: row.produto
       ? {
           id: row.produto.id.toString(),
-          nome: row.produto.nomeComercial,
+          nome: row.produto.nomeComercial ?? row.produto.nome ?? descricao,
           barcode: row.produto.barcode ?? null,
         }
       : null,
@@ -131,10 +220,22 @@ export function buildCotacaoItemApi(
   };
 }
 
-export function buildCotacaoTotals(items: CotacaoItemApi[], desconto = 0) {
-  const subtotal = items.reduce((sum, item) => sum + item.baseCalculo, 0);
+export function buildCotacaoTotals(
+  items: CotacaoItemApi[],
+  descontoGeral = 0,
+  persisted?: { subtotal?: number; ivaTotal?: number; total?: number },
+) {
+  if (persisted?.total != null && persisted.subtotal != null) {
+    return {
+      subtotal: Number(persisted.subtotal),
+      ivaTotal: Number(persisted.ivaTotal ?? 0),
+      total: Number(persisted.total),
+    };
+  }
+
+  const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
   const ivaTotal = items.reduce((sum, item) => sum + item.valorIva, 0);
-  const total = Math.max(0, subtotal + ivaTotal - Number(desconto ?? 0));
+  const total = Math.max(0, subtotal + ivaTotal - Number(descontoGeral ?? 0));
 
   return { subtotal, ivaTotal, total };
 }

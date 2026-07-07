@@ -3,7 +3,7 @@ import { buildFefoLoteWhereForPos } from "../../../stock/domain/fefo-lote.servic
 import { produtoPosStockWhere } from "../../../products/domain/produto-presenter";
 
 describe("PDV stock-first catalog filters", () => {
-  test("buildFefoLoteWhereForPos exige lote válido com stock", () => {
+  test("buildFefoLoteWhereForPos considera o dia todo para a validade", () => {
     const now = new Date("2026-07-05T12:00:00.000Z");
     const where = buildFefoLoteWhereForPos(now);
 
@@ -11,7 +11,9 @@ describe("PDV stock-first catalog filters", () => {
     expect(where.deletedAt).toBeNull();
     expect(where.estadoSanitario).toBe("VALIDO");
     expect(where.disponibilidade).toBe("DISPONIVEL");
-    expect(where.dataValidade).toEqual({ gte: now });
+    expect(where.dataValidade).toEqual({
+      gte: new Date("2026-07-05T00:00:00.000Z"),
+    });
     expect(where.stockBalance).toEqual({ quantidadeDisponivel: { gt: 0 } });
   });
 

@@ -7,6 +7,7 @@ import {
   isAccountLocked,
   resetAfterSuccess,
 } from '../../../../../infrastructure/security/login-security.service';
+import { resolveLoginTenantContext } from '../login-tenant-context';
 
 interface UserTenantWithTenant {
   tenant: {
@@ -115,6 +116,24 @@ export class LoginUseCase {
       },
     });
 
+    const mappedTenants = ((user as any).userTenants as UserTenantWithTenant[]).map((ut) => ({
+      id: ut.tenant.id.toString(),
+      companyName: ut.tenant.companyName,
+      name: ut.tenant.name,
+      branches: ut.tenant.branches.map((branch) => ({
+        id: branch.id.toString(),
+        code: branch.code,
+        name: branch.name,
+      })),
+    }));
+
+    const context = await resolveLoginTenantContext({
+      role: user.role,
+      userId: user.id.toString(),
+      email: user.email,
+      tenants: mappedTenants,
+    });
+
     return {
       token,
       user: {
@@ -123,16 +142,12 @@ export class LoginUseCase {
         email: user.email,
         role: user.role,
       },
-      tenants: ((user as any).userTenants as UserTenantWithTenant[]).map((ut) => ({
-        id: ut.tenant.id.toString(),
-        companyName: ut.tenant.companyName,
-        name: ut.tenant.name,
-        branches: ut.tenant.branches.map((branch) => ({
-          id: branch.id.toString(),
-          code: branch.code,
-          name: branch.name,
-        })),
-      })),
+      role: context.role,
+      tenantId: context.tenantId,
+      branchId: context.branchId,
+      permissions: context.permissions,
+      tenants: mappedTenants,
+      redirectTo: context.redirectTo,
     };
   }
 

@@ -2,19 +2,23 @@ import { getPrisma } from "../../../../../infrastructure/prisma/tenant-prisma.fa
 import { ComplianceAuditService } from "../../../../../shared/services/compliance-audit.service";
 import { parseDateRange } from "../../../regulatory/application/use-cases/regulatory.helpers";
 import { flattenProdutoForApi } from "../../../products/domain/produto-presenter";
+import type {
+  AddCotacaoItemDTO,
+  CreateCotacaoDTO,
+  UpdateCotacaoDTO,
+  UpdateCotacaoItemDTO,
+} from "../../application/dto/cotacao.dto";
 import {
   buildCotacaoItemApi,
   buildCotacaoTotals,
+  computeCotacaoItemSnapshot,
 } from "../../application/helpers/cotacao-calculator";
-import type {
-  CreateCotacaoDTO,
-  UpdateCotacaoDTO,
-} from "../../application/dto/cotacao.dto";
 
 type CotacaoSearchFilters = {
   query?: string;
   estado?: "PENDENTE" | "APROVADA" | "REJEITADA" | "EXPIRADA";
   clienteId?: bigint;
+  userId?: bigint;
   validadeFrom?: string;
   validadeTo?: string;
   createdFrom?: string;
@@ -31,7 +35,7 @@ const COTACAO_ITEM_INCLUDE = {
   produto: {
     select: {
       id: true,
-      nome: true,
+      nomeComercial: true,
       barcode: true,
       taxRule: {
         select: {
@@ -64,31 +68,38 @@ function serializeCotacaoItem(row: any) {
 
 function serializeCotacao(row: any) {
   const items = row.items?.map(serializeCotacaoItem) ?? [];
-  const totals = buildCotacaoTotals(items, Number(row.desconto ?? 0));
+  const totals = buildCotacaoTotals(items, Number(row.desconto ?? 0), {
+    subtotal: row.subtotal != null ? Number(row.subtotal) : undefined,
+    ivaTotal: row.ivaTotal != null ? Number(row.ivaTotal) : undefined,
+    total: row.total != null ? Number(row.total) : undefined,
+  });
 
   return {
     id: row.id.toString(),
     numero: row.numero,
-    clienteId: row.clienteId.toString(),
+    cliente: row.clienteNome ?? row.cliente ?? "",
+    clienteId: row.clienteId?.toString() ?? null,
     userId: row.userId.toString(),
     subtotal: totals.subtotal,
-    desconto: Number(row.desconto),
+    desconto: Number(row.desconto ?? 0),
     ivaTotal: totals.ivaTotal,
     total: totals.total,
     moeda: row.moeda,
     estado: row.estado,
     validade: row.validade.toISOString(),
     observacoes: row.observacoes ?? null,
+    aprovadoPorId: row.aprovadoPorId?.toString() ?? null,
+    aprovadoEm: row.aprovadoEm?.toISOString?.() ?? null,
     deletedAt: row.deletedAt?.toISOString?.() ?? null,
     version: row.version,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
-    cliente: row.cliente
+    clienteCadastrado: row.clienteCadastrado
       ? {
-          id: row.cliente.id.toString(),
-          nome: row.cliente.nome,
-          telefone: row.cliente.telefone ?? null,
-          nuit: row.cliente.nuit ?? null,
+          id: row.clienteCadastrado.id.toString(),
+          nome: row.clienteCadastrado.nome,
+          telefone: row.clienteCadastrado.telefone ?? null,
+          nuit: row.clienteCadastrado.nuit ?? null,
         }
       : null,
     user: row.user
@@ -98,10 +109,31 @@ function serializeCotacao(row: any) {
           role: row.user.role,
         }
       : null,
+    aprovadoPor: row.aprovadoPor
+      ? {
+          id: row.aprovadoPor.id.toString(),
+          name: row.aprovadoPor.name,
+          role: row.aprovadoPor.role,
+        }
+      : null,
     itemCount: row._count?.items ?? items.length,
     items,
+    canEdit: row.estado === "PENDENTE" && !row.deletedAt,
   };
 }
+
+const COTACAO_INCLUDE = {
+  clienteCadastrado: {
+    select: { id: true, nome: true, telefone: true, nuit: true },
+  },
+  user: { select: { id: true, name: true, role: true } },
+  aprovadoPor: { select: { id: true, name: true, role: true } },
+  items: {
+    include: COTACAO_ITEM_INCLUDE,
+    orderBy: { id: "asc" as const },
+  },
+  _count: { select: { items: true } },
+} as const;
 
 export class CotacaoRepository {
   private audit = new ComplianceAuditService();
@@ -223,64 +255,133 @@ export class CotacaoRepository {
     }
   }
 
+  private async resolveClienteSnapshot(
+    tx: PrismaTx,
+    data: { cliente: string; clienteId?: string | null },
+  ) {
+    const nome = data.cliente.trim();
+    if (!nome) {
+      throw new Error("Informe o nome do cliente");
+    }
+
+    if (data.clienteId) {
+      const cliente = await this.assertClienteExists(tx, BigInt(data.clienteId));
+      return {
+        clienteNome: cliente.nome ?? nome,
+        clienteId: cliente.id,
+      };
+    }
+
+    return {
+      clienteNome: nome,
+      clienteId: null,
+    };
+  }
+
+  private async recalculateAndPersistTotals(tx: PrismaTx, cotacaoId: bigint) {
+    const row = await tx.cotacao.findUnique({
+      where: { id: cotacaoId },
+      include: {
+        items: { include: COTACAO_ITEM_INCLUDE, orderBy: { id: "asc" } },
+      },
+    });
+    if (!row) {
+      throw new Error("Cotação não encontrada");
+    }
+
+    const items = row.items.map(serializeCotacaoItem);
+    const totals = buildCotacaoTotals(items, Number(row.desconto ?? 0));
+
+    await tx.cotacao.update({
+      where: { id: cotacaoId },
+      data: {
+        subtotal: totals.subtotal,
+        ivaTotal: totals.ivaTotal,
+        total: totals.total,
+      },
+    });
+
+    return totals;
+  }
+
+  private async buildItemSnapshotFromInput(
+    tx: PrismaTx,
+    input: AddCotacaoItemDTO | (UpdateCotacaoItemDTO & { produtoId?: string; servicoId?: string }),
+    existing?: any,
+  ) {
+    const quantidade = Number(
+      input.quantidade ?? existing?.quantidade ?? 1,
+    );
+    let precoUnit = input.precoUnit != null ? Number(input.precoUnit) : undefined;
+    let descricao = input.descricao?.trim();
+    let taxRule: any = null;
+
+    if (input.produtoId || existing?.produtoId) {
+      const produto = await this.loadProdutoSnapshot(
+        tx,
+        BigInt(input.produtoId ?? existing.produtoId),
+      );
+      precoUnit = precoUnit ?? produto.precoVenda;
+      descricao = descricao ?? produto.nome;
+      taxRule = produto.taxRule;
+    } else if (input.servicoId || existing?.servicoId) {
+      const servico = await this.loadServicoSnapshot(
+        tx,
+        BigInt(input.servicoId ?? existing.servicoId),
+      );
+      precoUnit = precoUnit ?? Number(servico.preco);
+      descricao = descricao ?? servico.nome;
+      taxRule = servico.taxRule;
+    }
+
+    if (!Number.isFinite(precoUnit) || (precoUnit ?? 0) <= 0) {
+      throw new Error("Preço unitário inválido");
+    }
+
+    return computeCotacaoItemSnapshot({
+      quantidade,
+      precoUnit: precoUnit!,
+      desconto: input.desconto,
+      descontoPercent: input.descontoPercent,
+      descricao,
+      taxRule,
+    });
+  }
+
   async create(data: CreateCotacaoDTO, userId: bigint) {
     await this.expireOverdueQuotes();
 
     const created = await this.prisma.$transaction(async (tx: PrismaTx) => {
-      const cliente = await this.assertClienteExists(tx, BigInt(data.clienteId));
-
-      const items = [];
-      for (const item of data.items) {
-        if (item.produtoId) {
-          const produto = await this.loadProdutoSnapshot(tx, BigInt(item.produtoId));
-          const precoUnit = item.precoUnit ?? produto.precoVenda;
-          if (!Number.isFinite(precoUnit) || precoUnit <= 0) {
-            throw new Error(`Produto ${produto.nomeComercial} sem preço de venda configurado`);
-          }
-
-          items.push({
-            produtoId: produto.id,
-            servicoId: null,
-            quantidade: item.quantidade,
-            precoUnit,
-          });
-          continue;
-        }
-
-        const servico = await this.loadServicoSnapshot(tx, BigInt(item.servicoId!));
-        const precoUnit = item.precoUnit ?? Number(servico.preco);
-        if (!Number.isFinite(precoUnit) || precoUnit <= 0) {
-          throw new Error(`Serviço ${servico.nome} sem preço válido`);
-        }
-
-        items.push({
-          produtoId: null,
-          servicoId: servico.id,
-          quantidade: item.quantidade,
-          precoUnit,
-        });
-      }
+      const clienteSnapshot = await this.resolveClienteSnapshot(tx, {
+        cliente: data.cliente,
+        clienteId: data.clienteId,
+      });
 
       const cotacao = await tx.cotacao.create({
         data: {
           numero: this.buildNumeroCotacao(),
-          clienteId: BigInt(data.clienteId),
+          clienteNome: clienteSnapshot.clienteNome,
+          clienteId: clienteSnapshot.clienteId,
           userId,
-          desconto: 0,
+          desconto: data.desconto ?? 0,
           validade: data.validade,
           observacoes: data.observacoes ?? null,
-          items: {
-            create: items,
-          },
+          estado: "PENDENTE",
+          subtotal: 0,
+          ivaTotal: 0,
+          total: 0,
         },
-        include: {
-          cliente: { select: { id: true, nome: true, telefone: true, nuit: true } },
-          user: { select: { id: true, name: true, role: true } },
-          items: {
-            include: COTACAO_ITEM_INCLUDE,
-          },
-          _count: { select: { items: true } },
-        },
+      });
+
+      if (data.items?.length) {
+        for (const item of data.items) {
+          await this.addItemInternal(tx, cotacao.id, item, userId, false);
+        }
+      }
+
+      const withRelations = await tx.cotacao.findUnique({
+        where: { id: cotacao.id },
+        include: COTACAO_INCLUDE,
       });
 
       await this.audit.createImmutableLog(
@@ -289,15 +390,226 @@ export class CotacaoRepository {
           action: "CREATE",
           entity: "Cotacao",
           entityId: cotacao.id,
-          after: serializeCotacao(cotacao),
+          after: serializeCotacao(withRelations),
         },
         tx,
       );
 
-      return { cotacao, cliente };
+      return withRelations;
     });
 
-    return serializeCotacao(created.cotacao);
+    return serializeCotacao(created);
+  }
+
+  private async addItemInternal(
+    tx: PrismaTx,
+    cotacaoId: bigint,
+    data: AddCotacaoItemDTO,
+    userId: bigint,
+    audit = true,
+  ) {
+    const cotacao = await tx.cotacao.findFirst({
+      where: { id: cotacaoId, deletedAt: null },
+      include: { items: true },
+    });
+    if (!cotacao) {
+      throw new Error("Cotação não encontrada");
+    }
+    this.assertCanMutate(cotacao, "adicionar itens a");
+
+    const existing = cotacao.items.find((item: any) =>
+      data.produtoId
+        ? item.produtoId?.toString() === data.produtoId
+        : item.servicoId?.toString() === data.servicoId,
+    );
+
+    if (existing) {
+      const snapshot = await this.buildItemSnapshotFromInput(tx, {
+        ...data,
+        quantidade: Number(existing.quantidade) + Number(data.quantidade ?? 1),
+      }, existing);
+
+      await tx.cotacaoItem.update({
+        where: { id: existing.id },
+        data: {
+          descricao: snapshot.descricao,
+          quantidade: snapshot.quantidade,
+          precoUnit: snapshot.precoUnit,
+          desconto: snapshot.desconto,
+          iva: snapshot.iva,
+          valorIva: snapshot.valorIva,
+          subtotal: snapshot.subtotal,
+          total: snapshot.total,
+        },
+      });
+    } else {
+      const snapshot = await this.buildItemSnapshotFromInput(tx, {
+        ...data,
+        quantidade: data.quantidade ?? 1,
+      });
+
+      await tx.cotacaoItem.create({
+        data: {
+          cotacaoId,
+          produtoId: data.produtoId ? BigInt(data.produtoId) : null,
+          servicoId: data.servicoId ? BigInt(data.servicoId) : null,
+          descricao: snapshot.descricao,
+          quantidade: snapshot.quantidade,
+          precoUnit: snapshot.precoUnit,
+          desconto: snapshot.desconto,
+          iva: snapshot.iva,
+          valorIva: snapshot.valorIva,
+          subtotal: snapshot.subtotal,
+          total: snapshot.total,
+        },
+      });
+    }
+
+    await this.recalculateAndPersistTotals(tx, cotacaoId);
+    await tx.cotacao.update({
+      where: { id: cotacaoId },
+      data: { version: { increment: 1 } },
+    });
+
+    const refreshed = await tx.cotacao.findUnique({
+      where: { id: cotacaoId },
+      include: COTACAO_INCLUDE,
+    });
+
+    if (audit) {
+      await this.audit.createImmutableLog(
+        {
+          userId,
+          action: "ADD_ITEM",
+          entity: "Cotacao",
+          entityId: cotacaoId,
+          after: serializeCotacao(refreshed),
+        },
+        tx,
+      );
+    }
+
+    return serializeCotacao(refreshed);
+  }
+
+  async addItem(cotacaoId: bigint, data: AddCotacaoItemDTO, userId: bigint) {
+    await this.expireOverdueQuotes();
+    return this.prisma.$transaction((tx: PrismaTx) =>
+      this.addItemInternal(tx, cotacaoId, data, userId),
+    );
+  }
+
+  async updateItem(
+    cotacaoId: bigint,
+    itemId: bigint,
+    data: UpdateCotacaoItemDTO,
+    userId: bigint,
+  ) {
+    await this.expireOverdueQuotes();
+
+    return this.prisma.$transaction(async (tx: PrismaTx) => {
+      const cotacao = await tx.cotacao.findFirst({
+        where: { id: cotacaoId, deletedAt: null },
+      });
+      if (!cotacao) {
+        throw new Error("Cotação não encontrada");
+      }
+      this.assertCanMutate(cotacao, "editar itens de");
+
+      const existing = await tx.cotacaoItem.findFirst({
+        where: { id: itemId, cotacaoId },
+        include: COTACAO_ITEM_INCLUDE,
+      });
+      if (!existing) {
+        throw new Error("Item não encontrado");
+      }
+
+      const snapshot = await this.buildItemSnapshotFromInput(tx, data, existing);
+
+      await tx.cotacaoItem.update({
+        where: { id: itemId },
+        data: {
+          descricao: snapshot.descricao,
+          quantidade: snapshot.quantidade,
+          precoUnit: snapshot.precoUnit,
+          desconto: snapshot.desconto,
+          iva: snapshot.iva,
+          valorIva: snapshot.valorIva,
+          subtotal: snapshot.subtotal,
+          total: snapshot.total,
+        },
+      });
+
+      await this.recalculateAndPersistTotals(tx, cotacaoId);
+      await tx.cotacao.update({
+        where: { id: cotacaoId },
+        data: { version: { increment: 1 } },
+      });
+
+      const refreshed = await tx.cotacao.findUnique({
+        where: { id: cotacaoId },
+        include: COTACAO_INCLUDE,
+      });
+
+      await this.audit.createImmutableLog(
+        {
+          userId,
+          action: "UPDATE_ITEM",
+          entity: "Cotacao",
+          entityId: cotacaoId,
+          after: serializeCotacao(refreshed),
+        },
+        tx,
+      );
+
+      return serializeCotacao(refreshed);
+    });
+  }
+
+  async removeItem(cotacaoId: bigint, itemId: bigint, userId: bigint) {
+    await this.expireOverdueQuotes();
+
+    return this.prisma.$transaction(async (tx: PrismaTx) => {
+      const cotacao = await tx.cotacao.findFirst({
+        where: { id: cotacaoId, deletedAt: null },
+      });
+      if (!cotacao) {
+        throw new Error("Cotação não encontrada");
+      }
+      this.assertCanMutate(cotacao, "remover itens de");
+
+      const existing = await tx.cotacaoItem.findFirst({
+        where: { id: itemId, cotacaoId },
+      });
+      if (!existing) {
+        throw new Error("Item não encontrado");
+      }
+
+      await tx.cotacaoItem.delete({ where: { id: itemId } });
+      await this.recalculateAndPersistTotals(tx, cotacaoId);
+      await tx.cotacao.update({
+        where: { id: cotacaoId },
+        data: { version: { increment: 1 } },
+      });
+
+      const refreshed = await tx.cotacao.findUnique({
+        where: { id: cotacaoId },
+        include: COTACAO_INCLUDE,
+      });
+
+      await this.audit.createImmutableLog(
+        {
+          userId,
+          action: "REMOVE_ITEM",
+          entity: "Cotacao",
+          entityId: cotacaoId,
+          after: serializeCotacao(refreshed),
+        },
+        tx,
+      );
+
+      return serializeCotacao(refreshed);
+    });
   }
 
   async search(filters: CotacaoSearchFilters = {}) {
@@ -315,6 +627,7 @@ export class CotacaoRepository {
       deletedAt: null,
       ...(filters.estado ? { estado: filters.estado } : {}),
       ...(filters.clienteId ? { clienteId: filters.clienteId } : {}),
+      ...(filters.userId ? { userId: filters.userId } : {}),
       ...(validadeRange.from || validadeRange.to
         ? {
             validade: {
@@ -336,7 +649,8 @@ export class CotacaoRepository {
             OR: [
               { numero: { contains: query } },
               { observacoes: { contains: query } },
-              { cliente: { nome: { contains: query } } },
+              { clienteNome: { contains: query } },
+              { clienteCadastrado: { nome: { contains: query } } },
               { items: { some: { produto: { nomeComercial: { contains: query } } } } },
               { items: { some: { servico: { nome: { contains: query } } } } },
             ],
@@ -350,49 +664,21 @@ export class CotacaoRepository {
         : sortBy === "numero"
           ? [{ numero: sortOrder }, { id: sortOrder }]
           : sortBy === "clienteNome"
-            ? [{ cliente: { nome: sortOrder } }, { id: sortOrder }]
-            : [{ createdAt: sortOrder }, { id: sortOrder }];
-
-    if (sortBy === "total") {
-      const [totalCount, allRows] = await this.prisma.$transaction([
-        this.prisma.cotacao.count({ where }),
-        this.prisma.cotacao.findMany({
-          where,
-          include: {
-            cliente: { select: { id: true, nome: true, telefone: true, nuit: true } },
-            user: { select: { id: true, name: true, role: true } },
-            items: { include: COTACAO_ITEM_INCLUDE },
-            _count: { select: { items: true } },
-          },
-        }),
-      ]);
-
-      const sorted = allRows
-        .map((row: any) => ({ row, total: serializeCotacao(row).total }))
-        .sort((a, b) =>
-          sortOrder === "asc" ? a.total - b.total : b.total - a.total,
-        )
-        .map((entry) => entry.row);
-
-      const offset = (page - 1) * pageSize;
-      const pageRows = sorted.slice(offset, offset + pageSize + 1);
-
-      return {
-        items: pageRows.slice(0, pageSize).map(serializeCotacao),
-        page,
-        pageSize,
-        hasMore: pageRows.length > pageSize,
-        totalCount,
-      };
-    }
+            ? [{ clienteNome: sortOrder }, { id: sortOrder }]
+            : sortBy === "total"
+              ? [{ total: sortOrder }, { id: sortOrder }]
+              : [{ createdAt: sortOrder }, { id: sortOrder }];
 
     const [totalCount, rows] = await this.prisma.$transaction([
       this.prisma.cotacao.count({ where }),
       this.prisma.cotacao.findMany({
         where,
         include: {
-          cliente: { select: { id: true, nome: true, telefone: true, nuit: true } },
+          clienteCadastrado: {
+            select: { id: true, nome: true, telefone: true, nuit: true },
+          },
           user: { select: { id: true, name: true, role: true } },
+          aprovadoPor: { select: { id: true, name: true, role: true } },
           _count: { select: { items: true } },
         },
         orderBy,
@@ -415,15 +701,7 @@ export class CotacaoRepository {
 
     const row = await this.prisma.cotacao.findFirst({
       where: { id, deletedAt: null },
-      include: {
-        cliente: { select: { id: true, nome: true, telefone: true, nuit: true } },
-        user: { select: { id: true, name: true, role: true } },
-        items: {
-          include: COTACAO_ITEM_INCLUDE,
-          orderBy: { id: "asc" },
-        },
-        _count: { select: { items: true } },
-      },
+      include: COTACAO_INCLUDE,
     });
 
     if (!row) {
@@ -438,14 +716,7 @@ export class CotacaoRepository {
 
     const existing = await this.prisma.cotacao.findFirst({
       where: { id, deletedAt: null },
-      include: {
-        cliente: { select: { id: true, nome: true, telefone: true, nuit: true } },
-        user: { select: { id: true, name: true, role: true } },
-        items: {
-          include: COTACAO_ITEM_INCLUDE,
-        },
-        _count: { select: { items: true } },
-      },
+      include: COTACAO_INCLUDE,
     });
 
     if (!existing) {
@@ -455,28 +726,39 @@ export class CotacaoRepository {
     this.assertCanMutate(existing, "editar");
 
     const updated = await this.prisma.$transaction(async (tx: PrismaTx) => {
-      if (data.clienteId) {
-        await this.assertClienteExists(tx, BigInt(data.clienteId));
+      const updateData: Record<string, unknown> = {
+        ...(data.validade ? { validade: data.validade } : {}),
+        ...(data.observacoes !== undefined
+          ? { observacoes: data.observacoes ?? null }
+          : {}),
+        ...(data.desconto !== undefined ? { desconto: data.desconto } : {}),
+        version: { increment: 1 },
+      };
+
+      if (data.cliente !== undefined || data.clienteId !== undefined) {
+        const snapshot = await this.resolveClienteSnapshot(tx, {
+          cliente: data.cliente ?? existing.clienteNome,
+          clienteId:
+            data.clienteId !== undefined
+              ? data.clienteId
+              : existing.clienteId?.toString() ?? null,
+        });
+        updateData.clienteNome = snapshot.clienteNome;
+        updateData.clienteId = snapshot.clienteId;
       }
 
-      const row = await tx.cotacao.update({
+      await tx.cotacao.update({
         where: { id, version: existing.version },
-        data: {
-          ...(data.clienteId ? { clienteId: BigInt(data.clienteId) } : {}),
-          ...(data.validade ? { validade: data.validade } : {}),
-          ...(data.observacoes !== undefined
-            ? { observacoes: data.observacoes ?? null }
-            : {}),
-          version: { increment: 1 },
-        },
-        include: {
-          cliente: { select: { id: true, nome: true, telefone: true, nuit: true } },
-          user: { select: { id: true, name: true, role: true } },
-          items: {
-            include: COTACAO_ITEM_INCLUDE,
-          },
-          _count: { select: { items: true } },
-        },
+        data: updateData,
+      });
+
+      if (data.desconto !== undefined) {
+        await this.recalculateAndPersistTotals(tx, id);
+      }
+
+      const row = await tx.cotacao.findUnique({
+        where: { id },
+        include: COTACAO_INCLUDE,
       });
 
       await this.audit.createImmutableLog(
@@ -484,7 +766,7 @@ export class CotacaoRepository {
           userId,
           action: "UPDATE",
           entity: "Cotacao",
-          entityId: row.id,
+          entityId: row!.id,
           before: serializeCotacao(existing),
           after: serializeCotacao(row),
         },
@@ -502,14 +784,7 @@ export class CotacaoRepository {
 
     const existing = await this.prisma.cotacao.findFirst({
       where: { id, deletedAt: null },
-      include: {
-        cliente: { select: { id: true, nome: true, telefone: true, nuit: true } },
-        user: { select: { id: true, name: true, role: true } },
-        items: {
-          include: COTACAO_ITEM_INCLUDE,
-        },
-        _count: { select: { items: true } },
-      },
+      include: COTACAO_INCLUDE,
     });
 
     if (!existing) {
@@ -552,14 +827,7 @@ export class CotacaoRepository {
 
     const existing = await this.prisma.cotacao.findFirst({
       where: { id, deletedAt: null },
-      include: {
-        cliente: { select: { id: true, nome: true, telefone: true, nuit: true } },
-        user: { select: { id: true, name: true, role: true } },
-        items: {
-          include: COTACAO_ITEM_INCLUDE,
-        },
-        _count: { select: { items: true } },
-      },
+      include: COTACAO_INCLUDE,
     });
 
     if (!existing) {
@@ -573,20 +841,16 @@ export class CotacaoRepository {
         where: { id, version: existing.version },
         data: {
           estado: nextStatus,
+          ...(nextStatus === "APROVADA"
+            ? { aprovadoPorId: userId, aprovadoEm: new Date() }
+            : {}),
           observacoes:
             observacoes && observacoes.trim().length > 0
               ? [existing.observacoes, observacoes.trim()].filter(Boolean).join("\n\n")
               : existing.observacoes,
           version: { increment: 1 },
         },
-        include: {
-          cliente: { select: { id: true, nome: true, telefone: true, nuit: true } },
-          user: { select: { id: true, name: true, role: true } },
-          items: {
-            include: COTACAO_ITEM_INCLUDE,
-          },
-          _count: { select: { items: true } },
-        },
+        include: COTACAO_INCLUDE,
       });
 
       await this.audit.createImmutableLog(

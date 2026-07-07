@@ -1,5 +1,20 @@
 -- Simplifica produto_regulacao (campos legais essenciais) e produto_classificacao_eventos
 
+-- Bases novas: criar tabela legada antes do reshape (tenants existentes já têm via expand SQL)
+CREATE TABLE IF NOT EXISTS `produto_classificacao_eventos` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `produtoId` BIGINT UNSIGNED NOT NULL,
+    `rule` VARCHAR(100) NOT NULL DEFAULT '',
+    `reason` TEXT NULL,
+    `matchedTerm` VARCHAR(191) NULL,
+    `source` VARCHAR(100) NOT NULL DEFAULT 'REGRA',
+    `policySnapshot` JSON NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    PRIMARY KEY (`id`),
+    INDEX `produto_classificacao_eventos_produtoId_createdAt_idx`(`produtoId`, `createdAt`),
+    CONSTRAINT `produto_classificacao_eventos_produtoId_fkey` FOREIGN KEY (`produtoId`) REFERENCES `produtos`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- 1. Migrar rule/reason/matchedTerm/policySnapshot → snapshot
 ALTER TABLE `produto_classificacao_eventos`
   ADD COLUMN `snapshot_new` JSON NULL AFTER `policySnapshot`,
