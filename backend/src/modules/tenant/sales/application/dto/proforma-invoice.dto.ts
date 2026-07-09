@@ -1,22 +1,22 @@
 import { z } from "zod";
 
-export const cotacaoIdParamSchema = z.object({
-  cotacaoId: z.string().regex(/^\d+$/, "cotacaoId inválido"),
+export const proformaInvoiceIdParamSchema = z.object({
+  proformaInvoiceId: z.string().regex(/^\d+$/, "proformaInvoiceId inválido"),
 });
 
-export const cotacaoItemIdParamSchema = z.object({
-  cotacaoId: z.string().regex(/^\d+$/, "cotacaoId inválido"),
+export const proformaInvoiceItemIdParamSchema = z.object({
+  proformaInvoiceId: z.string().regex(/^\d+$/, "proformaInvoiceId inválido"),
   itemId: z.string().regex(/^\d+$/, "itemId inválido"),
 });
 
-const estadoCotacaoSchema = z.enum([
+const estadoProformaInvoiceSchema = z.enum([
   "PENDENTE",
   "APROVADA",
   "REJEITADA",
   "EXPIRADA",
 ]);
 
-const cotacaoItemInputSchema = z
+const proformaInvoiceItemInputSchema = z
   .object({
     produtoId: z.string().regex(/^\d+$/).optional(),
     servicoId: z.string().regex(/^\d+$/).optional(),
@@ -44,14 +44,16 @@ const cotacaoItemInputSchema = z
     }
   });
 
-export const createCotacaoSchema = z
+export const createProformaInvoiceSchema = z
   .object({
     cliente: z.string().trim().min(1).max(191),
     clienteId: z.string().regex(/^\d+$/).optional(),
+    nuit: z.string().trim().max(50).optional(),
+    contacto: z.string().trim().max(50).optional(),
     validade: z.coerce.date(),
     observacoes: z.string().trim().max(2000).optional(),
     desconto: z.coerce.number().min(0).optional(),
-    items: z.array(cotacaoItemInputSchema).optional(),
+    items: z.array(proformaInvoiceItemInputSchema).optional(),
   })
   .superRefine((data, ctx) => {
     if (!data.cliente.trim()) {
@@ -63,10 +65,12 @@ export const createCotacaoSchema = z
     }
   });
 
-export const updateCotacaoSchema = z
+export const updateProformaInvoiceSchema = z
   .object({
     cliente: z.string().trim().min(1).max(191).optional(),
     clienteId: z.string().regex(/^\d+$/).nullable().optional(),
+    nuit: z.string().trim().max(50).nullable().optional(),
+    contacto: z.string().trim().max(50).nullable().optional(),
     validade: z.coerce.date().optional(),
     observacoes: z.string().trim().max(2000).nullable().optional(),
     desconto: z.coerce.number().min(0).optional(),
@@ -75,11 +79,11 @@ export const updateCotacaoSchema = z
     message: "Informe ao menos um campo para atualizar",
   });
 
-export const addCotacaoItemSchema = cotacaoItemInputSchema.extend({
+export const addProformaInvoiceItemSchema = proformaInvoiceItemInputSchema.safeExtend({
   quantidade: z.coerce.number().positive().default(1),
 });
 
-export const updateCotacaoItemSchema = z
+export const updateProformaInvoiceItemSchema = z
   .object({
     descricao: z.string().trim().min(1).max(255).optional(),
     quantidade: z.coerce.number().positive().optional(),
@@ -91,14 +95,14 @@ export const updateCotacaoItemSchema = z
     message: "Informe ao menos um campo para atualizar",
   });
 
-export const mutateCotacaoStatusSchema = z.object({
+export const mutateProformaInvoiceStatusSchema = z.object({
   observacoes: z.string().trim().max(2000).optional(),
 });
 
-export const searchCotacoesQuerySchema = z.object({
+export const searchProformaInvoicesQuerySchema = z.object({
   q: z.string().trim().min(1).optional(),
   search: z.string().trim().min(1).optional(),
-  estado: estadoCotacaoSchema.optional(),
+  estado: estadoProformaInvoiceSchema.optional(),
   clienteId: z.string().regex(/^\d+$/).optional(),
   userId: z.string().regex(/^\d+$/).optional(),
   validadeFrom: z.string().trim().min(1).optional(),
@@ -113,13 +117,13 @@ export const searchCotacoesQuerySchema = z.object({
   pageSize: z.coerce.number().int().positive().max(100).optional(),
 });
 
-export const listCotacaoAuditQuerySchema = z.object({
+export const listProformaInvoiceAuditQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().max(100).optional(),
 });
 
-export type CreateCotacaoDTO = z.infer<typeof createCotacaoSchema>;
-export type UpdateCotacaoDTO = z.infer<typeof updateCotacaoSchema>;
-export type AddCotacaoItemDTO = z.infer<typeof addCotacaoItemSchema>;
-export type UpdateCotacaoItemDTO = z.infer<typeof updateCotacaoItemSchema>;
-export type SearchCotacoesQueryDTO = z.infer<typeof searchCotacoesQuerySchema>;
+export type CreateProformaInvoiceDTO = z.infer<typeof createProformaInvoiceSchema>;
+export type UpdateProformaInvoiceDTO = z.infer<typeof updateProformaInvoiceSchema>;
+export type AddProformaInvoiceItemDTO = z.infer<typeof addProformaInvoiceItemSchema>;
+export type UpdateProformaInvoiceItemDTO = z.infer<typeof updateProformaInvoiceItemSchema>;
+export type SearchProformaInvoicesQueryDTO = z.infer<typeof searchProformaInvoicesQuerySchema>;

@@ -56,21 +56,21 @@ export function registerReportsRoutes(router: Router, prefix: string): void {
   );
 
   router.get(
-    `${prefix}/reports/quotations/:cotacaoId`,
+    `${prefix}/reports/proforma-invoices/:proformaInvoiceId`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
     requirePermission("RELATORIOS", "EXPORT"),
     async (context) =>
-      controller.quotation(context.req, context.params, getTenantAuth(context).userId),
+      controller.proformaInvoice(context.req, context.params, getTenantAuth(context).userId),
   );
 
   router.get(
-    `${prefix}/reports/quotations`,
+    `${prefix}/reports/proforma-invoices`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
     requirePermission("RELATORIOS", "EXPORT"),
     async (context) =>
-      controller.quotationList(context.req, getTenantAuth(context).userId),
+      controller.proformaInvoiceList(context.req, getTenantAuth(context).userId),
   );
 
   router.get(

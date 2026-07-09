@@ -1,0 +1,99 @@
+-- Migra permissao legada COTACOES para PROFORMA_INVOICES.
+-- Ordem segura:
+-- 1) expandir enum para aceitar COTACOES e PROFORMA_INVOICES
+-- 2) atualizar dados
+-- 3) contrair enum removendo COTACOES
+
+ALTER TABLE `role_permissions`
+MODIFY `module` ENUM(
+  'REQUISICOES',
+  'COMPRAS',
+  'PRODUTOS',
+  'LOTES',
+  'INVENTARIO',
+  'FORNECEDORES',
+  'CLIENTES',
+  'POS',
+  'RELATORIOS',
+  'UTILIZADORES',
+  'CONFIGURACOES',
+  'COTACOES',
+  'PROFORMA_INVOICES',
+  'FATURAS',
+  'CAIXA',
+  'ESTOQUE',
+  'PSICOTROPICOS',
+  'AUDITORIA'
+) NOT NULL;
+
+ALTER TABLE `user_permissions`
+MODIFY `module` ENUM(
+  'REQUISICOES',
+  'COMPRAS',
+  'PRODUTOS',
+  'LOTES',
+  'INVENTARIO',
+  'FORNECEDORES',
+  'CLIENTES',
+  'POS',
+  'RELATORIOS',
+  'UTILIZADORES',
+  'CONFIGURACOES',
+  'COTACOES',
+  'PROFORMA_INVOICES',
+  'FATURAS',
+  'CAIXA',
+  'ESTOQUE',
+  'PSICOTROPICOS',
+  'AUDITORIA'
+) NOT NULL;
+
+UPDATE `role_permissions`
+SET `module` = 'PROFORMA_INVOICES'
+WHERE `module` = 'COTACOES';
+
+UPDATE `user_permissions`
+SET `module` = 'PROFORMA_INVOICES'
+WHERE `module` = 'COTACOES';
+
+ALTER TABLE `role_permissions`
+MODIFY `module` ENUM(
+  'REQUISICOES',
+  'COMPRAS',
+  'PRODUTOS',
+  'LOTES',
+  'INVENTARIO',
+  'FORNECEDORES',
+  'CLIENTES',
+  'POS',
+  'RELATORIOS',
+  'UTILIZADORES',
+  'CONFIGURACOES',
+  'PROFORMA_INVOICES',
+  'FATURAS',
+  'CAIXA',
+  'ESTOQUE',
+  'PSICOTROPICOS',
+  'AUDITORIA'
+) NOT NULL;
+
+ALTER TABLE `user_permissions`
+MODIFY `module` ENUM(
+  'REQUISICOES',
+  'COMPRAS',
+  'PRODUTOS',
+  'LOTES',
+  'INVENTARIO',
+  'FORNECEDORES',
+  'CLIENTES',
+  'POS',
+  'RELATORIOS',
+  'UTILIZADORES',
+  'CONFIGURACOES',
+  'PROFORMA_INVOICES',
+  'FATURAS',
+  'CAIXA',
+  'ESTOQUE',
+  'PSICOTROPICOS',
+  'AUDITORIA'
+) NOT NULL;

@@ -5,25 +5,25 @@ import {
   parseSearchParams,
 } from "../../../../../shared/http/request-validation";
 import type {
-  AddCotacaoItemDTO,
-  CreateCotacaoDTO,
-  UpdateCotacaoDTO,
-  UpdateCotacaoItemDTO,
-} from "../../application/dto/cotacao.dto";
+  AddProformaInvoiceItemDTO,
+  CreateProformaInvoiceDTO,
+  UpdateProformaInvoiceDTO,
+  UpdateProformaInvoiceItemDTO,
+} from "../../application/dto/proforma-invoice.dto";
 import {
-  addCotacaoItemSchema,
-  createCotacaoSchema,
-  cotacaoItemIdParamSchema,
-  listCotacaoAuditQuerySchema,
-  mutateCotacaoStatusSchema,
-  searchCotacoesQuerySchema,
-  updateCotacaoItemSchema,
-  updateCotacaoSchema,
-} from "../../application/dto/cotacao.dto";
-import { CotacaoService } from "../../application/services/cotacao.service";
+  addProformaInvoiceItemSchema,
+  createProformaInvoiceSchema,
+  proformaInvoiceItemIdParamSchema,
+  listProformaInvoiceAuditQuerySchema,
+  mutateProformaInvoiceStatusSchema,
+  searchProformaInvoicesQuerySchema,
+  updateProformaInvoiceItemSchema,
+  updateProformaInvoiceSchema,
+} from "../../application/dto/proforma-invoice.dto";
+import { ProformaInvoiceService } from "../../application/services/proforma-invoice.service";
 
-export class CotacaoController {
-  private service = new CotacaoService();
+export class ProformaInvoiceController {
+  private service = new ProformaInvoiceService();
 
   private serialize(data: unknown) {
     return JSON.parse(
@@ -35,7 +35,7 @@ export class CotacaoController {
 
   async create(req: Request, userId: string) {
     try {
-      const body = await parseJsonBody<CreateCotacaoDTO>(req, createCotacaoSchema);
+      const body = await parseJsonBody<CreateProformaInvoiceDTO>(req, createProformaInvoiceSchema);
       const result = await this.service.create(body, userId);
       return success(this.serialize(result), 201);
     } catch (error: any) {
@@ -46,7 +46,7 @@ export class CotacaoController {
   async search(req: Request) {
     try {
       const url = new URL(req.url);
-      const params = parseSearchParams(url, searchCotacoesQuerySchema);
+      const params = parseSearchParams(url, searchProformaInvoicesQuerySchema);
       const result = await this.service.search({
         query: params.q ?? params.search,
         estado: params.estado,
@@ -73,71 +73,71 @@ export class CotacaoController {
     }
   }
 
-  async get(cotacaoId: string) {
+  async get(proformaInvoiceId: string) {
     try {
-      const result = await this.service.get(cotacaoId);
+      const result = await this.service.get(proformaInvoiceId);
       return success(this.serialize(result));
     } catch (error: any) {
       return controllerErrorResponse(error, 404);
     }
   }
 
-  async update(cotacaoId: string, req: Request, userId: string) {
+  async update(proformaInvoiceId: string, req: Request, userId: string) {
     try {
-      const body = await parseJsonBody<UpdateCotacaoDTO>(req, updateCotacaoSchema);
-      const result = await this.service.update(cotacaoId, body, userId);
+      const body = await parseJsonBody<UpdateProformaInvoiceDTO>(req, updateProformaInvoiceSchema);
+      const result = await this.service.update(proformaInvoiceId, body, userId);
       return success(this.serialize(result));
     } catch (error: any) {
       return controllerErrorResponse(error);
     }
   }
 
-  async addItem(cotacaoId: string, req: Request, userId: string) {
+  async addItem(proformaInvoiceId: string, req: Request, userId: string) {
     try {
-      const body = await parseJsonBody<AddCotacaoItemDTO>(req, addCotacaoItemSchema);
-      const result = await this.service.addItem(cotacaoId, body, userId);
+      const body = await parseJsonBody<AddProformaInvoiceItemDTO>(req, addProformaInvoiceItemSchema);
+      const result = await this.service.addItem(proformaInvoiceId, body, userId);
       return success(this.serialize(result));
     } catch (error: any) {
       return controllerErrorResponse(error);
     }
   }
 
-  async updateItem(cotacaoId: string, itemId: string, req: Request, userId: string) {
+  async updateItem(proformaInvoiceId: string, itemId: string, req: Request, userId: string) {
     try {
-      const body = await parseJsonBody<UpdateCotacaoItemDTO>(
+      const body = await parseJsonBody<UpdateProformaInvoiceItemDTO>(
         req,
-        updateCotacaoItemSchema,
+        updateProformaInvoiceItemSchema,
       );
-      const result = await this.service.updateItem(cotacaoId, itemId, body, userId);
+      const result = await this.service.updateItem(proformaInvoiceId, itemId, body, userId);
       return success(this.serialize(result));
     } catch (error: any) {
       return controllerErrorResponse(error);
     }
   }
 
-  async removeItem(cotacaoId: string, itemId: string, userId: string) {
+  async removeItem(proformaInvoiceId: string, itemId: string, userId: string) {
     try {
-      const result = await this.service.removeItem(cotacaoId, itemId, userId);
+      const result = await this.service.removeItem(proformaInvoiceId, itemId, userId);
       return success(this.serialize(result));
     } catch (error: any) {
       return controllerErrorResponse(error);
     }
   }
 
-  async delete(cotacaoId: string, userId: string) {
+  async delete(proformaInvoiceId: string, userId: string) {
     try {
-      await this.service.delete(cotacaoId, userId);
+      await this.service.delete(proformaInvoiceId, userId);
       return success({ deleted: true });
     } catch (error: any) {
       return controllerErrorResponse(error);
     }
   }
 
-  async approve(cotacaoId: string, req: Request, userId: string) {
+  async approve(proformaInvoiceId: string, req: Request, userId: string) {
     try {
-      const body = await parseJsonBody(req, mutateCotacaoStatusSchema);
+      const body = await parseJsonBody(req, mutateProformaInvoiceStatusSchema);
       const result = await this.service.approve(
-        cotacaoId,
+        proformaInvoiceId,
         userId,
         body.observacoes,
       );
@@ -147,11 +147,11 @@ export class CotacaoController {
     }
   }
 
-  async reject(cotacaoId: string, req: Request, userId: string) {
+  async reject(proformaInvoiceId: string, req: Request, userId: string) {
     try {
-      const body = await parseJsonBody(req, mutateCotacaoStatusSchema);
+      const body = await parseJsonBody(req, mutateProformaInvoiceStatusSchema);
       const result = await this.service.reject(
-        cotacaoId,
+        proformaInvoiceId,
         userId,
         body.observacoes,
       );
@@ -161,11 +161,11 @@ export class CotacaoController {
     }
   }
 
-  async expire(cotacaoId: string, req: Request, userId: string) {
+  async expire(proformaInvoiceId: string, req: Request, userId: string) {
     try {
-      const body = await parseJsonBody(req, mutateCotacaoStatusSchema);
+      const body = await parseJsonBody(req, mutateProformaInvoiceStatusSchema);
       const result = await this.service.expire(
-        cotacaoId,
+        proformaInvoiceId,
         userId,
         body.observacoes,
       );
@@ -175,11 +175,11 @@ export class CotacaoController {
     }
   }
 
-  async listAudit(req: Request, cotacaoId: string) {
+  async listAudit(req: Request, proformaInvoiceId: string) {
     try {
       const url = new URL(req.url);
-      const { page, pageSize } = parseSearchParams(url, listCotacaoAuditQuerySchema);
-      const result = await this.service.listAudit(cotacaoId, page, pageSize);
+      const { page, pageSize } = parseSearchParams(url, listProformaInvoiceAuditQuerySchema);
+      const result = await this.service.listAudit(proformaInvoiceId, page, pageSize);
       return success(this.serialize(result.items), 200, {
         page: result.page,
         pageSize: result.pageSize,

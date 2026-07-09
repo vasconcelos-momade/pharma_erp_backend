@@ -6,9 +6,9 @@ type TaxRuleRow = {
   taxa: unknown;
 };
 
-export type CotacaoItemRow = {
+export type ProformaInvoiceItemRow = {
   id: bigint;
-  cotacaoId: bigint;
+  proformaInvoiceId: bigint;
   produtoId?: bigint | null;
   servicoId?: bigint | null;
   descricao?: string | null;
@@ -34,9 +34,9 @@ export type CotacaoItemRow = {
   } | null;
 };
 
-export type CotacaoItemApi = {
+export type ProformaInvoiceItemApi = {
   id: string;
-  cotacaoId: string;
+  proformaInvoiceId: string;
   produtoId: string | null;
   servicoId: string | null;
   tipo: "PRODUTO" | "SERVICO";
@@ -65,7 +65,7 @@ export type CotacaoItemApi = {
   } | null;
 };
 
-export type CotacaoItemSnapshotInput = {
+export type ProformaInvoiceItemSnapshotInput = {
   quantidade: number;
   precoUnit: number;
   desconto?: number;
@@ -74,7 +74,7 @@ export type CotacaoItemSnapshotInput = {
   taxRule?: TaxRuleRow | null;
 };
 
-function resolveTaxRule(row: CotacaoItemRow | CotacaoItemSnapshotInput) {
+function resolveTaxRule(row: ProformaInvoiceItemRow | ProformaInvoiceItemSnapshotInput) {
   const taxRule =
     "produto" in row
       ? row.produto?.taxRule ?? row.servico?.taxRule ?? null
@@ -94,8 +94,8 @@ function resolveTaxRule(row: CotacaoItemRow | CotacaoItemSnapshotInput) {
   };
 }
 
-export function resolveCotacaoItemDescricao(
-  row: CotacaoItemRow,
+export function resolveProformaInvoiceItemDescricao(
+  row: ProformaInvoiceItemRow,
   overrideDescricao?: string | null,
 ): string {
   const custom = overrideDescricao?.trim() || row.descricao?.trim();
@@ -111,7 +111,7 @@ export function resolveCotacaoItemDescricao(
   );
 }
 
-export function computeCotacaoItemSnapshot(input: CotacaoItemSnapshotInput) {
+export function computeProformaInvoiceItemSnapshot(input: ProformaInvoiceItemSnapshotInput) {
   const quantidade = Number(input.quantidade);
   const precoUnit = Number(input.precoUnit);
   const baseBruta = quantidade * precoUnit;
@@ -148,15 +148,15 @@ export function computeCotacaoItemSnapshot(input: CotacaoItemSnapshotInput) {
   };
 }
 
-function hasPersistedSnapshot(row: CotacaoItemRow) {
+function hasPersistedSnapshot(row: ProformaInvoiceItemRow) {
   return row.subtotal != null && row.total != null && row.descricao != null;
 }
 
-export function buildCotacaoItemApi(
-  row: CotacaoItemRow,
+export function buildProformaInvoiceItemApi(
+  row: ProformaInvoiceItemRow,
   overrideDescricao?: string | null,
-): CotacaoItemApi {
-  const descricao = resolveCotacaoItemDescricao(row, overrideDescricao);
+): ProformaInvoiceItemApi {
+  const descricao = resolveProformaInvoiceItemDescricao(row, overrideDescricao);
   const quantidade = Number(row.quantidade);
   const precoUnit = Number(row.precoUnit);
 
@@ -176,7 +176,7 @@ export function buildCotacaoItemApi(
         codigoRegraFiscal: null as string | null,
         motivoIsencao: null as string | null,
       }
-    : computeCotacaoItemSnapshot({
+    : computeProformaInvoiceItemSnapshot({
         quantidade,
         precoUnit,
         desconto: Number(row.desconto ?? 0),
@@ -186,7 +186,7 @@ export function buildCotacaoItemApi(
 
   return {
     id: row.id.toString(),
-    cotacaoId: row.cotacaoId.toString(),
+    proformaInvoiceId: row.proformaInvoiceId.toString(),
     produtoId: row.produtoId?.toString() ?? null,
     servicoId: row.servicoId?.toString() ?? null,
     tipo: row.produtoId ? "PRODUTO" : "SERVICO",
@@ -220,8 +220,8 @@ export function buildCotacaoItemApi(
   };
 }
 
-export function buildCotacaoTotals(
-  items: CotacaoItemApi[],
+export function buildProformaInvoiceTotals(
+  items: ProformaInvoiceItemApi[],
   descontoGeral = 0,
   persisted?: { subtotal?: number; ivaTotal?: number; total?: number },
 ) {

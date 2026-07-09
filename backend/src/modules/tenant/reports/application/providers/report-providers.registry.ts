@@ -61,9 +61,9 @@ import {
   ProductsNoStockReportProvider,
 } from "./products-report.provider";
 import {
-  QuotationListReportProvider,
-  QuotationReportProvider,
-} from "./quotation-report.provider";
+  ProformaInvoiceListReportProvider,
+  ProformaInvoiceReportProvider,
+} from "./proforma-invoice-report.provider";
 import {
   RequisitionDetailReportProvider,
   RequisitionsCompraReportProvider,
@@ -119,8 +119,8 @@ export const reportDataProviders: ReportDataProvider[] = [
   new InvoiceListReportProvider(),
   new SalesHistoryReportProvider(),
   new CustomersReportProvider(),
-  new QuotationReportProvider(),
-  new QuotationListReportProvider(),
+  new ProformaInvoiceReportProvider(),
+  new ProformaInvoiceListReportProvider(),
   new ExecutiveDashboardReportProvider(),
   new FinanceDashboardReportProvider(),
   new PharmacyDashboardReportProvider(),

@@ -31,12 +31,12 @@ export class ReportsController {
     return this.generate(REPORT_KEYS.CUSTOMERS, req, {}, userId);
   }
 
-  async quotation(req: Request, params: Record<string, string>, userId: string) {
-    return this.generate(REPORT_KEYS.QUOTATION, req, params, userId);
+  async proformaInvoice(req: Request, params: Record<string, string>, userId: string) {
+    return this.generate(REPORT_KEYS.PROFORMA_INVOICE, req, params, userId);
   }
 
-  async quotationList(req: Request, userId: string) {
-    return this.generate(REPORT_KEYS.QUOTATION_LIST, req, {}, userId);
+  async proformaInvoiceList(req: Request, userId: string) {
+    return this.generate(REPORT_KEYS.PROFORMA_INVOICE_LIST, req, {}, userId);
   }
 
   async dashboardExecutive(req: Request, userId: string) {

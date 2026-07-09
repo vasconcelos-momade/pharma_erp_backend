@@ -1,20 +1,21 @@
 import { getPrisma } from "../../../../../infrastructure/prisma/tenant-prisma.factory";
 import { ComplianceAuditService } from "../../../../../shared/services/compliance-audit.service";
+import { DocumentNumberService } from "../../../../../shared/services/document-number.service";
 import { parseDateRange } from "../../../regulatory/application/use-cases/regulatory.helpers";
 import { flattenProdutoForApi } from "../../../products/domain/produto-presenter";
 import type {
-  AddCotacaoItemDTO,
-  CreateCotacaoDTO,
-  UpdateCotacaoDTO,
-  UpdateCotacaoItemDTO,
-} from "../../application/dto/cotacao.dto";
+  AddProformaInvoiceItemDTO,
+  CreateProformaInvoiceDTO,
+  UpdateProformaInvoiceDTO,
+  UpdateProformaInvoiceItemDTO,
+} from "../../application/dto/proforma-invoice.dto";
 import {
-  buildCotacaoItemApi,
-  buildCotacaoTotals,
-  computeCotacaoItemSnapshot,
-} from "../../application/helpers/cotacao-calculator";
+  buildProformaInvoiceItemApi,
+  buildProformaInvoiceTotals,
+  computeProformaInvoiceItemSnapshot,
+} from "../../application/helpers/proforma-invoice-calculator";
 
-type CotacaoSearchFilters = {
+type ProformaInvoiceSearchFilters = {
   query?: string;
   estado?: "PENDENTE" | "APROVADA" | "REJEITADA" | "EXPIRADA";
   clienteId?: bigint;
@@ -31,7 +32,7 @@ type CotacaoSearchFilters = {
 
 type PrismaTx = any;
 
-const COTACAO_ITEM_INCLUDE = {
+const PROFORMA_INVOICE_ITEM_INCLUDE = {
   produto: {
     select: {
       id: true,
@@ -62,13 +63,13 @@ const COTACAO_ITEM_INCLUDE = {
   },
 } as const;
 
-function serializeCotacaoItem(row: any) {
-  return buildCotacaoItemApi(row);
+function serializeProformaInvoiceItem(row: any) {
+  return buildProformaInvoiceItemApi(row);
 }
 
-function serializeCotacao(row: any) {
-  const items = row.items?.map(serializeCotacaoItem) ?? [];
-  const totals = buildCotacaoTotals(items, Number(row.desconto ?? 0), {
+function serializeProformaInvoice(row: any) {
+  const items = row.items?.map(serializeProformaInvoiceItem) ?? [];
+  const totals = buildProformaInvoiceTotals(items, Number(row.desconto ?? 0), {
     subtotal: row.subtotal != null ? Number(row.subtotal) : undefined,
     ivaTotal: row.ivaTotal != null ? Number(row.ivaTotal) : undefined,
     total: row.total != null ? Number(row.total) : undefined,
@@ -79,6 +80,8 @@ function serializeCotacao(row: any) {
     numero: row.numero,
     cliente: row.clienteNome ?? row.cliente ?? "",
     clienteId: row.clienteId?.toString() ?? null,
+    nuit: row.nuit ?? null,
+    contacto: row.contacto ?? null,
     userId: row.userId.toString(),
     subtotal: totals.subtotal,
     desconto: Number(row.desconto ?? 0),
@@ -122,29 +125,30 @@ function serializeCotacao(row: any) {
   };
 }
 
-const COTACAO_INCLUDE = {
+const PROFORMA_INVOICE_INCLUDE = {
   clienteCadastrado: {
     select: { id: true, nome: true, telefone: true, nuit: true },
   },
   user: { select: { id: true, name: true, role: true } },
   aprovadoPor: { select: { id: true, name: true, role: true } },
   items: {
-    include: COTACAO_ITEM_INCLUDE,
+    include: PROFORMA_INVOICE_ITEM_INCLUDE,
     orderBy: { id: "asc" as const },
   },
   _count: { select: { items: true } },
 } as const;
 
-export class CotacaoRepository {
+export class ProformaInvoiceRepository {
   private audit = new ComplianceAuditService();
+  private documentNumberService = new DocumentNumberService();
 
   private get prisma() {
     return getPrisma() as any;
   }
 
-  private async expireOverdueQuotes(tx?: PrismaTx) {
+  private async expireOverdueProformaInvoices(tx?: PrismaTx) {
     const prisma = tx ?? this.prisma;
-    await prisma.cotacao.updateMany({
+    await prisma.proformaInvoice.updateMany({
       where: {
         deletedAt: null,
         estado: "PENDENTE",
@@ -156,8 +160,11 @@ export class CotacaoRepository {
     });
   }
 
-  private buildNumeroCotacao() {
-    return `COT-${Date.now()}`;
+  private async buildNumeroProformaInvoice(tx: PrismaTx) {
+    return this.documentNumberService.nextProformaInvoiceNumero(tx, {
+      serie: "FTP",
+      padLength: 7,
+    });
   }
 
   private async assertClienteExists(tx: PrismaTx, clienteId: bigint) {
@@ -247,19 +254,26 @@ export class CotacaoRepository {
 
   private assertCanMutate(row: any, action: string) {
     if (row.deletedAt) {
-      throw new Error("Cotação não encontrada");
+      throw new Error("Fatura proforma não encontrada");
     }
 
     if (row.estado !== "PENDENTE") {
-      throw new Error(`Não é possível ${action} uma cotação com estado ${row.estado}`);
+      throw new Error(`Não e possivel ${action} uma fatura proforma com estado ${row.estado}`);
     }
   }
 
   private async resolveClienteSnapshot(
     tx: PrismaTx,
-    data: { cliente: string; clienteId?: string | null },
+    data: {
+      cliente: string;
+      clienteId?: string | null;
+      nuit?: string | null;
+      contacto?: string | null;
+    },
   ) {
     const nome = data.cliente.trim();
+    const nuit = data.nuit?.trim() || null;
+    const contacto = data.contacto?.trim() || null;
     if (!nome) {
       throw new Error("Informe o nome do cliente");
     }
@@ -269,31 +283,35 @@ export class CotacaoRepository {
       return {
         clienteNome: cliente.nome ?? nome,
         clienteId: cliente.id,
+        nuit: nuit ?? cliente.nuit ?? null,
+        contacto: contacto ?? cliente.telefone ?? null,
       };
     }
 
     return {
       clienteNome: nome,
       clienteId: null,
+      nuit,
+      contacto,
     };
   }
 
-  private async recalculateAndPersistTotals(tx: PrismaTx, cotacaoId: bigint) {
-    const row = await tx.cotacao.findUnique({
-      where: { id: cotacaoId },
+  private async recalculateAndPersistTotals(tx: PrismaTx, proformaInvoiceId: bigint) {
+    const row = await tx.proformaInvoice.findUnique({
+      where: { id: proformaInvoiceId },
       include: {
-        items: { include: COTACAO_ITEM_INCLUDE, orderBy: { id: "asc" } },
+        items: { include: PROFORMA_INVOICE_ITEM_INCLUDE, orderBy: { id: "asc" } },
       },
     });
     if (!row) {
-      throw new Error("Cotação não encontrada");
+      throw new Error("Fatura proforma não encontrada");
     }
 
-    const items = row.items.map(serializeCotacaoItem);
-    const totals = buildCotacaoTotals(items, Number(row.desconto ?? 0));
+    const items = row.items.map(serializeProformaInvoiceItem);
+    const totals = buildProformaInvoiceTotals(items, Number(row.desconto ?? 0));
 
-    await tx.cotacao.update({
-      where: { id: cotacaoId },
+    await tx.proformaInvoice.update({
+      where: { id: proformaInvoiceId },
       data: {
         subtotal: totals.subtotal,
         ivaTotal: totals.ivaTotal,
@@ -306,7 +324,7 @@ export class CotacaoRepository {
 
   private async buildItemSnapshotFromInput(
     tx: PrismaTx,
-    input: AddCotacaoItemDTO | (UpdateCotacaoItemDTO & { produtoId?: string; servicoId?: string }),
+    input: AddProformaInvoiceItemDTO | (UpdateProformaInvoiceItemDTO & { produtoId?: string; servicoId?: string }),
     existing?: any,
   ) {
     const quantidade = Number(
@@ -338,7 +356,7 @@ export class CotacaoRepository {
       throw new Error("Preço unitário inválido");
     }
 
-    return computeCotacaoItemSnapshot({
+    return computeProformaInvoiceItemSnapshot({
       quantidade,
       precoUnit: precoUnit!,
       desconto: input.desconto,
@@ -348,20 +366,24 @@ export class CotacaoRepository {
     });
   }
 
-  async create(data: CreateCotacaoDTO, userId: bigint) {
-    await this.expireOverdueQuotes();
+  async create(data: CreateProformaInvoiceDTO, userId: bigint) {
+    await this.expireOverdueProformaInvoices();
 
     const created = await this.prisma.$transaction(async (tx: PrismaTx) => {
       const clienteSnapshot = await this.resolveClienteSnapshot(tx, {
         cliente: data.cliente,
         clienteId: data.clienteId,
+        nuit: data.nuit,
+        contacto: data.contacto,
       });
 
-      const cotacao = await tx.cotacao.create({
+      const proformaInvoice = await tx.proformaInvoice.create({
         data: {
-          numero: this.buildNumeroCotacao(),
+          numero: await this.buildNumeroProformaInvoice(tx),
           clienteNome: clienteSnapshot.clienteNome,
           clienteId: clienteSnapshot.clienteId,
+          nuit: clienteSnapshot.nuit,
+          contacto: clienteSnapshot.contacto,
           userId,
           desconto: data.desconto ?? 0,
           validade: data.validade,
@@ -375,22 +397,22 @@ export class CotacaoRepository {
 
       if (data.items?.length) {
         for (const item of data.items) {
-          await this.addItemInternal(tx, cotacao.id, item, userId, false);
+          await this.addItemInternal(tx, proformaInvoice.id, item, userId, false);
         }
       }
 
-      const withRelations = await tx.cotacao.findUnique({
-        where: { id: cotacao.id },
-        include: COTACAO_INCLUDE,
+      const withRelations = await tx.proformaInvoice.findUnique({
+        where: { id: proformaInvoice.id },
+        include: PROFORMA_INVOICE_INCLUDE,
       });
 
       await this.audit.createImmutableLog(
         {
           userId,
           action: "CREATE",
-          entity: "Cotacao",
-          entityId: cotacao.id,
-          after: serializeCotacao(withRelations),
+          entity: "ProformaInvoice",
+          entityId: proformaInvoice.id,
+          after: serializeProformaInvoice(withRelations),
         },
         tx,
       );
@@ -398,26 +420,26 @@ export class CotacaoRepository {
       return withRelations;
     });
 
-    return serializeCotacao(created);
+    return serializeProformaInvoice(created);
   }
 
   private async addItemInternal(
     tx: PrismaTx,
-    cotacaoId: bigint,
-    data: AddCotacaoItemDTO,
+    proformaInvoiceId: bigint,
+    data: AddProformaInvoiceItemDTO,
     userId: bigint,
     audit = true,
   ) {
-    const cotacao = await tx.cotacao.findFirst({
-      where: { id: cotacaoId, deletedAt: null },
+    const proformaInvoice = await tx.proformaInvoice.findFirst({
+      where: { id: proformaInvoiceId, deletedAt: null },
       include: { items: true },
     });
-    if (!cotacao) {
-      throw new Error("Cotação não encontrada");
+    if (!proformaInvoice) {
+      throw new Error("Fatura proforma não encontrada");
     }
-    this.assertCanMutate(cotacao, "adicionar itens a");
+    this.assertCanMutate(proformaInvoice, "adicionar itens a");
 
-    const existing = cotacao.items.find((item: any) =>
+    const existing = proformaInvoice.items.find((item: any) =>
       data.produtoId
         ? item.produtoId?.toString() === data.produtoId
         : item.servicoId?.toString() === data.servicoId,
@@ -429,7 +451,7 @@ export class CotacaoRepository {
         quantidade: Number(existing.quantidade) + Number(data.quantidade ?? 1),
       }, existing);
 
-      await tx.cotacaoItem.update({
+      await tx.proformaInvoiceItem.update({
         where: { id: existing.id },
         data: {
           descricao: snapshot.descricao,
@@ -448,9 +470,9 @@ export class CotacaoRepository {
         quantidade: data.quantidade ?? 1,
       });
 
-      await tx.cotacaoItem.create({
+      await tx.proformaInvoiceItem.create({
         data: {
-          cotacaoId,
+          proformaInvoiceId,
           produtoId: data.produtoId ? BigInt(data.produtoId) : null,
           servicoId: data.servicoId ? BigInt(data.servicoId) : null,
           descricao: snapshot.descricao,
@@ -465,15 +487,15 @@ export class CotacaoRepository {
       });
     }
 
-    await this.recalculateAndPersistTotals(tx, cotacaoId);
-    await tx.cotacao.update({
-      where: { id: cotacaoId },
+    await this.recalculateAndPersistTotals(tx, proformaInvoiceId);
+    await tx.proformaInvoice.update({
+      where: { id: proformaInvoiceId },
       data: { version: { increment: 1 } },
     });
 
-    const refreshed = await tx.cotacao.findUnique({
-      where: { id: cotacaoId },
-      include: COTACAO_INCLUDE,
+    const refreshed = await tx.proformaInvoice.findUnique({
+      where: { id: proformaInvoiceId },
+      include: PROFORMA_INVOICE_INCLUDE,
     });
 
     if (audit) {
@@ -481,44 +503,44 @@ export class CotacaoRepository {
         {
           userId,
           action: "ADD_ITEM",
-          entity: "Cotacao",
-          entityId: cotacaoId,
-          after: serializeCotacao(refreshed),
+          entity: "ProformaInvoice",
+          entityId: proformaInvoiceId,
+          after: serializeProformaInvoice(refreshed),
         },
         tx,
       );
     }
 
-    return serializeCotacao(refreshed);
+    return serializeProformaInvoice(refreshed);
   }
 
-  async addItem(cotacaoId: bigint, data: AddCotacaoItemDTO, userId: bigint) {
-    await this.expireOverdueQuotes();
+  async addItem(proformaInvoiceId: bigint, data: AddProformaInvoiceItemDTO, userId: bigint) {
+    await this.expireOverdueProformaInvoices();
     return this.prisma.$transaction((tx: PrismaTx) =>
-      this.addItemInternal(tx, cotacaoId, data, userId),
+      this.addItemInternal(tx, proformaInvoiceId, data, userId),
     );
   }
 
   async updateItem(
-    cotacaoId: bigint,
+    proformaInvoiceId: bigint,
     itemId: bigint,
-    data: UpdateCotacaoItemDTO,
+    data: UpdateProformaInvoiceItemDTO,
     userId: bigint,
   ) {
-    await this.expireOverdueQuotes();
+    await this.expireOverdueProformaInvoices();
 
     return this.prisma.$transaction(async (tx: PrismaTx) => {
-      const cotacao = await tx.cotacao.findFirst({
-        where: { id: cotacaoId, deletedAt: null },
+      const proformaInvoice = await tx.proformaInvoice.findFirst({
+        where: { id: proformaInvoiceId, deletedAt: null },
       });
-      if (!cotacao) {
-        throw new Error("Cotação não encontrada");
+      if (!proformaInvoice) {
+        throw new Error("Fatura proforma não encontrada");
       }
-      this.assertCanMutate(cotacao, "editar itens de");
+      this.assertCanMutate(proformaInvoice, "editar itens de");
 
-      const existing = await tx.cotacaoItem.findFirst({
-        where: { id: itemId, cotacaoId },
-        include: COTACAO_ITEM_INCLUDE,
+      const existing = await tx.proformaInvoiceItem.findFirst({
+        where: { id: itemId, proformaInvoiceId },
+        include: PROFORMA_INVOICE_ITEM_INCLUDE,
       });
       if (!existing) {
         throw new Error("Item não encontrado");
@@ -526,7 +548,7 @@ export class CotacaoRepository {
 
       const snapshot = await this.buildItemSnapshotFromInput(tx, data, existing);
 
-      await tx.cotacaoItem.update({
+      await tx.proformaInvoiceItem.update({
         where: { id: itemId },
         data: {
           descricao: snapshot.descricao,
@@ -540,80 +562,80 @@ export class CotacaoRepository {
         },
       });
 
-      await this.recalculateAndPersistTotals(tx, cotacaoId);
-      await tx.cotacao.update({
-        where: { id: cotacaoId },
+      await this.recalculateAndPersistTotals(tx, proformaInvoiceId);
+      await tx.proformaInvoice.update({
+        where: { id: proformaInvoiceId },
         data: { version: { increment: 1 } },
       });
 
-      const refreshed = await tx.cotacao.findUnique({
-        where: { id: cotacaoId },
-        include: COTACAO_INCLUDE,
+      const refreshed = await tx.proformaInvoice.findUnique({
+        where: { id: proformaInvoiceId },
+        include: PROFORMA_INVOICE_INCLUDE,
       });
 
       await this.audit.createImmutableLog(
         {
           userId,
           action: "UPDATE_ITEM",
-          entity: "Cotacao",
-          entityId: cotacaoId,
-          after: serializeCotacao(refreshed),
+          entity: "ProformaInvoice",
+          entityId: proformaInvoiceId,
+          after: serializeProformaInvoice(refreshed),
         },
         tx,
       );
 
-      return serializeCotacao(refreshed);
+      return serializeProformaInvoice(refreshed);
     });
   }
 
-  async removeItem(cotacaoId: bigint, itemId: bigint, userId: bigint) {
-    await this.expireOverdueQuotes();
+  async removeItem(proformaInvoiceId: bigint, itemId: bigint, userId: bigint) {
+    await this.expireOverdueProformaInvoices();
 
     return this.prisma.$transaction(async (tx: PrismaTx) => {
-      const cotacao = await tx.cotacao.findFirst({
-        where: { id: cotacaoId, deletedAt: null },
+      const proformaInvoice = await tx.proformaInvoice.findFirst({
+        where: { id: proformaInvoiceId, deletedAt: null },
       });
-      if (!cotacao) {
-        throw new Error("Cotação não encontrada");
+      if (!proformaInvoice) {
+        throw new Error("Fatura proforma não encontrada");
       }
-      this.assertCanMutate(cotacao, "remover itens de");
+      this.assertCanMutate(proformaInvoice, "remover itens de");
 
-      const existing = await tx.cotacaoItem.findFirst({
-        where: { id: itemId, cotacaoId },
+      const existing = await tx.proformaInvoiceItem.findFirst({
+        where: { id: itemId, proformaInvoiceId },
       });
       if (!existing) {
         throw new Error("Item não encontrado");
       }
 
-      await tx.cotacaoItem.delete({ where: { id: itemId } });
-      await this.recalculateAndPersistTotals(tx, cotacaoId);
-      await tx.cotacao.update({
-        where: { id: cotacaoId },
+      await tx.proformaInvoiceItem.delete({ where: { id: itemId } });
+      await this.recalculateAndPersistTotals(tx, proformaInvoiceId);
+      await tx.proformaInvoice.update({
+        where: { id: proformaInvoiceId },
         data: { version: { increment: 1 } },
       });
 
-      const refreshed = await tx.cotacao.findUnique({
-        where: { id: cotacaoId },
-        include: COTACAO_INCLUDE,
+      const refreshed = await tx.proformaInvoice.findUnique({
+        where: { id: proformaInvoiceId },
+        include: PROFORMA_INVOICE_INCLUDE,
       });
 
       await this.audit.createImmutableLog(
         {
           userId,
           action: "REMOVE_ITEM",
-          entity: "Cotacao",
-          entityId: cotacaoId,
-          after: serializeCotacao(refreshed),
+          entity: "ProformaInvoice",
+          entityId: proformaInvoiceId,
+          after: serializeProformaInvoice(refreshed),
         },
         tx,
       );
 
-      return serializeCotacao(refreshed);
+      return serializeProformaInvoice(refreshed);
     });
   }
 
-  async search(filters: CotacaoSearchFilters = {}) {
-    await this.expireOverdueQuotes();
+  async search(filters: ProformaInvoiceSearchFilters = {}) {
+    await this.expireOverdueProformaInvoices();
 
     const query = (filters.query ?? "").trim() || undefined;
     const page = Math.max(1, filters.page ?? 1);
@@ -650,6 +672,8 @@ export class CotacaoRepository {
               { numero: { contains: query } },
               { observacoes: { contains: query } },
               { clienteNome: { contains: query } },
+              { nuit: { contains: query } },
+              { contacto: { contains: query } },
               { clienteCadastrado: { nome: { contains: query } } },
               { items: { some: { produto: { nomeComercial: { contains: query } } } } },
               { items: { some: { servico: { nome: { contains: query } } } } },
@@ -670,8 +694,8 @@ export class CotacaoRepository {
               : [{ createdAt: sortOrder }, { id: sortOrder }];
 
     const [totalCount, rows] = await this.prisma.$transaction([
-      this.prisma.cotacao.count({ where }),
-      this.prisma.cotacao.findMany({
+      this.prisma.proformaInvoice.count({ where }),
+      this.prisma.proformaInvoice.findMany({
         where,
         include: {
           clienteCadastrado: {
@@ -688,7 +712,7 @@ export class CotacaoRepository {
     ]);
 
     return {
-      items: rows.slice(0, pageSize).map(serializeCotacao),
+      items: rows.slice(0, pageSize).map(serializeProformaInvoice),
       page,
       pageSize,
       hasMore: rows.length > pageSize,
@@ -697,30 +721,30 @@ export class CotacaoRepository {
   }
 
   async getById(id: bigint) {
-    await this.expireOverdueQuotes();
+    await this.expireOverdueProformaInvoices();
 
-    const row = await this.prisma.cotacao.findFirst({
+    const row = await this.prisma.proformaInvoice.findFirst({
       where: { id, deletedAt: null },
-      include: COTACAO_INCLUDE,
+      include: PROFORMA_INVOICE_INCLUDE,
     });
 
     if (!row) {
-      throw new Error("Cotação não encontrada");
+      throw new Error("Fatura proforma não encontrada");
     }
 
-    return serializeCotacao(row);
+    return serializeProformaInvoice(row);
   }
 
-  async update(id: bigint, data: UpdateCotacaoDTO, userId: bigint) {
-    await this.expireOverdueQuotes();
+  async update(id: bigint, data: UpdateProformaInvoiceDTO, userId: bigint) {
+    await this.expireOverdueProformaInvoices();
 
-    const existing = await this.prisma.cotacao.findFirst({
+    const existing = await this.prisma.proformaInvoice.findFirst({
       where: { id, deletedAt: null },
-      include: COTACAO_INCLUDE,
+      include: PROFORMA_INVOICE_INCLUDE,
     });
 
     if (!existing) {
-      throw new Error("Cotação não encontrada");
+      throw new Error("Fatura proforma não encontrada");
     }
 
     this.assertCanMutate(existing, "editar");
@@ -742,12 +766,24 @@ export class CotacaoRepository {
             data.clienteId !== undefined
               ? data.clienteId
               : existing.clienteId?.toString() ?? null,
+          nuit: data.nuit !== undefined ? data.nuit : existing.nuit,
+          contacto:
+            data.contacto !== undefined ? data.contacto : existing.contacto,
         });
         updateData.clienteNome = snapshot.clienteNome;
         updateData.clienteId = snapshot.clienteId;
+        updateData.nuit = snapshot.nuit;
+        updateData.contacto = snapshot.contacto;
+      } else {
+        if (data.nuit !== undefined) {
+          updateData.nuit = data.nuit?.trim() || null;
+        }
+        if (data.contacto !== undefined) {
+          updateData.contacto = data.contacto?.trim() || null;
+        }
       }
 
-      await tx.cotacao.update({
+      await tx.proformaInvoice.update({
         where: { id, version: existing.version },
         data: updateData,
       });
@@ -756,19 +792,19 @@ export class CotacaoRepository {
         await this.recalculateAndPersistTotals(tx, id);
       }
 
-      const row = await tx.cotacao.findUnique({
+      const row = await tx.proformaInvoice.findUnique({
         where: { id },
-        include: COTACAO_INCLUDE,
+        include: PROFORMA_INVOICE_INCLUDE,
       });
 
       await this.audit.createImmutableLog(
         {
           userId,
           action: "UPDATE",
-          entity: "Cotacao",
+          entity: "ProformaInvoice",
           entityId: row!.id,
-          before: serializeCotacao(existing),
-          after: serializeCotacao(row),
+          before: serializeProformaInvoice(existing),
+          after: serializeProformaInvoice(row),
         },
         tx,
       );
@@ -776,27 +812,27 @@ export class CotacaoRepository {
       return row;
     });
 
-    return serializeCotacao(updated);
+    return serializeProformaInvoice(updated);
   }
 
   async softDelete(id: bigint, userId: bigint) {
-    await this.expireOverdueQuotes();
+    await this.expireOverdueProformaInvoices();
 
-    const existing = await this.prisma.cotacao.findFirst({
+    const existing = await this.prisma.proformaInvoice.findFirst({
       where: { id, deletedAt: null },
-      include: COTACAO_INCLUDE,
+      include: PROFORMA_INVOICE_INCLUDE,
     });
 
     if (!existing) {
-      throw new Error("Cotação não encontrada");
+      throw new Error("Fatura proforma não encontrada");
     }
 
     if (existing.estado === "APROVADA") {
-      throw new Error("Não é possível remover uma cotação aprovada");
+      throw new Error("Não e possivel remover uma fatura proforma aprovada");
     }
 
     await this.prisma.$transaction(async (tx: PrismaTx) => {
-      await tx.cotacao.update({
+      await tx.proformaInvoice.update({
         where: { id },
         data: {
           deletedAt: new Date(),
@@ -808,9 +844,9 @@ export class CotacaoRepository {
         {
           userId,
           action: "DELETE",
-          entity: "Cotacao",
+          entity: "ProformaInvoice",
           entityId: id,
-          before: serializeCotacao(existing),
+          before: serializeProformaInvoice(existing),
         },
         tx,
       );
@@ -823,21 +859,21 @@ export class CotacaoRepository {
     userId: bigint,
     observacoes?: string,
   ) {
-    await this.expireOverdueQuotes();
+    await this.expireOverdueProformaInvoices();
 
-    const existing = await this.prisma.cotacao.findFirst({
+    const existing = await this.prisma.proformaInvoice.findFirst({
       where: { id, deletedAt: null },
-      include: COTACAO_INCLUDE,
+      include: PROFORMA_INVOICE_INCLUDE,
     });
 
     if (!existing) {
-      throw new Error("Cotação não encontrada");
+      throw new Error("Fatura proforma não encontrada");
     }
 
     this.assertCanMutate(existing, "alterar o estado de");
 
     const updated = await this.prisma.$transaction(async (tx: PrismaTx) => {
-      const row = await tx.cotacao.update({
+      const row = await tx.proformaInvoice.update({
         where: { id, version: existing.version },
         data: {
           estado: nextStatus,
@@ -850,17 +886,17 @@ export class CotacaoRepository {
               : existing.observacoes,
           version: { increment: 1 },
         },
-        include: COTACAO_INCLUDE,
+        include: PROFORMA_INVOICE_INCLUDE,
       });
 
       await this.audit.createImmutableLog(
         {
           userId,
           action: nextStatus === "APROVADA" ? "APPROVE" : nextStatus,
-          entity: "Cotacao",
+          entity: "ProformaInvoice",
           entityId: row.id,
-          before: serializeCotacao(existing),
-          after: serializeCotacao(row),
+          before: serializeProformaInvoice(existing),
+          after: serializeProformaInvoice(row),
         },
         tx,
       );
@@ -868,13 +904,13 @@ export class CotacaoRepository {
       return row;
     });
 
-    return serializeCotacao(updated);
+    return serializeProformaInvoice(updated);
   }
 
-  async listAuditLogs(cotacaoId: bigint, page = 1, pageSize = 20) {
+  async listAuditLogs(proformaInvoiceId: bigint, page = 1, pageSize = 20) {
     const safePage = Math.max(1, page);
     const safeSize = Math.min(100, Math.max(1, pageSize));
-    const where = { entity: "Cotacao", entityId: cotacaoId };
+    const where = { entity: "ProformaInvoice", entityId: proformaInvoiceId };
 
     const [totalCount, rows] = await this.prisma.$transaction([
       this.prisma.auditLog.count({ where }),

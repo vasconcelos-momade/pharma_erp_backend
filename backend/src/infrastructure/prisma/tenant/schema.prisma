@@ -22,8 +22,8 @@ model User {
   caixaMovimentos         CaixaMovimento[]
   estoqueMovimentos       EstoqueMovimento[]
   faturas                 Fatura[]
-  cotacoes                Cotacao[]
-  cotacoesAprovadas       Cotacao[]                @relation("CotacaoAprovador")
+  proformaInvoices                ProformaInvoice[]
+  proformaInvoicesAprovadas       ProformaInvoice[]                @relation("ProformaInvoiceAprovador")
   dispensacoes            Dispensacao[]
   livroPsicotropicos      LivroPsicotropico[]
   livroReceitas           LivroReceita[]
@@ -132,7 +132,7 @@ model Cliente {
   version        Int            @default(0)
   deletedAt      DateTime?
   faturas        Fatura[]
-  cotacoes       Cotacao[]
+  proformaInvoices       ProformaInvoice[]
   contasReceber  ContaReceber[]
   receitas       Receita[]
   createdAt      DateTime       @default(now())
@@ -212,7 +212,7 @@ model Produto {
   stockBalance             StockBalance?
   dispensacoes             Dispensacao[]
   faturaItens              FaturaItem[]
-  cotacaoItens             CotacaoItem[]
+  proformaInvoiceItems             ProformaInvoiceItem[]
   stockReversals           StockReversal[]
   regulacao                ProdutoRegulacao?
   classificacaoEventos     ProdutoClassificacaoEvento[]
@@ -269,7 +269,7 @@ model Servico {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   faturaItens        FaturaItem[]
-  cotacaoItens       CotacaoItem[]
+  proformaInvoiceItems       ProformaInvoiceItem[]
   taxRule            TaxRule?           @relation(fields: [taxRuleId], references: [id])
 
   @@index([ativo])
@@ -601,11 +601,13 @@ model LoteStockBalance {
   @@map("lote_stock_balances")
 }
 
-model Cotacao {
+model ProformaInvoice {
   id                BigInt        @id @default(autoincrement()) @db.UnsignedBigInt
   numero            String        @unique
   clienteNome       String        @map("cliente")
   clienteId         BigInt?       @db.UnsignedBigInt
+  nuit              String?       @db.VarChar(50)
+  contacto          String?       @db.VarChar(50)
   clienteCadastrado Cliente?      @relation(fields: [clienteId], references: [id])
   userId            BigInt        @db.UnsignedBigInt
   user              User          @relation(fields: [userId], references: [id])
@@ -614,28 +616,28 @@ model Cotacao {
   ivaTotal          Decimal       @default(0) @db.Decimal(14, 2)
   total             Decimal       @default(0) @db.Decimal(14, 2)
   moeda             String        @default("MZN")
-  estado            EstadoCotacao @default(PENDENTE)
+  estado            EstadoProformaInvoice @default(PENDENTE)
   validade          DateTime
   observacoes       String?       @db.Text
   aprovadoPorId     BigInt?       @db.UnsignedBigInt
-  aprovadoPor       User?         @relation("CotacaoAprovador", fields: [aprovadoPorId], references: [id])
+  aprovadoPor       User?         @relation("ProformaInvoiceAprovador", fields: [aprovadoPorId], references: [id])
   aprovadoEm        DateTime?
   deletedAt         DateTime?
   version           Int           @default(0)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
-  items             CotacaoItem[]
+  items             ProformaInvoiceItem[]
 
   @@index([clienteId, estado])
   @@index([createdAt])
   @@index([estado])
-  @@map("cotacoes")
+  @@map("proforma_invoices")
 }
 
 /// Snapshot comercial por item — valores persistidos no momento da negociação.
-model CotacaoItem {
+model ProformaInvoiceItem {
   id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
-  cotacaoId  BigInt   @db.UnsignedBigInt
+  proformaInvoiceId  BigInt   @db.UnsignedBigInt
   produtoId  BigInt?  @db.UnsignedBigInt
   servicoId  BigInt?  @db.UnsignedBigInt
   descricao  String
@@ -646,14 +648,14 @@ model CotacaoItem {
   valorIva   Decimal  @default(0) @db.Decimal(14, 2)
   subtotal   Decimal  @default(0) @db.Decimal(14, 2)
   total      Decimal  @default(0) @db.Decimal(14, 2)
-  cotacao    Cotacao  @relation(fields: [cotacaoId], references: [id], onDelete: Cascade)
+  proformaInvoice    ProformaInvoice  @relation(fields: [proformaInvoiceId], references: [id], onDelete: Cascade)
   produto    Produto? @relation(fields: [produtoId], references: [id])
   servico    Servico? @relation(fields: [servicoId], references: [id])
 
-  @@index([cotacaoId])
+  @@index([proformaInvoiceId])
   @@index([produtoId])
   @@index([servicoId])
-  @@map("cotacao_itens")
+  @@map("proforma_invoice_items")
 }
 
 model ContaReceber {
@@ -1225,7 +1227,7 @@ enum EstadoFatura {
   ANULADA
 }
 
-enum EstadoCotacao {
+enum EstadoProformaInvoice {
   PENDENTE
   APROVADA
   REJEITADA
@@ -1396,7 +1398,7 @@ enum SystemModule {
   RELATORIOS
   UTILIZADORES
   CONFIGURACOES
-  COTACOES
+  PROFORMA_INVOICES
   // Legado: mantido para compatibilidade de dados existentes.
   FATURAS
   CAIXA

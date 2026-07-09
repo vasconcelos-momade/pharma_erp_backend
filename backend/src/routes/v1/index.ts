@@ -14,7 +14,7 @@ import { registerFaturasRoutes } from "./faturas.routes";
 import { registerUsersRoutes } from "./users.routes";
 import { registerAuditRoutes } from "./audit.routes";
 import { registerReportsRoutes } from "./reports.routes";
-import { registerQuotationRoutes } from "./quotations.routes";
+import { registerProformaInvoiceRoutes } from "./proforma-invoices.routes";
 
 export const API_V1_PREFIX = "/api/v1";
 
@@ -35,7 +35,7 @@ export function buildV1Router(): Router {
   registerUsersRoutes(router, API_V1_PREFIX);
   registerAuditRoutes(router, API_V1_PREFIX);
   registerReportsRoutes(router, API_V1_PREFIX);
-  registerQuotationRoutes(router, API_V1_PREFIX);
+  registerProformaInvoiceRoutes(router, API_V1_PREFIX);
   registerSyncRoutes(router, API_V1_PREFIX);
 
   router.get(`${API_V1_PREFIX}/health`, async () => ({

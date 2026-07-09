@@ -1,5 +1,5 @@
 import { ValidationApiError } from "../../../../../shared/http/api-error";
-import { CotacaoService } from "../../../sales/application/services/cotacao.service";
+import { ProformaInvoiceService } from "../../../sales/application/services/proforma-invoice.service";
 import { formatCurrency, toText } from "../helpers/report-export.helper";
 import { collectAllPages } from "../helpers/report-pagination.helper";
 import { REPORT_KEYS } from "../constants/report-keys";
@@ -9,7 +9,7 @@ import {
   type ReportProviderContext,
 } from "../types/report.types";
 
-function parseCotacaoListFilters(url: URL) {
+function parseProformaInvoiceListFilters(url: URL) {
   const query = url.searchParams;
   const search = query.get("q")?.trim() || query.get("search")?.trim() || undefined;
   const estadoRaw = query.get("estado")?.trim();
@@ -48,29 +48,29 @@ function formatDateTime(value: unknown): string {
   return date.toISOString().replace("T", " ").slice(0, 16);
 }
 
-function buildQuotationDetailDefinition(cotacao: any): ModuleReportDefinition {
+function buildProformaInvoiceDetailDefinition(proformaInvoice: any): ModuleReportDefinition {
   return {
-    fileBaseName: `cotacao-${toText(cotacao.numero, cotacao.id)}`,
-    reportName: `Cotacao ${toText(cotacao.numero, cotacao.id)}`,
-    title: `Cotacao ${toText(cotacao.numero, cotacao.id)}`,
+    fileBaseName: `proforma-${toText(proformaInvoice.numero, proformaInvoice.id)}`,
+    reportName: `Fatura Proforma ${toText(proformaInvoice.numero, proformaInvoice.id)}`,
+    title: `Fatura Proforma ${toText(proformaInvoice.numero, proformaInvoice.id)}`,
     filters: {
-      Numero: cotacao.numero,
-      Estado: cotacao.estado,
-      Cliente: cotacao.cliente?.nome ?? "-",
-      Validade: formatDateTime(cotacao.validade),
-      Moeda: cotacao.moeda,
+      Numero: proformaInvoice.numero,
+      Estado: proformaInvoice.estado,
+      Cliente: proformaInvoice.cliente?.nome ?? "-",
+      Validade: formatDateTime(proformaInvoice.validade),
+      Moeda: proformaInvoice.moeda,
     },
     kpis: {
-      Itens: cotacao.itemCount ?? cotacao.items?.length ?? 0,
-      "Subtotal (MZN)": formatCurrency(cotacao.subtotal),
-      "IVA (MZN)": formatCurrency(cotacao.ivaTotal),
-      "Total (MZN)": formatCurrency(cotacao.total),
+      Itens: proformaInvoice.itemCount ?? proformaInvoice.items?.length ?? 0,
+      "Subtotal (MZN)": formatCurrency(proformaInvoice.subtotal),
+      "IVA (MZN)": formatCurrency(proformaInvoice.ivaTotal),
+      "Total (MZN)": formatCurrency(proformaInvoice.total),
     },
     tables: [
       {
-        title: "Itens da cotacao",
+        title: "Itens da fatura proforma",
         columns: ["Descricao", "Qtd", "Preco Unit.", "IVA", "Total"],
-        rows: (cotacao.items ?? []).map((item: any) => [
+        rows: (proformaInvoice.items ?? []).map((item: any) => [
           item.descricao ?? item.produto?.nomeComercial ?? item.servico?.nome ?? "-",
           item.quantidade,
           formatCurrency(item.precoUnit),
@@ -80,47 +80,47 @@ function buildQuotationDetailDefinition(cotacao: any): ModuleReportDefinition {
       },
     ],
     totals: {
-      Subtotal: formatCurrency(cotacao.subtotal),
-      Desconto: formatCurrency(cotacao.desconto),
-      IVA: formatCurrency(cotacao.ivaTotal),
-      Total: formatCurrency(cotacao.total),
+      Subtotal: formatCurrency(proformaInvoice.subtotal),
+      Desconto: formatCurrency(proformaInvoice.desconto),
+      IVA: formatCurrency(proformaInvoice.ivaTotal),
+      Total: formatCurrency(proformaInvoice.total),
     },
-    observations: cotacao.observacoes ? [toText(cotacao.observacoes)] : [],
+    observations: proformaInvoice.observacoes ? [toText(proformaInvoice.observacoes)] : [],
     pdf: {
-      template: "quotations/detail",
+      template: "proforma-invoices/detail",
       orientation: "portrait",
       pageSize: "A4",
     },
   };
 }
 
-export class QuotationReportProvider implements ReportDataProvider {
-  readonly reportKey = REPORT_KEYS.QUOTATION;
+export class ProformaInvoiceReportProvider implements ReportDataProvider {
+  readonly reportKey = REPORT_KEYS.PROFORMA_INVOICE;
 
-  private readonly cotacaoService = new CotacaoService();
+  private readonly proformaInvoiceService = new ProformaInvoiceService();
 
   async build(context: ReportProviderContext): Promise<ModuleReportDefinition> {
-    const cotacaoId = context.routeParams.cotacaoId;
-    if (!/^\d+$/.test(cotacaoId ?? "")) {
-      throw new ValidationApiError("cotacaoId invalido");
+    const proformaInvoiceId = context.routeParams.proformaInvoiceId;
+    if (!/^\d+$/.test(proformaInvoiceId ?? "")) {
+      throw new ValidationApiError("proformaInvoiceId inválido");
     }
 
-    const cotacao = this.cotacaoService.enrichCotacao(
-      await this.cotacaoService.get(cotacaoId),
+    const proformaInvoice = this.proformaInvoiceService.enrichProformaInvoice(
+      await this.proformaInvoiceService.get(proformaInvoiceId),
     );
-    return buildQuotationDetailDefinition(cotacao);
+    return buildProformaInvoiceDetailDefinition(proformaInvoice);
   }
 }
 
-export class QuotationListReportProvider implements ReportDataProvider {
-  readonly reportKey = REPORT_KEYS.QUOTATION_LIST;
+export class ProformaInvoiceListReportProvider implements ReportDataProvider {
+  readonly reportKey = REPORT_KEYS.PROFORMA_INVOICE_LIST;
 
-  private readonly cotacaoService = new CotacaoService();
+  private readonly proformaInvoiceService = new ProformaInvoiceService();
 
   async build(context: ReportProviderContext): Promise<ModuleReportDefinition> {
-    const filters = parseCotacaoListFilters(context.url);
+    const filters = parseProformaInvoiceListFilters(context.url);
     const items = await collectAllPages((page) =>
-      this.cotacaoService.search({
+      this.proformaInvoiceService.search({
         ...filters,
         page,
         pageSize: 100,
@@ -133,9 +133,9 @@ export class QuotationListReportProvider implements ReportDataProvider {
     );
 
     return {
-      fileBaseName: "relatorio-cotacoes",
-      reportName: "Relatorio de Cotacoes",
-      title: "Relatorio de Cotacoes",
+      fileBaseName: "relatorio-proformas",
+      reportName: "Relatorio de Faturas Proforma",
+      title: "Relatorio de Faturas Proforma",
       filters: {
         Pesquisa: filters.query ?? "-",
         Estado: filters.estado ?? "-",
@@ -146,14 +146,14 @@ export class QuotationListReportProvider implements ReportDataProvider {
         "Criado ate": filters.createdTo ?? "-",
       },
       kpis: {
-        "Total de cotacoes": items.length,
+        "Total de faturas proforma": items.length,
         "Valor total (MZN)": formatCurrency(totalAmount),
         Pendentes: items.filter((item) => item.estado === "PENDENTE").length,
         Aprovadas: items.filter((item) => item.estado === "APROVADA").length,
       },
       tables: [
         {
-          title: "Cotacoes",
+          title: "Faturas Proforma",
           columns: [
             "Numero",
             "Cliente",
@@ -180,7 +180,7 @@ export class QuotationListReportProvider implements ReportDataProvider {
       },
       orientation: "landscape",
       pdf: {
-        template: "quotations/list",
+        template: "proforma-invoices/list",
         orientation: "landscape",
         pageSize: "A4",
       },

@@ -1,2 +1,2 @@
-export { CotacaoController } from "./presentation/controllers/cotacao.controller";
-export { CotacaoService } from "./application/services/cotacao.service";
+export { ProformaInvoiceController } from "./presentation/controllers/proforma-invoice.controller";
+export { ProformaInvoiceService } from "./application/services/proforma-invoice.service";
