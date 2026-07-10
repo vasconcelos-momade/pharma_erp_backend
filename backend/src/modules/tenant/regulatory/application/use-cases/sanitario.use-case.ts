@@ -69,8 +69,8 @@ function buildSanitarioSearchWhere(params: SanitarioDashboardParams) {
 
 function readLoteStock(row: any) {
   return {
-    quantidadeTotal: toNumber(row.stockBalance?.quantidadeTotal),
-    quantidadeDisponivel: toNumber(row.stockBalance?.quantidadeDisponivel),
+    quantidadeTotal: toNumber(row.stockBalance?.quantidadeTotal ?? row.quantidadeAtual),
+    quantidadeDisponivel: toNumber(row.stockBalance?.quantidadeDisponivel ?? row.quantidadeAtual),
   };
 }
 

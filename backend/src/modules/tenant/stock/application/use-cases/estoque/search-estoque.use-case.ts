@@ -1,16 +1,24 @@
 import { getPrisma } from "../../../../../../infrastructure/prisma/tenant-prisma.factory";
+import { round2, toNumber } from "../../../../dashboard/application/dashboard-date.util";
 import { enrichLotesStockFromMovements } from "../../../domain/enrich-lote-stock.util";
-import { mapLoteListItem } from "./lote.mapper";
+import {
+  LOTE_COM_STOCK_DISPONIVEL_WHERE,
+  LOTE_COM_STOCK_TOTAL_WHERE,
+  readLoteDisponivel,
+} from "../../../domain/lote-stock-read.util";
+import { mapEstoqueListItem } from "./estoque.mapper";
 
-type SearchLotesParams = {
+type SearchEstoqueParams = {
   q?: string;
-  produtoId?: string;
+  categoriaId?: string;
   fornecedorId?: string;
   estadoSanitario?: string;
   disponibilidade?: string;
+  semStock?: boolean;
+  aExpirar?: boolean;
+  expirado?: boolean;
   validadeAte?: string;
   validadeDe?: string;
-  expirado?: boolean;
   page?: number;
   pageSize?: number;
   sortBy?: string;
@@ -65,12 +73,12 @@ function applyDisponibilidadeFilter(
   }
 }
 
-export class LotesDashboardUseCase {
+export class EstoqueDashboardUseCase {
   async execute() {
     const prisma = getPrisma() as any;
     const now = new Date();
-    const from30Days = new Date(now);
-    from30Days.setDate(from30Days.getDate() - 30);
+    const expirarLimite = new Date(now);
+    expirarLimite.setDate(expirarLimite.getDate() + 60);
 
     const loteBaseWhere = {
       deletedAt: null,
@@ -78,98 +86,104 @@ export class LotesDashboardUseCase {
     };
 
     const [
-      totalLotes,
-      lotesDisponiveis,
+      produtosEmStock,
+      lotesAtivos,
+      produtosSemStock,
+      lotesAExpirar,
       lotesExpirados,
-      lotesReservados,
-      lotesSanitarios,
-      movimentosSanitarios30Dias,
-      incineracoes30Dias,
+      valorStockRows,
     ] = await prisma.$transaction([
-      prisma.lote.count({
-        where: loteBaseWhere,
-      }),
-      prisma.lote.count({
+      prisma.produto.count({
         where: {
-          ...loteBaseWhere,
+          deletedAt: null,
+          ativo: true,
           OR: [
             { stockBalance: { quantidadeDisponivel: { gt: 0 } } },
             {
-              AND: [
-                { stockBalance: { is: null } },
-                { quantidadeAtual: { gt: 0 } },
-              ],
+              lotes: {
+                some: {
+                  deletedAt: null,
+                  ativo: true,
+                  ...LOTE_COM_STOCK_DISPONIVEL_WHERE,
+                },
+              },
             },
           ],
-          disponibilidade: "DISPONIVEL",
-          estadoSanitario: "VALIDO",
-          dataValidade: { gte: now },
         },
       }),
-      prisma.lote.count({
-        where: {
-          ...loteBaseWhere,
-          OR: [
-            { stockBalance: { quantidadeTotal: { gt: 0 } } },
-            {
-              AND: [
-                { stockBalance: { is: null } },
-                { quantidadeAtual: { gt: 0 } },
-              ],
-            },
-          ],
-          dataValidade: { lt: now },
-        },
-      }),
-      prisma.lote.count({
-        where: {
-          ...loteBaseWhere,
-          reservas: { some: {} },
-        },
-      }),
-      prisma.lote.count({
-        where: {
-          ...loteBaseWhere,
-          OR: [
-            { estadoSanitario: { in: ["RECALL", "EXPIRADO"] } },
-            { disponibilidade: { in: ["BLOQUEADO", "INDISPONIVEL"] } },
-            { quantidadeQuarentena: { gt: 0 } },
-          ],
-        },
-      }),
-      prisma.estoqueMovimento.count({
+      prisma.lote.count({ where: loteBaseWhere }),
+      prisma.produto.count({
         where: {
           deletedAt: null,
-          tipo: { in: ["QUARENTENA", "INCINERACAO"] },
-          createdAt: { gte: from30Days },
+          ativo: true,
+          OR: [
+            { stockBalance: { is: { quantidadeDisponivel: { lte: 0 } } } },
+            { stockBalance: { is: null } },
+          ],
+          NOT: {
+            lotes: {
+              some: {
+                deletedAt: null,
+                ativo: true,
+                ...LOTE_COM_STOCK_DISPONIVEL_WHERE,
+              },
+            },
+          },
         },
       }),
-      prisma.incineracao.count({
+      prisma.lote.count({
         where: {
-          createdAt: { gte: from30Days },
+          ...loteBaseWhere,
+          dataValidade: { gte: now, lte: expirarLimite },
+          ...LOTE_COM_STOCK_TOTAL_WHERE,
+        },
+      }),
+      prisma.lote.count({
+        where: {
+          ...loteBaseWhere,
+          dataValidade: { lt: now },
+          ...LOTE_COM_STOCK_TOTAL_WHERE,
+        },
+      }),
+      prisma.lote.findMany({
+        where: {
+          ...loteBaseWhere,
+          ...LOTE_COM_STOCK_DISPONIVEL_WHERE,
+        },
+        select: {
+          precoCompra: true,
+          quantidadeQuarentena: true,
+          stockBalance: {
+            select: { quantidadeDisponivel: true, quantidadeTotal: true },
+          },
         },
       }),
     ]);
 
+    const valorTotalInventario = valorStockRows.reduce((sum: number, row: any) => {
+      const qty = Math.max(0, readLoteDisponivel(row));
+      return sum + qty * toNumber(row.precoCompra);
+    }, 0);
+
     return {
-      totalLotes,
-      lotesDisponiveis,
+      produtosEmStock,
+      lotesAtivos,
+      produtosSemStock,
+      lotesAExpirar,
       lotesExpirados,
-      lotesReservados,
-      lotesSanitarios,
-      movimentosSanitarios30Dias,
-      incineracoes30Dias,
-      alertasOperacionais: lotesExpirados + lotesSanitarios + lotesReservados,
+      valorTotalInventario: round2(valorTotalInventario),
     };
   }
 }
 
-export class SearchLotesUseCase {
-  async execute(params: SearchLotesParams = {}) {
+export class SearchEstoqueUseCase {
+  async execute(params: SearchEstoqueParams = {}) {
     const prisma = getPrisma() as any;
     const page = Math.max(1, params.page ?? 1);
-    const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 20));
+    const pageSize = Math.min(100, Math.max(1, params.pageSize ?? 10));
     const now = new Date();
+    const expirarLimite = new Date(now);
+    expirarLimite.setDate(expirarLimite.getDate() + 60);
     const q = params.q?.trim();
 
     const where: Record<string, unknown> = {
@@ -177,7 +191,9 @@ export class SearchLotesUseCase {
       ativo: true,
     };
 
-    if (params.produtoId) where.produtoId = BigInt(params.produtoId);
+    if (params.categoriaId) {
+      where.produto = { categoriaId: BigInt(params.categoriaId) };
+    }
     if (params.fornecedorId) where.fornecedorId = BigInt(params.fornecedorId);
     if (params.estadoSanitario) {
       applyEstadoSanitarioFilter(where, params.estadoSanitario);
@@ -201,13 +217,39 @@ export class SearchLotesUseCase {
       where.dataValidade = { gte: now };
     }
 
+    if (params.aExpirar === true) {
+      where.dataValidade = { gte: now, lte: expirarLimite };
+    }
+
+    if (params.semStock === true) {
+      const semStockFilter = {
+        OR: [
+          {
+            AND: [
+              { stockBalance: { is: null } },
+              { quantidadeAtual: { lte: 0 } },
+            ],
+          },
+          { stockBalance: { quantidadeDisponivel: { lte: 0 } } },
+        ],
+      };
+      if (Array.isArray(where.AND)) {
+        where.AND.push(semStockFilter);
+      } else {
+        where.AND = [semStockFilter];
+      }
+    }
+
     if (q) {
       where.OR = [
         { numeroLote: { contains: q } },
         { produto: { nomeComercial: { contains: q } } },
+        { produto: { nomeGenerico: { contains: q } } },
         { produto: { barcode: { contains: q } } },
         { fornecedor: { nome: { contains: q } } },
-        ...(/^\d+$/.test(q) ? [{ id: BigInt(q) }, { produtoId: BigInt(q) }] : []),
+        ...(/^\d+$/.test(q)
+          ? [{ id: BigInt(q) }, { produtoId: BigInt(q) }]
+          : []),
       ];
     }
 
@@ -218,19 +260,36 @@ export class SearchLotesUseCase {
         ? [{ numeroLote: sortOrder }, { id: sortOrder }]
         : sortBy === "quantidadeAtual"
           ? [
-              { stockBalance: { quantidadeTotal: sortOrder } },
+              { stockBalance: { quantidadeDisponivel: sortOrder } },
               { dataValidade: "asc" },
             ]
-          : sortBy === "createdAt"
-            ? [{ createdAt: sortOrder }, { id: sortOrder }]
-            : [{ dataValidade: sortOrder }, { numeroLote: "asc" }];
+          : sortBy === "updatedAt"
+            ? [
+                { stockBalance: { lastUpdated: sortOrder } },
+                { dataValidade: "asc" },
+              ]
+            : sortBy === "createdAt"
+              ? [{ createdAt: sortOrder }, { id: sortOrder }]
+              : [{ dataValidade: sortOrder }, { numeroLote: "asc" }];
 
     const [totalCount, rows] = await prisma.$transaction([
       prisma.lote.count({ where }),
       prisma.lote.findMany({
         where,
         include: {
-          produto: { select: { id: true, nomeComercial: true, barcode: true } },
+          produto: {
+            select: {
+              id: true,
+              nomeComercial: true,
+              nomeGenerico: true,
+              barcode: true,
+              dosagem: true,
+              forma: true,
+              estoqueMinimo: true,
+              categoriaId: true,
+              categoria: { select: { id: true, nome: true } },
+            },
+          },
           fornecedor: { select: { id: true, nome: true } },
           stockBalance: true,
         },
@@ -244,7 +303,7 @@ export class SearchLotesUseCase {
     await enrichLotesStockFromMovements(prisma, pageRows);
 
     return {
-      items: pageRows.map((lote: any) => mapLoteListItem(lote, now)),
+      items: pageRows.map((lote: any) => mapEstoqueListItem(lote, now)),
       page,
       pageSize,
       hasMore: rows.length > pageSize,

@@ -1,6 +1,6 @@
 import { readLoteDisponivel, readLoteTotal } from "../../../domain/lote-stock-read.util";
 
-export function mapLoteListItem(lote: any, now = new Date()) {
+export function mapEstoqueListItem(lote: any, now = new Date()) {
   const total = readLoteTotal(lote);
   const disponivel = readLoteDisponivel(lote);
   const validade = new Date(lote.dataValidade);
@@ -17,27 +17,50 @@ export function mapLoteListItem(lote: any, now = new Date()) {
     indicadorValidade = "60_DIAS";
   }
 
+  const estoqueMinimo = Number(lote.produto?.estoqueMinimo ?? 0);
+  let indicadorStock: "SEM_STOCK" | "BAIXO" | "NORMAL" = "NORMAL";
+  if (disponivel <= 0) {
+    indicadorStock = "SEM_STOCK";
+  } else if (estoqueMinimo > 0 && disponivel <= estoqueMinimo) {
+    indicadorStock = "BAIXO";
+  }
+
+  const precoCompra = Number(lote.precoCompra ?? 0);
+
   return {
     id: lote.id.toString(),
     produtoId: lote.produtoId.toString(),
     produtoNome: lote.produto?.nomeComercial ?? null,
     produtoNomeComercial: lote.produto?.nomeComercial ?? null,
+    produtoNomeGenerico: lote.produto?.nomeGenerico ?? null,
     produtoBarcode: lote.produto?.barcode ?? null,
+    produtoDosagem: lote.produto?.dosagem ?? null,
+    produtoFormaFarmaceutica: lote.produto?.forma ?? null,
+    categoriaId: lote.produto?.categoriaId?.toString() ?? null,
+    categoriaNome: lote.produto?.categoria?.nome ?? null,
+    estoqueMinimo,
     fornecedorId: lote.fornecedorId?.toString() ?? null,
     fornecedorNome: lote.fornecedor?.nome ?? null,
     numeroLote: lote.numeroLote,
+    dataFabricacao: lote.dataFabricacao?.toISOString?.() ?? null,
     dataValidade: lote.dataValidade.toISOString(),
     diasRestantes,
     indicadorValidade,
+    indicadorStock,
+    quantidadeInicial: Number(lote.quantidadeInicial ?? 0),
     quantidadeTotal: total,
     quantidadeQuarentena: Number(lote.quantidadeQuarentena ?? 0),
     quantidadeDisponivel: disponivel,
-    precoCompra: Number(lote.precoCompra),
+    precoCompra,
     precoVenda: lote.precoVenda != null ? Number(lote.precoVenda) : null,
     estadoSanitario: lote.estadoSanitario,
     disponibilidade: lote.disponibilidade,
     ativo: lote.ativo,
-    valorEmStock: disponivel * Number(lote.precoCompra ?? 0),
+    valorEmStock: disponivel * precoCompra,
+    ultimaAtualizacao:
+      lote.stockBalance?.lastUpdated?.toISOString?.() ??
+      lote.createdAt?.toISOString?.() ??
+      null,
     createdAt: lote.createdAt?.toISOString?.() ?? null,
   };
 }

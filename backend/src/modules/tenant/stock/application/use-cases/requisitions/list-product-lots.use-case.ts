@@ -41,7 +41,7 @@ export class ListProductLotsUseCase {
       numeroLote: lote.numeroLote,
       dataValidade: lote.dataValidade,
       quantidadeTotal: Number(lote.stockBalance?.quantidadeTotal ?? 0),
-      quantidadeDisponivel: Number(lote.stockBalance?.quantidadeDisponivel ?? 0),
+      quantidadeDisponivel: Number(lote.stockBalance?.quantidadeDisponivel ?? lote.quantidadeAtual ?? 0),
       estadoSanitario: lote.estadoSanitario,
       disponibilidade: lote.disponibilidade,
     }));

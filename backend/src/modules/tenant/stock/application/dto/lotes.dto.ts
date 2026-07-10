@@ -72,3 +72,28 @@ export const revertLoteQuarentenaBodySchema = z.object({
   motivo: z.string().trim().min(3, "Motivo obrigatório"),
   documentoReferencia: optionalStringSchema,
 });
+
+export const updateLotePrecosBodySchema = z.object({
+  precoCompra: z.coerce.number().nonnegative("Preço de compra inválido"),
+  precoVenda: z.coerce.number().nonnegative("Preço de venda inválido").nullable().optional(),
+  motivo: optionalStringSchema,
+});
+
+export const updateLoteBodySchema = z.object({
+  numeroLote: z.string().trim().min(1).optional(),
+  dataValidade: z.string().trim().min(1).optional(),
+  dataFabricacao: z.string().trim().optional().nullable(),
+});
+
+export const loteMovimentacaoSanitariaBodySchema = z.object({
+  tipo: z.enum([
+    "QUARENTENA",
+    "LIBERACAO",
+    "INCINERACAO",
+    "RECALL",
+    "DEVOLUCAO_FORNECEDOR",
+  ]),
+  quantidade: z.coerce.number().positive().optional(),
+  motivo: z.string().trim().min(3, "Motivo obrigatório"),
+  documentoReferencia: optionalStringSchema,
+});

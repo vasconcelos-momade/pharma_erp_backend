@@ -23,6 +23,9 @@ import {
   MoveLoteToQuarentenaUseCase,
   RevertLoteQuarentenaUseCase,
 } from "../../application/use-cases/lotes/lote-quarentena.use-case";
+import { UpdateLotePrecosUseCase } from "../../application/use-cases/lotes/update-lote-precos.use-case";
+import { UpdateLoteUseCase } from "../../application/use-cases/lotes/update-lote.use-case";
+import { LoteMovimentacaoSanitariaUseCase } from "../../application/use-cases/lotes/lote-movimentacao-sanitaria.use-case";
 import {
   searchLotesQuerySchema,
   searchValidadesQuerySchema,
@@ -30,6 +33,9 @@ import {
   listProductPriceHistoryQuerySchema,
   moveLoteQuarentenaBodySchema,
   revertLoteQuarentenaBodySchema,
+  updateLotePrecosBodySchema,
+  updateLoteBodySchema,
+  loteMovimentacaoSanitariaBodySchema,
 } from "../../application/dto/lotes.dto";
 import { parseSearchParams, parseJsonBody } from "../../../../../shared/http/request-validation";
 import { controllerErrorResponse } from "../../../../../shared/http/controller-error";
@@ -51,6 +57,9 @@ export class LotesController {
   private listProductPriceHistoryUseCase = new ListProductPriceHistoryUseCase();
   private moveLoteToQuarentenaUseCase = new MoveLoteToQuarentenaUseCase();
   private revertLoteQuarentenaUseCase = new RevertLoteQuarentenaUseCase();
+  private updateLotePrecosUseCase = new UpdateLotePrecosUseCase();
+  private updateLoteUseCase = new UpdateLoteUseCase();
+  private loteMovimentacaoSanitariaUseCase = new LoteMovimentacaoSanitariaUseCase();
 
   private extractLoteId(req: Request): string {
     const parts = new URL(req.url).pathname.split("/");
@@ -236,6 +245,58 @@ export class LotesController {
       const body = await parseJsonBody(req, revertLoteQuarentenaBodySchema);
       const result = await this.revertLoteQuarentenaUseCase.execute({
         loteId,
+        quantidade: body.quantidade,
+        motivo: body.motivo,
+        userId,
+        documentoReferencia: body.documentoReferencia,
+      });
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async updatePrecos(req: Request, userId: string) {
+    try {
+      const loteId = this.extractLoteId(req);
+      const body = await parseJsonBody(req, updateLotePrecosBodySchema);
+      const result = await this.updateLotePrecosUseCase.execute({
+        loteId,
+        precoCompra: body.precoCompra,
+        precoVenda: body.precoVenda,
+        motivo: body.motivo,
+        userId,
+      });
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async update(req: Request, userId: string) {
+    try {
+      const loteId = this.extractLoteId(req);
+      const body = await parseJsonBody(req, updateLoteBodySchema);
+      const result = await this.updateLoteUseCase.execute({
+        loteId,
+        numeroLote: body.numeroLote,
+        dataValidade: body.dataValidade,
+        dataFabricacao: body.dataFabricacao,
+        userId,
+      });
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async movimentacaoSanitaria(req: Request, userId: string) {
+    try {
+      const loteId = this.extractLoteId(req);
+      const body = await parseJsonBody(req, loteMovimentacaoSanitariaBodySchema);
+      const result = await this.loteMovimentacaoSanitariaUseCase.execute({
+        loteId,
+        tipo: body.tipo,
         quantidade: body.quantidade,
         motivo: body.motivo,
         userId,

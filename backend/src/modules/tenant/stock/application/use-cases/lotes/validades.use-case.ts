@@ -48,7 +48,7 @@ export class ValidadesDashboardUseCase {
     const valorEmRisco = valorRows.reduce((sum: number, row: any) => {
       const qty = Math.max(
         0,
-        Number(row.stockBalance?.quantidadeDisponivel ?? 0),
+        Number(row.stockBalance?.quantidadeDisponivel ?? row.quantidadeAtual ?? 0),
       );
       return sum + qty * Number(row.precoCompra ?? 0);
     }, 0);

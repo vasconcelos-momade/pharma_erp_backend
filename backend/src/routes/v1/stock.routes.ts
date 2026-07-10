@@ -1,8 +1,10 @@
 import { StockController } from "../../modules/tenant/stock";
 import { InventoryController } from "../../modules/tenant/stock/presentation/controllers/inventory.controller";
 import { PurchasesController } from "../../modules/tenant/stock/presentation/controllers/purchases.controller";
+import { SuppliersController } from "../../modules/tenant/stock/presentation/controllers/suppliers.controller";
 import { RequisitionsController } from "../../modules/tenant/stock/presentation/controllers/requisitions.controller";
 import { LotesController } from "../../modules/tenant/stock/presentation/controllers/lotes.controller";
+import { EstoqueController } from "../../modules/tenant/stock/presentation/controllers/estoque.controller";
 import {
   tenantAuthMiddleware,
   tenantBranchContextMiddleware,
@@ -14,9 +16,11 @@ import type { Router } from "../../shared/http/router";
 
 const stockController = new StockController();
 const purchasesController = new PurchasesController();
+const suppliersController = new SuppliersController();
 const inventoryController = new InventoryController();
 const requisitionsController = new RequisitionsController();
 const lotesController = new LotesController();
+const estoqueController = new EstoqueController();
 
 function registerReceiveRoute(router: Router, path: string): void {
   router.post(
@@ -57,6 +61,57 @@ function registerPurchasesRoutes(router: Router, prefix: string): void {
     tenantBranchContextMiddleware(),
     requirePermission("FORNECEDORES", "VIEW"),
     async (context) => purchasesController.listSuppliers(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/fornecedores/search`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("FORNECEDORES", "VIEW"),
+    async (context) => suppliersController.search(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/compras/sugestoes`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("COMPRAS", "VIEW"),
+    async (context) => suppliersController.purchaseSuggestions(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/fornecedores/:fornecedorId`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("FORNECEDORES", "VIEW"),
+    async (context) => suppliersController.get(context.req),
+  );
+
+  router.post(
+    `${prefix}/tenant/fornecedores`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("FORNECEDORES", "CREATE"),
+    auditMiddleware,
+    async (context) => suppliersController.create(context.req),
+  );
+
+  router.patch(
+    `${prefix}/tenant/fornecedores/:fornecedorId`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("FORNECEDORES", "UPDATE"),
+    auditMiddleware,
+    async (context) => suppliersController.update(context.req),
+  );
+
+  router.delete(
+    `${prefix}/tenant/fornecedores/:fornecedorId`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("FORNECEDORES", "DELETE"),
+    auditMiddleware,
+    async (context) => suppliersController.delete(context.req),
   );
 
   router.get(
@@ -336,6 +391,22 @@ function registerRequisitionRoutes(router: Router, prefix: string): void {
   );
 
   router.get(
+    `${prefix}/tenant/dashboard/estoque`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "VIEW"),
+    async (context) => estoqueController.dashboard(context.req),
+  );
+
+  router.get(
+    `${prefix}/tenant/estoque`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "VIEW"),
+    async (context) => estoqueController.search(context.req),
+  );
+
+  router.get(
     `${prefix}/tenant/dashboard/lotes`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
@@ -460,6 +531,42 @@ function registerRequisitionRoutes(router: Router, prefix: string): void {
     auditMiddleware,
     async (context) =>
       lotesController.revertQuarentena(
+        context.req,
+        getTenantAuth(context).userId,
+      ),
+  );
+
+  router.patch(
+    `${prefix}/tenant/lotes/:loteId/precos`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "UPDATE"),
+    auditMiddleware,
+    async (context) =>
+      lotesController.updatePrecos(
+        context.req,
+        getTenantAuth(context).userId,
+      ),
+  );
+
+  router.patch(
+    `${prefix}/tenant/lotes/:loteId`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "UPDATE"),
+    auditMiddleware,
+    async (context) =>
+      lotesController.update(context.req, getTenantAuth(context).userId),
+  );
+
+  router.post(
+    `${prefix}/tenant/lotes/:loteId/movimentacao-sanitaria`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "UPDATE"),
+    auditMiddleware,
+    async (context) =>
+      lotesController.movimentacaoSanitaria(
         context.req,
         getTenantAuth(context).userId,
       ),

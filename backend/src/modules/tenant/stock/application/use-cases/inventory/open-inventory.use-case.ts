@@ -14,6 +14,8 @@ export class OpenInventoryUseCase {
         where: {
           deletedAt: null,
           ativo: true,
+          stockBalance: { quantidadeTotal: { gt: 0 } },
+          movimentos: { some: { deletedAt: null } },
         },
         select: {
           id: true,

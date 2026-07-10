@@ -22,6 +22,7 @@ import { GetFaturaDetalheUseCase } from "../../application/use-cases/get-fatura-
 import { FaturaDocumentService } from "../../application/services/fatura-document.service";
 import { z } from "zod";
 import { searchProdutosQuerySchema } from "../../../products/application/dto/produto.dto";
+import { POS_DEFAULT_PAGE_SIZE } from "../../domain/pos-catalog.constants";
 import {
   parseJsonBody,
   parseSearchParams,
@@ -143,6 +144,8 @@ const liquidarConvenioSchema = z.object({
 
 const searchServicosQuerySchema = z.object({
   q: z.string().trim().min(1).optional(),
+  page: z.coerce.number().int().positive().optional(),
+  pageSize: z.coerce.number().int().positive().max(100).optional(),
 });
 
 const relatorioDiferencaQuerySchema = z.object({
@@ -185,7 +188,7 @@ export class POSController {
 
   async searchProdutos(req: Request) {
     const url = new URL(req.url);
-    const { q, barcode, categoriaId, page = 1, pageSize = 20 } = parseSearchParams(
+    const { q, barcode, categoriaId, page = 1, pageSize = POS_DEFAULT_PAGE_SIZE } = parseSearchParams(
       url,
       searchProdutosQuerySchema,
     );
@@ -202,9 +205,16 @@ export class POSController {
 
   async searchServicos(req: Request) {
     const url = new URL(req.url);
-    const { q } = parseSearchParams(url, searchServicosQuerySchema);
-    
-    const result = await this.searchServicosUseCase.execute(q);
+    const { q, page = 1, pageSize = POS_DEFAULT_PAGE_SIZE } = parseSearchParams(
+      url,
+      searchServicosQuerySchema,
+    );
+
+    const result = await this.searchServicosUseCase.execute({
+      query: q,
+      page,
+      pageSize,
+    });
     return Response.json(this.serialize(result));
   }
 

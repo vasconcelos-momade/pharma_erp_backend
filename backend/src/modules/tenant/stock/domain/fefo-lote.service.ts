@@ -18,11 +18,18 @@ export const FEFO_LOTE_FILTER = {
   disponibilidade: "DISPONIVEL" as const,
 };
 
-/** Lote elegível para venda no PDV: FEFO + validade + stock disponível. */
-export function buildFefoLoteWhereForPos(now = new Date()) {
+/** Lote candidato no PDV: FEFO + validade (sem exigir cache de stock). */
+export function buildFefoLoteWhereForPosCandidates(now = new Date()) {
   return {
     ...FEFO_LOTE_FILTER,
     dataValidade: { gte: startOfUtcDay(now) },
+  };
+}
+
+/** Lote elegível para venda no PDV: FEFO + validade + stock disponível (cache). */
+export function buildFefoLoteWhereForPos(now = new Date()) {
+  return {
+    ...buildFefoLoteWhereForPosCandidates(now),
     ...LOTE_COM_STOCK_DISPONIVEL_WHERE,
   };
 }
@@ -32,8 +39,12 @@ export type FefoLoteTx = LoteStockTx;
 /** @deprecated Use readLoteDisponivel — mantido para compatibilidade em testes. */
 export function loteQuantidadeDisponivel(lote: {
   stockBalance?: { quantidadeDisponivel?: unknown } | null;
+  quantidadeAtual?: unknown;
 }): number {
-  return Math.max(0, Number(lote.stockBalance?.quantidadeDisponivel ?? 0) || 0);
+  if (lote.stockBalance != null) {
+    return Math.max(0, Number(lote.stockBalance.quantidadeDisponivel ?? 0) || 0);
+  }
+  return Math.max(0, Number(lote.quantidadeAtual ?? 0) || 0);
 }
 
 export function resolveLotePrecoVenda(

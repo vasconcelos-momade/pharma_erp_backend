@@ -46,12 +46,6 @@ export class MySqlManagementService {
         env,
       });
 
-      // Sincroniza tabelas presentes no schema mas ainda sem migration (ex.: produto_regulacao).
-      execSync(
-        `bunx prisma db push --schema=${schemaPath} --accept-data-loss --skip-generate`,
-        { stdio: "inherit", env },
-      );
-
       console.log(`✅ [Prisma] Schema tenant aplicado com sucesso em ${dbName}.`);
     } catch (error) {
       console.error(`❌ [Prisma] Erro ao rodar migrations em ${dbName}:`, error);
