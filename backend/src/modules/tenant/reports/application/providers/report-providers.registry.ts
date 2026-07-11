@@ -65,14 +65,6 @@ import {
   ProformaInvoiceReportProvider,
 } from "./proforma-invoice-report.provider";
 import {
-  RequisitionDetailReportProvider,
-  RequisitionsCompraReportProvider,
-  RequisitionsEntradaReportProvider,
-  RequisitionsListReportProvider,
-  RequisitionsSaidaReportProvider,
-  RequisitionsTransferReportProvider,
-} from "./requisitions-report.provider";
-import {
   StockMovementsAjusteReportProvider,
   StockMovementsEntradaReportProvider,
   StockMovementsReportProvider,
@@ -109,12 +101,6 @@ export const reportDataProviders: ReportDataProvider[] = [
   new StockMovementsAjusteReportProvider(),
   new InventoriesListReportProvider(),
   new InventoryDetailReportProvider(),
-  new RequisitionsListReportProvider(),
-  new RequisitionsCompraReportProvider(),
-  new RequisitionsEntradaReportProvider(),
-  new RequisitionsSaidaReportProvider(),
-  new RequisitionsTransferReportProvider(),
-  new RequisitionDetailReportProvider(),
   new InvoiceReportProvider(),
   new InvoiceListReportProvider(),
   new SalesHistoryReportProvider(),

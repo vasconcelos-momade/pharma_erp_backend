@@ -51,7 +51,6 @@ assert_status() {
 echo "==> Dono (ADMIN via role_permissions): endpoints permitidos"
 assert_status "GET produtos" 200 GET "/tenant/produtos"
 assert_status "GET compras" 200 GET "/tenant/compras"
-assert_status "GET requisicoes" 200 GET "/tenant/requisicoes"
 assert_status "GET inventarios" 200 GET "/tenant/inventarios"
 assert_status "GET POS faturas" 200 GET "/tenant/pos/faturas"
 

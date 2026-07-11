@@ -26,6 +26,9 @@ import {
 import { UpdateLotePrecosUseCase } from "../../application/use-cases/lotes/update-lote-precos.use-case";
 import { UpdateLoteUseCase } from "../../application/use-cases/lotes/update-lote.use-case";
 import { LoteMovimentacaoSanitariaUseCase } from "../../application/use-cases/lotes/lote-movimentacao-sanitaria.use-case";
+import { CreateLoteUseCase } from "../../application/use-cases/lotes/create-lote.use-case";
+import { ListProductLotsUseCase } from "../../application/use-cases/lotes/list-product-lots.use-case";
+import { SearchStockProdutosUseCase } from "../../application/use-cases/lotes/search-stock-produtos.use-case";
 import {
   searchLotesQuerySchema,
   searchValidadesQuerySchema,
@@ -36,6 +39,8 @@ import {
   updateLotePrecosBodySchema,
   updateLoteBodySchema,
   loteMovimentacaoSanitariaBodySchema,
+  createLoteSchema,
+  searchStockProdutosQuerySchema,
 } from "../../application/dto/lotes.dto";
 import { parseSearchParams, parseJsonBody } from "../../../../../shared/http/request-validation";
 import { controllerErrorResponse } from "../../../../../shared/http/controller-error";
@@ -60,6 +65,9 @@ export class LotesController {
   private updateLotePrecosUseCase = new UpdateLotePrecosUseCase();
   private updateLoteUseCase = new UpdateLoteUseCase();
   private loteMovimentacaoSanitariaUseCase = new LoteMovimentacaoSanitariaUseCase();
+  private createLoteUseCase = new CreateLoteUseCase();
+  private listProductLotsUseCase = new ListProductLotsUseCase();
+  private searchStockProdutosUseCase = new SearchStockProdutosUseCase();
 
   private extractLoteId(req: Request): string {
     const parts = new URL(req.url).pathname.split("/");
@@ -305,6 +313,43 @@ export class LotesController {
       return Response.json(this.serialize(result));
     } catch (error: any) {
       return controllerErrorResponse(error);
+    }
+  }
+
+  async createLote(req: Request) {
+    try {
+      const body = await parseJsonBody(req, createLoteSchema);
+      const result = await this.createLoteUseCase.execute(body);
+      return Response.json(this.serialize(result), { status: 201 });
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async listProductLots(req: Request) {
+    try {
+      const parts = new URL(req.url).pathname.split("/");
+      const produtoId = parts[parts.indexOf("produtos") + 1];
+      const result = await this.listProductLotsUseCase.execute(produtoId);
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async searchProdutos(req: Request) {
+    try {
+      const url = new URL(req.url);
+      const params = parseSearchParams(url, searchStockProdutosQuerySchema);
+      const result = await this.searchStockProdutosUseCase.execute({
+        q: params.q ?? params.barcode,
+        categoriaId: params.categoriaId ? BigInt(params.categoriaId) : undefined,
+        page: params.page,
+        pageSize: params.pageSize,
+      });
+      return Response.json(this.serialize(result));
+    } catch (error: any) {
+      return controllerErrorResponse(error, 500);
     }
   }
 

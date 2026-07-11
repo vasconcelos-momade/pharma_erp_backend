@@ -85,6 +85,24 @@ export const updateLoteBodySchema = z.object({
   dataFabricacao: z.string().trim().optional().nullable(),
 });
 
+export const createLoteSchema = z.object({
+  produtoId: z.string().trim().min(1, "Produto é obrigatório"),
+  fornecedorId: z.string().trim().min(1, "Fornecedor é obrigatório"),
+  numeroLote: z.string().trim().min(1, "Número do lote é obrigatório"),
+  dataValidade: z.coerce.date(),
+  precoCompra: z.coerce.number().optional(),
+});
+
+export const searchStockProdutosQuerySchema = z.object({
+  q: z.string().trim().min(1).optional(),
+  barcode: z.string().trim().min(1).optional(),
+  categoriaId: z.string().trim().regex(/^\d+$/).optional(),
+  page: z.coerce.number().int().positive().optional(),
+  pageSize: z.coerce.number().int().positive().max(100).optional(),
+});
+
+export type CreateLoteDTO = z.infer<typeof createLoteSchema>;
+
 export const loteMovimentacaoSanitariaBodySchema = z.object({
   tipo: z.enum([
     "QUARENTENA",

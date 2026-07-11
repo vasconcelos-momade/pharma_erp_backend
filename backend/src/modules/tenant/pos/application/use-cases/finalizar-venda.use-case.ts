@@ -49,6 +49,8 @@ export interface FinalizarVendaDTO {
 }
 
 export class FinalizarVendaUseCase {
+  private static readonly MAX_PATIENT_AGE = 130;
+
   async execute(data: FinalizarVendaDTO) {
     const prisma = getPrisma();
 
@@ -767,8 +769,14 @@ export class FinalizarVendaUseCase {
     if (!nome) {
       throw new Error("Nome do paciente é obrigatório para itens com receita.");
     }
-    if (!Number.isFinite(idade) || idade <= 0) {
-      throw new Error("Idade do paciente deve ser maior que zero.");
+    if (
+      !Number.isFinite(idade) ||
+      idade <= 0 ||
+      idade > FinalizarVendaUseCase.MAX_PATIENT_AGE
+    ) {
+      throw new Error(
+        `Idade do paciente deve estar entre 1 e ${FinalizarVendaUseCase.MAX_PATIENT_AGE} anos.`,
+      );
     }
     if (!nid) {
       throw new Error("NID da receita/doente é obrigatório para itens com receita.");
@@ -838,6 +846,13 @@ export class FinalizarVendaUseCase {
     const dataNascimento = new Date();
     dataNascimento.setHours(0, 0, 0, 0);
     dataNascimento.setFullYear(dataNascimento.getFullYear() - idade);
+
+    if (Number.isNaN(dataNascimento.getTime()) || dataNascimento.getFullYear() < 1900) {
+      throw new Error(
+        "Não foi possível calcular a data de nascimento do paciente a partir da idade informada.",
+      );
+    }
+
     return dataNascimento;
   }
 }

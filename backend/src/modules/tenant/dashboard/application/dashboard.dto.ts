@@ -44,7 +44,7 @@ export const stockDashboardTableQuerySchema = z.object({
   table: z.enum([
     "ultimosMovimentos",
     "inventarios",
-    "requisicoes",
+    "compras",
     "reservas",
     "incineracoes",
     "produtosCriticos",

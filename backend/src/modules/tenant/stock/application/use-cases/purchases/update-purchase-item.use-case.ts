@@ -50,7 +50,9 @@ export class UpdatePurchaseItemUseCase {
       throw new Error(`O produto ${data.produtoId} já está presente nesta compra`);
     }
 
-    const subtotal = data.quantidade * data.precoCompra;
+    const quantidadeAprovada = data.quantidadeAprovada;
+    const quantidadeSugerida = data.quantidadeSugerida ?? quantidadeAprovada;
+    const subtotal = quantidadeAprovada * data.precoCompra;
 
     await prisma.compraItem.update({
       where: { id: itemPk },
@@ -58,7 +60,8 @@ export class UpdatePurchaseItemUseCase {
         produtoId: produto.id,
         numeroLote: data.numeroLote,
         dataValidade: new Date(data.dataValidade),
-        quantidade: data.quantidade,
+        quantidadeSugerida,
+        quantidadeAprovada,
         precoCompra: data.precoCompra,
         precoVenda: data.precoVenda ?? null,
         total: subtotal,

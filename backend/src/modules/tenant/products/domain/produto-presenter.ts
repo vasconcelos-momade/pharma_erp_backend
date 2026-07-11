@@ -302,7 +302,7 @@ export function mapMasterProdutoListItem<T extends Record<string, unknown>>(
   };
 }
 
-export const produtoRequisicaoSelect = {
+export const produtoStockSearchSelect = {
   id: true,
   nomeComercial: true,
   barcode: true,
@@ -341,8 +341,8 @@ export const produtoRequisicaoSelect = {
   lotes: fefoLoteSelect,
 } as const;
 
-/** Produto para Requisições: todos os activos; lote opcional (FEFO). */
-export function mapRequisicaoProduto<T extends Record<string, unknown>>(
+/** Produto para pesquisa em stock (lote opcional FEFO). */
+export function mapStockSearchProduto<T extends Record<string, unknown>>(
   row: T,
 ): T & ResolvedProdutoPolicy & {
   lote: string | null;

@@ -1,10 +1,10 @@
 import { getPrisma } from "../../../../../../infrastructure/prisma/tenant-prisma.factory";
 import {
-  mapRequisicaoProduto,
-  produtoRequisicaoSelect,
+  mapStockSearchProduto,
+  produtoStockSearchSelect,
 } from "../../../../products/domain/produto-presenter";
 
-export class SearchRequisitionProdutosUseCase {
+export class SearchStockProdutosUseCase {
   async execute(params?: {
     q?: string;
     categoriaId?: bigint;
@@ -57,14 +57,14 @@ export class SearchRequisitionProdutosUseCase {
 
     const items = await prisma.produto.findMany({
       where,
-      select: produtoRequisicaoSelect,
+      select: produtoStockSearchSelect,
       orderBy: [{ nomeComercial: "asc" }, { id: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize + 1,
     });
 
     const mapped = items.map((row: any) =>
-      mapRequisicaoProduto(row as Record<string, unknown>),
+      mapStockSearchProduto(row as Record<string, unknown>),
     );
 
     return {

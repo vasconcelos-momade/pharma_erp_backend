@@ -26,7 +26,9 @@ export class AddPurchaseItemUseCase {
       throw new Error(`Produto ${data.produtoId} não encontrado`);
     }
 
-    const subtotal = data.quantidade * data.precoCompra;
+    const quantidadeAprovada = data.quantidadeAprovada;
+    const quantidadeSugerida = data.quantidadeSugerida ?? quantidadeAprovada;
+    const subtotal = quantidadeAprovada * data.precoCompra;
 
     // Remove item se já existir para o mesmo produto, substituindo pelo novo
     await prisma.compraItem.deleteMany({
@@ -42,7 +44,8 @@ export class AddPurchaseItemUseCase {
         produtoId: produto.id,
         numeroLote: data.numeroLote,
         dataValidade: normalizeExpiryDate(data.dataValidade),
-        quantidade: data.quantidade,
+        quantidadeSugerida,
+        quantidadeAprovada,
         precoCompra: data.precoCompra,
         precoVenda: data.precoVenda ?? null,
         total: subtotal,

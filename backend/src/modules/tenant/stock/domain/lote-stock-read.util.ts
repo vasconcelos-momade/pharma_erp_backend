@@ -13,6 +13,7 @@ export function readLoteDisponivel(lote: {
   quantidadeAtual?: unknown;
 }): number {
   const quarentena = Math.max(0, Number(lote.quantidadeQuarentena ?? 0) || 0);
+  const quantidadeAtual = Math.max(0, Number(lote.quantidadeAtual ?? 0) || 0);
 
   if (lote.stockBalance != null) {
     const disponivel = Number(lote.stockBalance.quantidadeDisponivel ?? 0) || 0;
@@ -23,16 +24,21 @@ export function readLoteDisponivel(lote: {
     if (total > 0) {
       return Math.max(0, total - quarentena);
     }
+    if (quantidadeAtual > 0) {
+      return quantidadeAtual;
+    }
     return 0;
   }
 
-  return Math.max(0, Number(lote.quantidadeAtual ?? 0) || 0);
+  return quantidadeAtual;
 }
 
 export function readLoteTotal(lote: {
   stockBalance?: { quantidadeTotal?: unknown; quantidadeDisponivel?: unknown } | null;
   quantidadeAtual?: unknown;
 }): number {
+  const quantidadeAtual = Math.max(0, Number(lote.quantidadeAtual ?? 0) || 0);
+
   if (lote.stockBalance != null) {
     const total = Number(lote.stockBalance.quantidadeTotal ?? 0) || 0;
     if (total > 0) {
@@ -42,8 +48,11 @@ export function readLoteTotal(lote: {
     if (disponivel > 0) {
       return disponivel;
     }
+    if (quantidadeAtual > 0) {
+      return quantidadeAtual;
+    }
     return 0;
   }
 
-  return Math.max(0, Number(lote.quantidadeAtual ?? 0) || 0);
+  return quantidadeAtual;
 }

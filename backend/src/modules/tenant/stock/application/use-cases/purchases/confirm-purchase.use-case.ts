@@ -26,7 +26,7 @@ export class ConfirmPurchaseUseCase {
           fornecedorId: compra.fornecedorId,
           numeroLote: item.numeroLote ?? "",
           dataValidade: item.dataValidade ?? "",
-          quantidade: Number(item.quantidade),
+          quantidade: Number(item.quantidadeAprovada),
           precoCompra: Number(item.precoCompra),
           precoVenda: item.precoVenda != null ? Number(item.precoVenda) : null,
           userId: BigInt(userId),

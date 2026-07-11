@@ -148,12 +148,6 @@ export function registerReportsRoutes(router: Router, prefix: string): void {
     { path: "movements/ajuste", reportKey: REPORT_KEYS.STOCK_MOVEMENTS_AJUSTE },
     { path: "inventories", reportKey: REPORT_KEYS.INVENTORIES },
     { path: "inventories/:inventarioId", reportKey: REPORT_KEYS.INVENTORY_DETAIL, parametric: true },
-    { path: "requisitions", reportKey: REPORT_KEYS.REQUISITIONS },
-    { path: "requisitions/compra", reportKey: REPORT_KEYS.REQUISITIONS_COMPRA },
-    { path: "requisitions/entrada", reportKey: REPORT_KEYS.REQUISITIONS_ENTRADA },
-    { path: "requisitions/saida", reportKey: REPORT_KEYS.REQUISITIONS_SAIDA },
-    { path: "requisitions/transfer", reportKey: REPORT_KEYS.REQUISITIONS_TRANSFER },
-    { path: "requisitions/:requisicaoId", reportKey: REPORT_KEYS.REQUISITION_DETAIL, parametric: true },
   ];
 
   for (const report of stockReports) {

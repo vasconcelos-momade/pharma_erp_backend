@@ -66,11 +66,16 @@ export async function findFefoLote(
   produtoId: bigint,
   loteId?: bigint | null,
 ): Promise<FefoLoteRow | null> {
+  if (!tx.lote?.findFirst || !tx.lote?.findMany) {
+    return null;
+  }
+
   const select = {
     id: true,
     numeroLote: true,
     dataValidade: true,
     quantidadeQuarentena: true,
+    quantidadeAtual: true,
     precoCompra: true,
     precoVenda: true,
   };

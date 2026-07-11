@@ -100,7 +100,7 @@ function movementOriginLabel(origem?: string | null): string {
   }
 
   if (origem.startsWith("REQUISICAO:")) {
-    return "Requisicao";
+    return "Movimento legado";
   }
 
   switch (origem) {
@@ -129,7 +129,7 @@ function movementDocumentReference(row: {
 }): string | null {
   if (row.origem?.startsWith("REQUISICAO:")) {
     const requisicaoId = row.origem.split(":")[1];
-    return requisicaoId ? `REQ-${requisicaoId}` : null;
+    return requisicaoId ? `LEG-${requisicaoId}` : null;
   }
 
   const invoiceMatch =

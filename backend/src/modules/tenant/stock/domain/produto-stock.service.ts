@@ -113,12 +113,39 @@ export async function getQuantidadeDisponivel(
   const balance = await tx.stockBalance.findUnique({
     where: { produtoId },
   });
-  if (balance) {
-    return toNumber(balance.quantidadeDisponivel);
+  const cachedDisponivel = toNumber(balance?.quantidadeDisponivel);
+  if (cachedDisponivel > 0) {
+    return cachedDisponivel;
   }
 
+  // Quando o cache do produto está zerado, reidrata a partir dos movimentos/lotes
+  // para evitar bloquear o PDV com stock falso igual a zero.
+  const reservada = toNumber(balance?.quantidadeReservada);
+  const total = await getQuantidadeTotal(tx, produtoId);
   const sellable = await getSellableQuantityFromLotes(tx, produtoId);
-  return Math.min(await getQuantidadeTotal(tx, produtoId), sellable);
+  const disponivel = Math.max(0, Math.min(total, sellable) - reservada);
+
+  if (
+    balance == null ||
+    cachedDisponivel !== disponivel ||
+    toNumber(balance.quantidadeTotal) !== total
+  ) {
+    await tx.stockBalance.upsert({
+      where: { produtoId },
+      create: {
+        produtoId,
+        quantidadeTotal: total,
+        quantidadeReservada: reservada,
+        quantidadeDisponivel: disponivel,
+      },
+      update: {
+        quantidadeTotal: total,
+        quantidadeDisponivel: disponivel,
+      },
+    });
+  }
+
+  return disponivel;
 }
 
 /**

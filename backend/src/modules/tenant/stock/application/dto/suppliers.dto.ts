@@ -28,6 +28,9 @@ export const updateSupplierSchema = createSupplierSchema.partial().extend({
 
 export const purchaseSuggestionsQuerySchema = z.object({
   days: z.coerce.number().int().positive().max(365).optional(),
+  coberturaDias: z.coerce.number().int().positive().max(365).optional(),
   from: z.string().trim().optional(),
   to: z.string().trim().optional(),
+  page: z.coerce.number().int().positive().optional(),
+  pageSize: z.coerce.number().int().positive().max(100).optional(),
 });

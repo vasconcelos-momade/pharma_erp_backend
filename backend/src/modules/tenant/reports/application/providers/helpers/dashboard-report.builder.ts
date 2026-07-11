@@ -248,7 +248,7 @@ export function buildStockDashboardReport(data: any): ModuleReportDefinition {
     fileBaseName: "dashboard-stock",
     reportName: "Dashboard Stock",
     title: "Dashboard Stock & Logistica",
-    subtitle: "Movimentos, inventarios, requisicoes e reservas",
+    subtitle: "Movimentos, inventários, compras e reservas",
     filters: periodFilters(periodo),
     kpis: Object.fromEntries(
       Object.entries(data.kpis ?? {}).map(([key, value]) => [
@@ -291,13 +291,14 @@ export function buildStockDashboardReport(data: any): ModuleReportDefinition {
         ],
       ),
       mapObjectTable(
-        "Requisicoes",
-        ["Documento", "Estado", "Tipo", "Data"],
-        tables.requisicoes ?? [],
+        "Compras",
+        ["Documento", "Estado", "Fornecedor", "Total", "Data"],
+        tables.compras ?? [],
         [
           (row) => row.numeroDocumento,
           (row) => row.status,
-          (row) => row.tipo,
+          (row) => row.fornecedorNome,
+          (row) => row.total,
           (row) => formatDateTime(row.createdAt),
         ],
       ),

@@ -34,7 +34,7 @@ export class StockDashboardUseCase {
       produtosSemStock,
       produtosCriticosRows,
       inventariosAbertos,
-      requisicoesPendentes,
+      comprasPendentes,
       incineracoesCount,
       ajustesCount,
       movimentosTipo,
@@ -42,7 +42,7 @@ export class StockDashboardUseCase {
       topMovimentados,
       ultimosMovimentos,
       inventarios,
-      requisicoes,
+      compras,
       reservas,
       incineracoes,
     ] = await Promise.all([
@@ -89,7 +89,7 @@ export class StockDashboardUseCase {
         take: 200,
       }),
       prisma.inventario.count({ where: { status: "ABERTO" } }),
-      prisma.requisicao.count({ where: { status: "PENDENTE" } }),
+      prisma.compra.count({ where: { status: "PENDENTE" } }),
       prisma.incineracao.count({
         where: { dataIncineracao: { gte: fromDays } },
       }),
@@ -151,15 +151,16 @@ export class StockDashboardUseCase {
           iniciadoEm: true,
         },
       }),
-      prisma.requisicao.findMany({
+      prisma.compra.findMany({
         orderBy: { createdAt: "desc" },
         take: 10,
         select: {
           id: true,
           numeroDocumento: true,
           status: true,
-          tipo: true,
+          total: true,
           createdAt: true,
+          fornecedor: { select: { nome: true } },
         },
       }),
       prisma.estoqueReserva.findMany({
@@ -258,7 +259,7 @@ export class StockDashboardUseCase {
         produtosSemStock,
         lotesAtivos: lotes.totalLotes,
         inventariosAbertos,
-        requisicoesPendentes,
+        comprasPendentes,
         incineracoes: incineracoesCount,
         ajustesStock: ajustesCount,
         alertasOperacionais: lotes.alertasOperacionais,
@@ -317,11 +318,12 @@ export class StockDashboardUseCase {
           status: row.status,
           iniciadoEm: row.iniciadoEm.toISOString(),
         })),
-        requisicoes: requisicoes.map((row: any) => ({
+        compras: compras.map((row: any) => ({
           id: row.id.toString(),
           numeroDocumento: row.numeroDocumento,
           status: row.status,
-          tipo: row.tipo,
+          fornecedorNome: row.fornecedor?.nome ?? "—",
+          total: round2(toNumber(row.total)),
           createdAt: row.createdAt.toISOString(),
         })),
         reservas: reservas.map((row: any) => ({
@@ -347,7 +349,7 @@ export class StockDashboardUseCase {
     table:
       | "ultimosMovimentos"
       | "inventarios"
-      | "requisicoes"
+      | "compras"
       | "reservas"
       | "incineracoes"
       | "produtosCriticos";
@@ -451,19 +453,18 @@ export class StockDashboardUseCase {
           })),
         });
       }
-      case "requisicoes": {
+      case "compras": {
         const where: any = { createdAt: { gte: resolved.from, lte: resolved.to } };
         if (params.estado) where.status = params.estado;
-        if (params.tipoMovimentacao) where.tipo = params.tipoMovimentacao;
         if (search) {
           where.OR = [
             { numeroDocumento: { contains: search, mode: "insensitive" } },
-            { tipo: { contains: search, mode: "insensitive" } },
+            { fornecedor: { nome: { contains: search, mode: "insensitive" } } },
           ];
         }
         const [totalCount, rows] = await prisma.$transaction([
-          prisma.requisicao.count({ where }),
-          prisma.requisicao.findMany({
+          prisma.compra.count({ where }),
+          prisma.compra.findMany({
             where,
             orderBy: { createdAt: "desc" },
             skip: (page - 1) * pageSize,
@@ -472,8 +473,9 @@ export class StockDashboardUseCase {
               id: true,
               numeroDocumento: true,
               status: true,
-              tipo: true,
+              total: true,
               createdAt: true,
+              fornecedor: { select: { nome: true } },
             },
           }),
         ]);
@@ -486,7 +488,8 @@ export class StockDashboardUseCase {
             id: row.id.toString(),
             numeroDocumento: row.numeroDocumento,
             status: row.status,
-            tipo: row.tipo,
+            fornecedorNome: row.fornecedor?.nome ?? "—",
+            total: round2(toNumber(row.total)),
             createdAt: row.createdAt.toISOString(),
           })),
         });

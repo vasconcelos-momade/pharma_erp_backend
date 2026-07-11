@@ -6,9 +6,7 @@ import {
 import {
   flattenProdutoForApi,
   mapMasterProdutoListItem,
-  mapRequisicaoProduto,
   produtoMasterListSelect,
-  produtoRequisicaoSelect,
   produtoWithRegulacaoInclude,
 } from "../../domain/produto-presenter";
 import {
