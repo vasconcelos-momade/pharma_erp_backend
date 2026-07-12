@@ -189,11 +189,11 @@ export async function receivePurchaseItemStock(
       produtoId: produto.id,
       loteId: lote.id,
       userId: input.userId,
-      tipo: "ENTRADA",
+      tipo: "COMPRA",
       quantidade: input.quantidade,
       estoqueAnterior,
       estoqueFinal,
-      origem: "COMPRA_FORNECEDOR",
+      origem: "COMPRA",
     },
   });
 

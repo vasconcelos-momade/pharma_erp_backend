@@ -33,9 +33,10 @@ export class CreateDraftSaleUseCase {
 
     return prisma.$transaction(async (tx: any) => {
       const fatura = await draftCartService.resolveOrCreateFatura(tx, ctx);
+      const activeCtx = { ...ctx, idempotencyKey: fatura.idempotencyKey };
 
       for (const item of data.items) {
-        await draftCartService.addCartItemDelta(tx, fatura.id, ctx, item);
+        await draftCartService.addCartItemDelta(tx, fatura.id, activeCtx, item);
       }
 
       await draftCartService.recalculateFaturaTotals(tx, fatura.id);

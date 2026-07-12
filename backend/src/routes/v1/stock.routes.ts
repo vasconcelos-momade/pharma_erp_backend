@@ -1,6 +1,5 @@
 import { StockController } from "../../modules/tenant/stock";
 import { InventoryController } from "../../modules/tenant/stock/presentation/controllers/inventory.controller";
-import { PurchasesController } from "../../modules/tenant/stock/presentation/controllers/purchases.controller";
 import { SuppliersController } from "../../modules/tenant/stock/presentation/controllers/suppliers.controller";
 import { LotesController } from "../../modules/tenant/stock/presentation/controllers/lotes.controller";
 import { EstoqueController } from "../../modules/tenant/stock/presentation/controllers/estoque.controller";
@@ -14,7 +13,6 @@ import { auditMiddleware } from "../../shared/http/middlewares";
 import type { Router } from "../../shared/http/router";
 
 const stockController = new StockController();
-const purchasesController = new PurchasesController();
 const suppliersController = new SuppliersController();
 const inventoryController = new InventoryController();
 const lotesController = new LotesController();
@@ -43,32 +41,50 @@ function registerAdjustRoute(router: Router, path: string): void {
   );
 }
 
-function registerPurchasesRoutes(router: Router, prefix: string): void {
+function registerPurchaseSuggestionsRoutes(router: Router, prefix: string): void {
+  router.get(
+    `${prefix}/tenant/compras/sugestoes`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("COMPRAS", "VIEW"),
+    async (context) => suppliersController.purchaseSuggestions(context.req),
+  );
+
   router.post(
-    `${prefix}/tenant/compras`,
+    `${prefix}/tenant/compras/sugestoes`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
     requirePermission("COMPRAS", "CREATE"),
     auditMiddleware,
-    async (context) => purchasesController.createPendingPurchase(context.req, getTenantAuth(context).userId),
+    async (context) => suppliersController.addManualPurchaseSuggestion(context.req),
   );
 
-  router.post(
-    `${prefix}/tenant/compras/from-suggestions`,
+  router.delete(
+    `${prefix}/tenant/compras/sugestoes`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
-    requirePermission("COMPRAS", "CREATE"),
+    requirePermission("COMPRAS", "DELETE"),
     auditMiddleware,
-    async (context) =>
-      purchasesController.createFromSuggestions(context.req, getTenantAuth(context).userId),
+    async () => suppliersController.clearPurchaseSuggestions(),
   );
 
+  router.delete(
+    `${prefix}/tenant/compras/sugestoes/:produtoId`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("COMPRAS", "DELETE"),
+    auditMiddleware,
+    async (context) => suppliersController.removePurchaseSuggestion(context.req),
+  );
+}
+
+function registerSupplierRoutes(router: Router, prefix: string): void {
   router.get(
     `${prefix}/tenant/fornecedores`,
     tenantAuthMiddleware(),
     tenantBranchContextMiddleware(),
     requirePermission("FORNECEDORES", "VIEW"),
-    async (context) => purchasesController.listSuppliers(context.req),
+    async (context) => suppliersController.search(context.req),
   );
 
   router.get(
@@ -77,14 +93,6 @@ function registerPurchasesRoutes(router: Router, prefix: string): void {
     tenantBranchContextMiddleware(),
     requirePermission("FORNECEDORES", "VIEW"),
     async (context) => suppliersController.search(context.req),
-  );
-
-  router.get(
-    `${prefix}/tenant/compras/sugestoes`,
-    tenantAuthMiddleware(),
-    tenantBranchContextMiddleware(),
-    requirePermission("COMPRAS", "VIEW"),
-    async (context) => suppliersController.purchaseSuggestions(context.req),
   );
 
   router.get(
@@ -120,59 +128,6 @@ function registerPurchasesRoutes(router: Router, prefix: string): void {
     requirePermission("FORNECEDORES", "DELETE"),
     auditMiddleware,
     async (context) => suppliersController.delete(context.req),
-  );
-
-  router.get(
-    `${prefix}/tenant/compras`,
-    tenantAuthMiddleware(),
-    tenantBranchContextMiddleware(),
-    requirePermission("COMPRAS", "VIEW"),
-    async (context) => purchasesController.listPurchases(context.req),
-  );
-
-  router.get(
-    `${prefix}/tenant/compras/:compraId`,
-    tenantAuthMiddleware(),
-    tenantBranchContextMiddleware(),
-    requirePermission("COMPRAS", "VIEW"),
-    async (context) => purchasesController.getPurchaseDetail(context.req),
-  );
-
-  router.post(
-    `${prefix}/tenant/compras/:compraId/items`,
-    tenantAuthMiddleware(),
-    tenantBranchContextMiddleware(),
-    requirePermission("COMPRAS", "UPDATE"),
-    auditMiddleware,
-    async (context) => purchasesController.addPurchaseItem(context.req),
-  );
-
-  router.patch(
-    `${prefix}/tenant/compras/:compraId/items/:itemId`,
-    tenantAuthMiddleware(),
-    tenantBranchContextMiddleware(),
-    requirePermission("COMPRAS", "UPDATE"),
-    auditMiddleware,
-    async (context) => purchasesController.updatePurchaseItem(context.req),
-  );
-
-  router.delete(
-    `${prefix}/tenant/compras/:compraId/items/:itemId`,
-    tenantAuthMiddleware(),
-    tenantBranchContextMiddleware(),
-    requirePermission("COMPRAS", "DELETE"),
-    auditMiddleware,
-    async (context) => purchasesController.removePurchaseItem(context.req),
-  );
-
-  router.post(
-    `${prefix}/tenant/compras/:compraId/confirmar`,
-    tenantAuthMiddleware(),
-    tenantBranchContextMiddleware(),
-    requirePermission("COMPRAS", "APPROVE"),
-    requirePermission("LOTES", "CREATE_LOTE"),
-    auditMiddleware,
-    async (context) => purchasesController.confirmPurchase(context.req, getTenantAuth(context).userId),
   );
 }
 
@@ -271,7 +226,25 @@ function registerLotesAndStockRoutes(router: Router, prefix: string): void {
     tenantBranchContextMiddleware(),
     requirePermission("LOTES", "CREATE_LOTE"),
     auditMiddleware,
-    async (context) => lotesController.createLote(context.req),
+    async (context) => lotesController.createLote(context.req, getTenantAuth(context).userId),
+  );
+
+  router.post(
+    `${prefix}/tenant/estoque/entrada-compra`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("LOTES", "CREATE_LOTE"),
+    auditMiddleware,
+    async (context) =>
+      estoqueController.entradaCompra(context.req, getTenantAuth(context).userId),
+  );
+
+  router.get(
+    `${prefix}/tenant/estoque/movimentos`,
+    tenantAuthMiddleware(),
+    tenantBranchContextMiddleware(),
+    requirePermission("ESTOQUE", "VIEW"),
+    async (context) => stockController.listStockMovements(context.req),
   );
 
   router.get(
@@ -488,7 +461,8 @@ export function registerStockRoutes(router: Router, prefix: string): void {
   registerAdjustRoute(router, `${prefix}/tenant/stock/adjustments`);
   registerAdjustRoute(router, `${prefix}/tenant/stock/adjust`);
 
-  registerPurchasesRoutes(router, prefix);
+  registerPurchaseSuggestionsRoutes(router, prefix);
+  registerSupplierRoutes(router, prefix);
   registerInventoryRoutes(router, prefix);
   registerLotesAndStockRoutes(router, prefix);
 }

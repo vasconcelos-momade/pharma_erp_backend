@@ -75,7 +75,6 @@ export async function findFefoLote(
     numeroLote: true,
     dataValidade: true,
     quantidadeQuarentena: true,
-    quantidadeAtual: true,
     precoCompra: true,
     precoVenda: true,
   };

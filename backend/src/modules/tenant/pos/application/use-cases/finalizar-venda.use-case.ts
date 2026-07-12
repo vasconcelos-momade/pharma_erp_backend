@@ -58,14 +58,24 @@ export class FinalizarVendaUseCase {
       // Padronização do isolamento transacional para nível SERIALIZABLE em operações de balcão
       // para evitar PHANTOM READS em picos de concorrência.
       return await prisma.$transaction(async (tx: any) => {
-        // 0. Verificar Idempotência com Escopo (Terminal + Key)
+        // 0. Garantir chave de carrinho activa e verificar idempotência de retry
         if (data.idempotencyKey) {
-          const nextCartIdempotencyKey = this.buildNextCartIdempotencyKey(data);
+          const activeCartKey = await draftCartService.ensureActiveCartKey(tx, {
+            userId: data.userId,
+            idempotencyKey: data.idempotencyKey,
+            terminalId: data.terminalId,
+          });
+          data.idempotencyKey = activeCartKey;
+
+          const nextCartIdempotencyKey = await draftCartService.buildFreshCartKey(
+            tx,
+            data.userId,
+          );
           const scopedKey = `TERM-${data.terminalId}:${data.idempotencyKey}`;
           const existingFatura = await tx.fatura.findFirst({
-            where: { 
+            where: {
               terminalId: BigInt(data.terminalId),
-              idempotencyKey: scopedKey 
+              idempotencyKey: scopedKey,
             },
             select: {
               id: true,
@@ -78,25 +88,44 @@ export class FinalizarVendaUseCase {
               estado: true,
             },
           });
+
           if (existingFatura) {
-            return {
-              success: true,
-              faturaId: existingFatura.id.toString(),
-              numero: existingFatura.numero,
-              estado: existingFatura.estado,
-              subtotal: Number(existingFatura.subtotal),
-              ivaTotal: Number(existingFatura.ivaTotal),
-              total: Number(existingFatura.total),
-              valorRecebido:
-                existingFatura.valorRecebido == null
-                  ? null
-                  : Number(existingFatura.valorRecebido),
-              troco: Number(existingFatura.troco ?? 0),
-              items: [],
-              isDuplicate: true,
-              cartReset: true,
-              nextCartIdempotencyKey,
-            };
+            const draftFatura = await tx.fatura.findFirst({
+              where: {
+                idempotencyKey: data.idempotencyKey,
+                estado: "RASCUNHO",
+                userId: BigInt(data.userId),
+              },
+              select: { _count: { select: { items: true } } },
+            });
+
+            const hasPendingDraftItems = (draftFatura?._count?.items ?? 0) > 0;
+            if (!hasPendingDraftItems) {
+              await this.cleanupCheckoutDraftArtifacts(
+                tx,
+                existingFatura.id,
+                data.idempotencyKey,
+              );
+
+              return {
+                success: true,
+                faturaId: existingFatura.id.toString(),
+                numero: existingFatura.numero,
+                estado: existingFatura.estado,
+                subtotal: Number(existingFatura.subtotal),
+                ivaTotal: Number(existingFatura.ivaTotal),
+                total: Number(existingFatura.total),
+                valorRecebido:
+                  existingFatura.valorRecebido == null
+                    ? null
+                    : Number(existingFatura.valorRecebido),
+                troco: Number(existingFatura.troco ?? 0),
+                items: [],
+                isDuplicate: true,
+                cartReset: true,
+                nextCartIdempotencyKey,
+              };
+            }
           }
         }
 
@@ -633,8 +662,12 @@ export class FinalizarVendaUseCase {
           tx,
           fatura.id,
           data.idempotencyKey,
+          produtosDoCarrinho,
         );
-        const nextCartIdempotencyKey = this.buildNextCartIdempotencyKey(data);
+        const nextCartIdempotencyKey = await draftCartService.buildFreshCartKey(
+          tx,
+          data.userId,
+        );
 
         return {
           success: true,
@@ -700,15 +733,22 @@ export class FinalizarVendaUseCase {
     console.info(`[${label}]`, payload);
   }
 
-  private buildNextCartIdempotencyKey(data: Pick<FinalizarVendaDTO, "userId" | "terminalId">) {
-    return `pdv-${data.userId}-${data.terminalId}-${Date.now()}`;
-  }
-
   private async cleanupCheckoutDraftArtifacts(
     tx: any,
     faturaId: bigint,
     currentCartIdempotencyKey?: string,
+    soldProdutoIds: bigint[] = [],
   ) {
+    const reservationsToClear = await tx.estoqueReserva.findMany({
+      where: { faturaId },
+      select: { produtoId: true },
+    });
+
+    const productIdsToSync = new Set<bigint>(soldProdutoIds);
+    for (const reserva of reservationsToClear) {
+      productIdsToSync.add(reserva.produtoId);
+    }
+
     const finalizedReservations = await tx.estoqueReserva.deleteMany({
       where: { faturaId },
     });
@@ -726,6 +766,14 @@ export class FinalizarVendaUseCase {
       });
 
       if (draftFatura) {
+        const draftReservations = await tx.estoqueReserva.findMany({
+          where: { faturaId: draftFatura.id },
+          select: { produtoId: true },
+        });
+        for (const reserva of draftReservations) {
+          productIdsToSync.add(reserva.produtoId);
+        }
+
         const deletedItems = await tx.faturaItem.deleteMany({
           where: { faturaId: draftFatura.id },
         });
@@ -750,7 +798,12 @@ export class FinalizarVendaUseCase {
       deletedDraftItems,
       deletedDraftReservations,
       deletedDraftFatura,
+      syncedProdutoIds: [...productIdsToSync].map((id) => id.toString()),
     });
+
+    for (const produtoId of productIdsToSync) {
+      await syncStockBalanceCache(tx, produtoId);
+    }
   }
 
 

@@ -199,7 +199,6 @@ model Produto {
   version                  Int                     @default(0)
   deletedAt                DateTime?
   fornecedores             ProdutoFornecedor[]
-  compraItens              CompraItem[]
   lotes                    Lote[]
   movimentos               EstoqueMovimento[]
   reservas                 EstoqueReserva[]
@@ -214,6 +213,7 @@ model Produto {
   regulacao                ProdutoRegulacao?
   classificacaoEventos     ProdutoClassificacaoEvento[]
   inventarioItens          InventarioItem[]
+  purchaseSuggestion       PurchaseSuggestion?
   categoria                Categoria               @relation(fields: [categoriaId], references: [id])
   taxRule                  TaxRule?                @relation(fields: [taxRuleId], references: [id])
   createdAt                DateTime                @default(now())
@@ -292,7 +292,6 @@ model Fornecedor {
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
   produtos        ProdutoFornecedor[]
-  compras         Compra[]
   lotes           Lote[]
   contasPagar     ContaPagar[]
   historicoPrecos HistoricoPreco[]
@@ -314,41 +313,23 @@ model ProdutoFornecedor {
   @@map("produtos_fornecedores")
 }
 
-model Compra {
-  id              BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
-  numeroDocumento String       @db.VarChar(100)
-  fornecedorId    BigInt       @db.UnsignedBigInt
-  data         DateTime
-  total        Decimal      @db.Decimal(14, 2)
-  status       StatusCompra
-  fornecedor   Fornecedor   @relation(fields: [fornecedorId], references: [id])
-  itens        CompraItem[]
-  contasPagar  ContaPagar[]
-  version      Int          @default(0)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+/// Cache operacional de sugestões de compra (não representa uma compra real).
+model PurchaseSuggestion {
+  id                 BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
+  produtoId          BigInt               @unique @db.UnsignedBigInt
+  quantidadeAtual    Decimal              @db.Decimal(14, 2)
+  estoqueMinimo      Decimal              @db.Decimal(14, 2)
+  consumoMedioDiario Decimal              @db.Decimal(14, 4)
+  quantidadeSugerida Decimal              @db.Decimal(14, 2)
+  coberturaDias      Int                  @default(30)
+  origem             OrigemSugestaoCompra @default(AUTOMATICA)
+  observacao         String?              @db.Text
+  generatedAt        DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  produto            Produto              @relation(fields: [produtoId], references: [id], onDelete: Cascade)
 
-  @@index([fornecedorId])
-  @@index([status])
-  @@index([createdAt])
-  @@map("compras")
-}
-
-model CompraItem {
-  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
-  compraId     BigInt    @db.UnsignedBigInt
-  produtoId    BigInt    @db.UnsignedBigInt
-  numeroLote   String?   @db.VarChar(100)
-  dataValidade DateTime?
-  quantidadeSugerida Decimal @db.Decimal(10, 2)
-  quantidadeAprovada Decimal @db.Decimal(10, 2)
-  precoCompra        Decimal @db.Decimal(10, 2)
-  precoVenda   Decimal?  @db.Decimal(10, 2)
-  total        Decimal   @db.Decimal(10, 2)
-  compra       Compra    @relation(fields: [compraId], references: [id])
-  produto      Produto   @relation(fields: [produtoId], references: [id])
-
-  @@map("compras_itens")
+  @@index([origem])
+  @@map("purchase_suggestions")
 }
 
 model Lote {
@@ -702,7 +683,6 @@ model ContaReceberPagamento {
 model ContaPagar {
   id           BigInt  @id @default(autoincrement()) @db.UnsignedBigInt
   fornecedorId BigInt  @db.UnsignedBigInt
-  compraId     BigInt? @db.UnsignedBigInt
   userId       BigInt  @db.UnsignedBigInt
 
   valor Decimal @db.Decimal(14, 2)
@@ -716,7 +696,6 @@ model ContaPagar {
   updatedAt DateTime @updatedAt
 
   fornecedor         Fornecedor          @relation(fields: [fornecedorId], references: [id])
-  compra             Compra?             @relation(fields: [compraId], references: [id])
   user               User                @relation(fields: [userId], references: [id])
   financialMovements FinancialMovement[]
 
@@ -1125,6 +1104,7 @@ enum TipoServicoClinico {
 
 enum TipoMovimento {
   ENTRADA
+  COMPRA
   SAIDA
   AJUSTE
   DEVOLUCAO
@@ -1216,10 +1196,9 @@ enum TipoFornecedor {
   LOCAL
 }
 
-enum StatusCompra {
-  PENDENTE
-  RECEBIDA
-  CANCELADA
+enum OrigemSugestaoCompra {
+  AUTOMATICA
+  MANUAL
 }
 
 enum StatusInventario {

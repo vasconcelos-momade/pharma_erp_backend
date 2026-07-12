@@ -9,17 +9,24 @@ type GetDraftCartParams = DraftCartMutationContext & {
 export class GetDraftCartUseCase {
   async execute(ctx: GetDraftCartParams): Promise<DraftCartView> {
     const prisma = getPrisma();
-    await draftCartService.assertCaixaAberta(prisma, ctx.userId);
 
-    const fatura = await prisma.fatura.findUnique({
-      where: { idempotencyKey: ctx.idempotencyKey },
-      select: { id: true, estado: true },
+    return prisma.$transaction(async (tx: any) => {
+      await draftCartService.assertCaixaAberta(tx, ctx.userId);
+
+      const activeKey = await draftCartService.ensureActiveCartKey(tx, ctx);
+      const activeCtx = { ...ctx, idempotencyKey: activeKey };
+
+      const fatura = await draftCartService.resolveActiveDraftFatura(
+        tx,
+        activeCtx.userId,
+        activeKey,
+      );
+
+      if (!fatura) {
+        return draftCartService.emptyCartView(activeKey, ctx.valorRecebido);
+      }
+
+      return draftCartService.buildCartView(tx, fatura.id, ctx.valorRecebido);
     });
-
-    if (!fatura || fatura.estado !== "RASCUNHO") {
-      return draftCartService.emptyCartView(ctx.idempotencyKey, ctx.valorRecebido);
-    }
-
-    return draftCartService.buildCartView(prisma, fatura.id, ctx.valorRecebido);
   }
 }

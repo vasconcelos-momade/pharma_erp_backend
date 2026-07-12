@@ -16,6 +16,18 @@ const optionalStringSchema = z
     return normalized && normalized.length > 0 ? normalized : undefined;
   });
 
+export const entradaCompraBodySchema = z.object({
+  produtoId: z.string().trim().min(1, "Produto é obrigatório"),
+  fornecedorId: z.string().trim().min(1, "Fornecedor é obrigatório"),
+  numeroLote: z.string().trim().min(1, "Número do lote é obrigatório"),
+  dataValidade: z.string().trim().min(1, "Data de validade é obrigatória"),
+  quantidade: z.coerce.number().positive("Quantidade inválida"),
+  precoCompra: z.coerce.number().nonnegative("Preço de compra inválido"),
+  precoVenda: z.coerce.number().positive("Preço de venda inválido"),
+});
+
+export type EntradaCompraDTO = z.infer<typeof entradaCompraBodySchema>;
+
 export const searchEstoqueQuerySchema = z.object({
   q: optionalStringSchema,
   categoriaId: optionalIdSchema,

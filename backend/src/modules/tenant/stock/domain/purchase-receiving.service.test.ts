@@ -181,8 +181,8 @@ describe("receivePurchaseItemStock", () => {
     expect(loteCreatePayload.quantidadeInicial).toBe(10);
 
     const movimentoPayload = tx.estoqueMovimento.create.mock.calls[0]![0].data;
-    expect(movimentoPayload.tipo).toBe("ENTRADA");
-    expect(movimentoPayload.origem).toBe("COMPRA_FORNECEDOR");
+    expect(movimentoPayload.tipo).toBe("COMPRA");
+    expect(movimentoPayload.origem).toBe("COMPRA");
     expect(movimentoPayload.estoqueAnterior).toBe(0);
     expect(movimentoPayload.estoqueFinal).toBe(10);
   });

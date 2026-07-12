@@ -1,4 +1,5 @@
 import { getPrisma } from "../../../../../infrastructure/prisma/tenant-prisma.factory";
+import { ValidationApiError } from "../../../../../shared/http/api-error";
 import {
   normalizeExpiryDate,
   receivePurchaseItemStock,
@@ -20,66 +21,55 @@ export interface ReceivePurchaseDTO {
 
 export class ReceivePurchaseUseCase {
   async execute(data: ReceivePurchaseDTO) {
+    if (data.items.length === 0) {
+      throw new ValidationApiError("Informe pelo menos um item");
+    }
+
     const prisma = getPrisma();
 
     return await prisma.$transaction(async (tx: any) => {
-      let totalCompra = 0;
-
-      const compra = await tx.compra.create({
-        data: {
-          numeroDocumento: data.numeroDocumento.trim(),
-          fornecedorId: BigInt(data.fornecedorId),
-          data: new Date(),
-          total: 0,
-          status: "RECEBIDA",
-        },
-      });
+      const results = [];
 
       for (const item of data.items) {
         const produtoId = BigInt(item.produtoId);
         const dataValidade = normalizeExpiryDate(item.dataValidade);
 
-        const subtotalItem = item.quantidade * item.precoCompra;
-        totalCompra += subtotalItem;
-
-        await tx.compraItem.create({
-          data: {
-            compraId: compra.id,
+        const result = await receivePurchaseItemStock(
+          tx,
+          {
             produtoId,
+            fornecedorId: BigInt(data.fornecedorId),
             numeroLote: item.numeroLote,
             dataValidade,
-            quantidadeSugerida: item.quantidade,
-            quantidadeAprovada: item.quantidade,
+            quantidade: item.quantidade,
             precoCompra: item.precoCompra,
             precoVenda: item.precoVenda ?? null,
-            total: subtotalItem,
+            userId: BigInt(data.userId),
           },
-        });
+          {
+            salePriceMode: "truthy",
+          },
+        );
 
-        await receivePurchaseItemStock(tx, {
-          produtoId,
-          fornecedorId: BigInt(data.fornecedorId),
-          numeroLote: item.numeroLote,
-          dataValidade,
+        results.push({
+          loteId: result.loteId.toString(),
+          produtoId: result.produtoId.toString(),
           quantidade: item.quantidade,
-          precoCompra: item.precoCompra,
-          precoVenda: item.precoVenda ?? null,
-          userId: BigInt(data.userId),
-        }, {
-          salePriceMode: "truthy",
+          estoqueAnterior: result.estoqueAnterior,
+          estoqueFinal: result.estoqueFinal,
         });
       }
 
-      await tx.compra.update({
-        where: { id: compra.id },
-        data: { total: totalCompra },
-      });
+      const totalCompra = data.items.reduce(
+        (sum, item) => sum + item.quantidade * item.precoCompra,
+        0,
+      );
 
       return {
-        message: "Compra recebida e stock atualizado com sucesso",
-        compraId: compra.id.toString(),
-        numeroDocumento: compra.numeroDocumento,
+        message: "Entrada de compra registada com sucesso",
+        numeroDocumento: data.numeroDocumento.trim(),
         total: totalCompra,
+        items: results,
       };
     });
   }

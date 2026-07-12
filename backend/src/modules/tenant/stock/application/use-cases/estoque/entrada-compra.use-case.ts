@@ -2,69 +2,48 @@ import { getPrisma } from "../../../../../../infrastructure/prisma/tenant-prisma
 import { NotFoundApiError, ValidationApiError } from "../../../../../../shared/http/api-error";
 import { receivePurchaseItemStock } from "../../../domain/purchase-receiving.service";
 
-export interface CreateLoteInput {
+export interface EntradaCompraInput {
   produtoId: string;
   fornecedorId: string;
   numeroLote: string;
-  dataValidade: Date | string;
-  quantidadeInicial: number;
+  dataValidade: string;
+  quantidade: number;
   precoCompra: number;
   precoVenda: number;
   userId: string;
 }
 
-export class CreateLoteUseCase {
-  async execute(data: CreateLoteInput) {
-    if (data.quantidadeInicial <= 0) {
-      throw new ValidationApiError("Quantidade inicial deve ser superior a zero");
+export class EntradaCompraUseCase {
+  async execute(data: EntradaCompraInput) {
+    if (data.quantidade <= 0) {
+      throw new ValidationApiError("Quantidade deve ser superior a zero");
     }
 
-    const prisma = getPrisma() as any;
-    const produtoId = BigInt(data.produtoId);
-    const fornecedorId = BigInt(data.fornecedorId);
+    const prisma = getPrisma();
 
     return prisma.$transaction(async (tx: any) => {
       const produto = await tx.produto.findUnique({
-        where: { id: produtoId },
+        where: { id: BigInt(data.produtoId) },
       });
       if (!produto || produto.deletedAt != null || !produto.ativo) {
-        throw new NotFoundApiError("Produto nao encontrado");
+        throw new NotFoundApiError("Produto não encontrado");
       }
 
       const fornecedor = await tx.fornecedor.findUnique({
-        where: { id: fornecedorId },
+        where: { id: BigInt(data.fornecedorId) },
       });
       if (!fornecedor || fornecedor.deletedAt != null || !fornecedor.ativo) {
-        throw new NotFoundApiError("Fornecedor nao encontrado");
-      }
-
-      let produtoFornecedor = await tx.produtoFornecedor.findUnique({
-        where: {
-          produtoId_fornecedorId: {
-            produtoId,
-            fornecedorId,
-          },
-        },
-      });
-
-      if (!produtoFornecedor) {
-        produtoFornecedor = await tx.produtoFornecedor.create({
-          data: {
-            produtoId,
-            fornecedorId,
-            precoCompra: data.precoCompra,
-          },
-        });
+        throw new NotFoundApiError("Fornecedor não encontrado");
       }
 
       const result = await receivePurchaseItemStock(
         tx,
         {
-          produtoId,
-          fornecedorId,
+          produtoId: BigInt(data.produtoId),
+          fornecedorId: BigInt(data.fornecedorId),
           numeroLote: data.numeroLote,
           dataValidade: data.dataValidade,
-          quantidade: data.quantidadeInicial,
+          quantidade: data.quantidade,
           precoCompra: data.precoCompra,
           precoVenda: data.precoVenda,
           userId: BigInt(data.userId),
@@ -73,7 +52,7 @@ export class CreateLoteUseCase {
       );
 
       return {
-        message: "Lote criado com sucesso",
+        message: "Entrada de compra registada com sucesso",
         loteId: result.loteId.toString(),
         produtoId: result.produtoId.toString(),
         estoqueAnterior: result.estoqueAnterior,

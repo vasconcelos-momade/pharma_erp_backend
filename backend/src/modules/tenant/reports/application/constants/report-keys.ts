@@ -28,6 +28,7 @@ export const REPORT_KEYS = {
   STOCK_MOVEMENTS_ENTRADA: "stock-movements-entrada",
   STOCK_MOVEMENTS_SAIDA: "stock-movements-saida",
   STOCK_MOVEMENTS_AJUSTE: "stock-movements-ajuste",
+  PURCHASE_SUGGESTIONS: "purchase-suggestions",
   INVENTORIES: "inventories",
   INVENTORY_DETAIL: "inventory-detail",
   FINANCE_CASHFLOW: "finance-cashflow",

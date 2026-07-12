@@ -90,7 +90,9 @@ export const createLoteSchema = z.object({
   fornecedorId: z.string().trim().min(1, "Fornecedor é obrigatório"),
   numeroLote: z.string().trim().min(1, "Número do lote é obrigatório"),
   dataValidade: z.coerce.date(),
-  precoCompra: z.coerce.number().optional(),
+  quantidadeInicial: z.coerce.number().positive("Quantidade inicial inválida"),
+  precoCompra: z.coerce.number().nonnegative("Preço de compra inválido"),
+  precoVenda: z.coerce.number().positive("Preço de venda inválido"),
 });
 
 export const searchStockProdutosQuerySchema = z.object({

@@ -3,6 +3,7 @@
  * StockBalance / LoteStockBalance são projeções/cache de leitura.
  */
 
+import { syncPurchaseSuggestionAfterStockChange } from "./purchase-suggestion.service";
 import type { FefoLoteTx } from "./fefo-lote.service";
 import {
   getSellableQuantityFromLoteMovements,
@@ -29,6 +30,16 @@ export type StockTx = FefoLoteTx &
         where: { produtoId: bigint };
         data: Record<string, unknown>;
       }) => Promise<unknown>;
+    };
+    estoqueReserva?: {
+      aggregate: (args: {
+        where: { produtoId: bigint };
+        _sum: { quantidade: true };
+      }) => Promise<{ _sum: { quantidade: unknown } | null }>;
+      findMany?: (args: {
+        where: Record<string, unknown>;
+        select?: Record<string, boolean>;
+      }) => Promise<Array<{ produtoId: bigint }>>;
     };
     estoqueMovimento?: {
       findFirst: (args: {
@@ -106,6 +117,25 @@ export async function getQuantidadeTotal(
   return 0;
 }
 
+/** Reservas activas no carrinho — fonte de verdade: estoque_reservas. */
+export async function getQuantidadeReservada(
+  tx: StockTx,
+  produtoId: bigint,
+): Promise<number> {
+  if (tx.estoqueReserva?.aggregate) {
+    const result = await tx.estoqueReserva.aggregate({
+      where: { produtoId },
+      _sum: { quantidade: true },
+    });
+    return toNumber(result._sum?.quantidade);
+  }
+
+  const balance = await tx.stockBalance.findUnique({
+    where: { produtoId },
+  });
+  return toNumber(balance?.quantidadeReservada);
+}
+
 export async function getQuantidadeDisponivel(
   tx: StockTx,
   produtoId: bigint,
@@ -113,22 +143,20 @@ export async function getQuantidadeDisponivel(
   const balance = await tx.stockBalance.findUnique({
     where: { produtoId },
   });
-  const cachedDisponivel = toNumber(balance?.quantidadeDisponivel);
-  if (cachedDisponivel > 0) {
-    return cachedDisponivel;
-  }
-
-  // Quando o cache do produto está zerado, reidrata a partir dos movimentos/lotes
-  // para evitar bloquear o PDV com stock falso igual a zero.
-  const reservada = toNumber(balance?.quantidadeReservada);
+  const reservada = await getQuantidadeReservada(tx, produtoId);
   const total = await getQuantidadeTotal(tx, produtoId);
   const sellable = await getSellableQuantityFromLotes(tx, produtoId);
   const disponivel = Math.max(0, Math.min(total, sellable) - reservada);
 
+  const cachedDisponivel = toNumber(balance?.quantidadeDisponivel);
+  const cachedReservada = toNumber(balance?.quantidadeReservada);
+  const cachedTotal = toNumber(balance?.quantidadeTotal);
+
   if (
     balance == null ||
     cachedDisponivel !== disponivel ||
-    toNumber(balance.quantidadeTotal) !== total
+    cachedReservada !== reservada ||
+    cachedTotal !== total
   ) {
     await tx.stockBalance.upsert({
       where: { produtoId },
@@ -140,9 +168,12 @@ export async function getQuantidadeDisponivel(
       },
       update: {
         quantidadeTotal: total,
+        quantidadeReservada: reservada,
         quantidadeDisponivel: disponivel,
       },
     });
+
+    await syncPurchaseSuggestionAfterStockChange(tx, produtoId, disponivel);
   }
 
   return disponivel;
@@ -157,10 +188,7 @@ export async function syncStockBalanceCache(
 ): Promise<{ total: number; disponivel: number }> {
   const total = await getQuantidadeTotalFromMovements(tx, produtoId);
   const sellable = await getSellableQuantityFromLotes(tx, produtoId);
-  const balance = await tx.stockBalance.findUnique({
-    where: { produtoId },
-  });
-  const reservada = toNumber(balance?.quantidadeReservada);
+  const reservada = await getQuantidadeReservada(tx, produtoId);
   const disponivel = Math.max(0, Math.min(total, sellable) - reservada);
 
   await tx.stockBalance.upsert({
@@ -173,9 +201,12 @@ export async function syncStockBalanceCache(
     },
     update: {
       quantidadeTotal: total,
+      quantidadeReservada: reservada,
       quantidadeDisponivel: disponivel,
     },
   });
+
+  await syncPurchaseSuggestionAfterStockChange(tx, produtoId, disponivel);
 
   return { total, disponivel };
 }

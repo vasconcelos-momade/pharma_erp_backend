@@ -146,6 +146,7 @@ export function registerReportsRoutes(router: Router, prefix: string): void {
     { path: "movements/entrada", reportKey: REPORT_KEYS.STOCK_MOVEMENTS_ENTRADA },
     { path: "movements/saida", reportKey: REPORT_KEYS.STOCK_MOVEMENTS_SAIDA },
     { path: "movements/ajuste", reportKey: REPORT_KEYS.STOCK_MOVEMENTS_AJUSTE },
+    { path: "purchase-suggestions", reportKey: REPORT_KEYS.PURCHASE_SUGGESTIONS },
     { path: "inventories", reportKey: REPORT_KEYS.INVENTORIES },
     { path: "inventories/:inventarioId", reportKey: REPORT_KEYS.INVENTORY_DETAIL, parametric: true },
   ];

@@ -70,6 +70,7 @@ import {
   StockMovementsReportProvider,
   StockMovementsSaidaReportProvider,
 } from "./stock-movements-report.provider";
+import { PurchaseSuggestionsReportProvider } from "./purchase-suggestions-report.provider";
 import { type ReportDataProvider } from "../types/report.types";
 
 export const reportDataProviders: ReportDataProvider[] = [
@@ -99,6 +100,7 @@ export const reportDataProviders: ReportDataProvider[] = [
   new StockMovementsEntradaReportProvider(),
   new StockMovementsSaidaReportProvider(),
   new StockMovementsAjusteReportProvider(),
+  new PurchaseSuggestionsReportProvider(),
   new InventoriesListReportProvider(),
   new InventoryDetailReportProvider(),
   new InvoiceReportProvider(),

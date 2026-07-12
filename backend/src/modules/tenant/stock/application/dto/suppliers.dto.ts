@@ -27,10 +27,31 @@ export const updateSupplierSchema = createSupplierSchema.partial().extend({
 });
 
 export const purchaseSuggestionsQuerySchema = z.object({
-  days: z.coerce.number().int().positive().max(365).optional(),
-  coberturaDias: z.coerce.number().int().positive().max(365).optional(),
-  from: z.string().trim().optional(),
-  to: z.string().trim().optional(),
+  q: z.string().trim().optional(),
+  origem: z.enum(["AUTOMATICA", "MANUAL", "TODAS"]).optional(),
+  sortBy: z
+    .enum([
+      "produtoNome",
+      "estoqueAtual",
+      "estoqueMinimo",
+      "consumoMedioDiario",
+      "quantidadeSugerida",
+      "origem",
+    ])
+    .optional(),
+  sortOrder: z.enum(["asc", "desc"]).optional(),
   page: z.coerce.number().int().positive().optional(),
   pageSize: z.coerce.number().int().positive().max(100).optional(),
 });
+
+export const addManualPurchaseSuggestionSchema = z.object({
+  produtoId: z.string().trim().min(1, "Produto é obrigatório"),
+  quantidadeSugerida: z.coerce
+    .number()
+    .positive("Quantidade sugerida deve ser maior que zero"),
+  observacao: z.string().trim().optional(),
+});
+
+export type AddManualPurchaseSuggestionDTO = z.infer<
+  typeof addManualPurchaseSuggestionSchema
+>;

@@ -19,6 +19,7 @@ type StockMovementAggregateRow = {
 
 const MOVEMENT_TYPES = [
   "ENTRADA",
+  "COMPRA",
   "SAIDA",
   "AJUSTE",
   "DEVOLUCAO",
@@ -79,6 +80,8 @@ function movementTypeLabel(tipo: string): string {
   switch (tipo) {
     case "ENTRADA":
       return "Entrada";
+    case "COMPRA":
+      return "Compra";
     case "SAIDA":
       return "Saida";
     case "AJUSTE":
@@ -108,8 +111,10 @@ function movementOriginLabel(origem?: string | null): string {
       return "Venda POS";
     case "ANULACAO_FATURA":
       return "Anulacao de fatura";
-    case "COMPRA_FORNECEDOR":
+    case "COMPRA":
       return "Compra a fornecedor";
+    case "COMPRA_FORNECEDOR":
+      return "Compra a fornecedor (legado)";
     case "AJUSTE_INVENTARIO":
       return "Ajuste de inventario";
     default:

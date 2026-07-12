@@ -168,8 +168,11 @@ export class PharmacyDashboardUseCase {
       produtoNomes.map((p: any) => [p.id.toString(), p.nomeComercial]),
     );
 
-    const entradas =
+    const entradasManuais =
       movimentosEntradaSaida.find((row: any) => row.tipo === "ENTRADA")?._sum
+        ?.quantidade ?? 0;
+    const entradasCompra =
+      movimentosEntradaSaida.find((row: any) => row.tipo === "COMPRA")?._sum
         ?.quantidade ?? 0;
     const saidas =
       movimentosEntradaSaida.find((row: any) => row.tipo === "SAIDA")?._sum
@@ -208,7 +211,8 @@ export class PharmacyDashboardUseCase {
           stock: item.stockDisponivel,
         })),
         entradasSaidas: [
-          { tipo: "ENTRADA", quantidade: round2(toNumber(entradas)) },
+          { tipo: "ENTRADA", quantidade: round2(toNumber(entradasManuais)) },
+          { tipo: "COMPRA", quantidade: round2(toNumber(entradasCompra)) },
           { tipo: "SAIDA", quantidade: round2(toNumber(saidas)) },
         ],
         produtosMaisDispensados: topDispensados.map((row: any) => ({
@@ -294,7 +298,7 @@ export class PharmacyDashboardUseCase {
       case "ultimasEntradas": {
         const where: any = {
           deletedAt: null,
-          tipo: "ENTRADA",
+          tipo: { in: ["ENTRADA", "COMPRA"] },
           createdAt: { gte: resolved.from, lte: resolved.to },
         };
         if (params.produtoId) where.produtoId = BigInt(params.produtoId);
@@ -449,7 +453,7 @@ export class PharmacyDashboardUseCase {
 
   private async listUltimasEntradas(prisma: any) {
     const rows = await prisma.estoqueMovimento.findMany({
-      where: { deletedAt: null, tipo: "ENTRADA" },
+      where: { deletedAt: null, tipo: { in: ["ENTRADA", "COMPRA"] } },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: 10,
       select: {

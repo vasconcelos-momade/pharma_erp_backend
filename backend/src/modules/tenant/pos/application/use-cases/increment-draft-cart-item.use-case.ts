@@ -10,10 +10,11 @@ export class IncrementDraftCartItemUseCase {
     const prisma = getPrisma();
 
     return prisma.$transaction(async (tx: any) => {
-      const fatura = await draftCartService.resolveDraftFaturaOrThrow(tx, ctx.idempotencyKey);
+      const fatura = await draftCartService.resolveDraftFaturaOrThrow(tx, ctx);
+      const activeCtx = { ...ctx, idempotencyKey: fatura.idempotencyKey ?? ctx.idempotencyKey };
       const item = await draftCartService.getFaturaItemOrThrow(tx, fatura.id, itemId);
 
-      await draftCartService.incrementLineDelta(tx, fatura.id, ctx, item);
+      await draftCartService.incrementLineDelta(tx, fatura.id, activeCtx, item);
 
       await draftCartService.recalculateFaturaTotals(tx, fatura.id);
       return draftCartService.buildCartView(tx, fatura.id);

@@ -316,10 +316,10 @@ export class LotesController {
     }
   }
 
-  async createLote(req: Request) {
+  async createLote(req: Request, userId: string) {
     try {
       const body = await parseJsonBody(req, createLoteSchema);
-      const result = await this.createLoteUseCase.execute(body);
+      const result = await this.createLoteUseCase.execute({ ...body, userId });
       return Response.json(this.serialize(result), { status: 201 });
     } catch (error: any) {
       return controllerErrorResponse(error);

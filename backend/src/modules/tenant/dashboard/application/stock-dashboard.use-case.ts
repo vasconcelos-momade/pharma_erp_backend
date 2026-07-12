@@ -34,7 +34,7 @@ export class StockDashboardUseCase {
       produtosSemStock,
       produtosCriticosRows,
       inventariosAbertos,
-      comprasPendentes,
+      sugestoesCompra,
       incineracoesCount,
       ajustesCount,
       movimentosTipo,
@@ -42,7 +42,7 @@ export class StockDashboardUseCase {
       topMovimentados,
       ultimosMovimentos,
       inventarios,
-      compras,
+      entradasCompra,
       reservas,
       incineracoes,
     ] = await Promise.all([
@@ -89,7 +89,7 @@ export class StockDashboardUseCase {
         take: 200,
       }),
       prisma.inventario.count({ where: { status: "ABERTO" } }),
-      prisma.compra.count({ where: { status: "PENDENTE" } }),
+      prisma.purchaseSuggestion.count(),
       prisma.incineracao.count({
         where: { dataIncineracao: { gte: fromDays } },
       }),
@@ -151,16 +151,25 @@ export class StockDashboardUseCase {
           iniciadoEm: true,
         },
       }),
-      prisma.compra.findMany({
-        orderBy: { createdAt: "desc" },
+      prisma.estoqueMovimento.findMany({
+        where: {
+          deletedAt: null,
+          tipo: "COMPRA",
+        },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: 10,
         select: {
           id: true,
-          numeroDocumento: true,
-          status: true,
-          total: true,
+          quantidade: true,
           createdAt: true,
-          fornecedor: { select: { nome: true } },
+          produto: { select: { nomeComercial: true } },
+          lote: {
+            select: {
+              numeroLote: true,
+              precoCompra: true,
+              fornecedor: { select: { nome: true } },
+            },
+          },
         },
       }),
       prisma.estoqueReserva.findMany({
@@ -245,7 +254,7 @@ export class StockDashboardUseCase {
       const bucket = monthlyBuckets.get(key);
       if (!bucket) continue;
       const qty = toNumber(row.quantidade);
-      if (row.tipo === "ENTRADA") bucket.entradas += qty;
+      if (row.tipo === "ENTRADA" || row.tipo === "COMPRA") bucket.entradas += qty;
       if (row.tipo === "SAIDA") bucket.saidas += qty;
     }
 
@@ -259,7 +268,7 @@ export class StockDashboardUseCase {
         produtosSemStock,
         lotesAtivos: lotes.totalLotes,
         inventariosAbertos,
-        comprasPendentes,
+        sugestoesCompra,
         incineracoes: incineracoesCount,
         ajustesStock: ajustesCount,
         alertasOperacionais: lotes.alertasOperacionais,
@@ -318,12 +327,15 @@ export class StockDashboardUseCase {
           status: row.status,
           iniciadoEm: row.iniciadoEm.toISOString(),
         })),
-        compras: compras.map((row: any) => ({
+        entradasCompra: entradasCompra.map((row: any) => ({
           id: row.id.toString(),
-          numeroDocumento: row.numeroDocumento,
-          status: row.status,
-          fornecedorNome: row.fornecedor?.nome ?? "—",
-          total: round2(toNumber(row.total)),
+          produtoNomeComercial: row.produto?.nomeComercial ?? "—",
+          numeroLote: row.lote?.numeroLote ?? "—",
+          fornecedorNome: row.lote?.fornecedor?.nome ?? "—",
+          quantidade: round2(toNumber(row.quantidade)),
+          valorCompra: round2(
+            toNumber(row.quantidade) * toNumber(row.lote?.precoCompra),
+          ),
           createdAt: row.createdAt.toISOString(),
         })),
         reservas: reservas.map((row: any) => ({
@@ -349,7 +361,7 @@ export class StockDashboardUseCase {
     table:
       | "ultimosMovimentos"
       | "inventarios"
-      | "compras"
+      | "entradasCompra"
       | "reservas"
       | "incineracoes"
       | "produtosCriticos";
@@ -453,29 +465,39 @@ export class StockDashboardUseCase {
           })),
         });
       }
-      case "compras": {
-        const where: any = { createdAt: { gte: resolved.from, lte: resolved.to } };
-        if (params.estado) where.status = params.estado;
+      case "entradasCompra": {
+        const where: any = {
+          deletedAt: null,
+          tipo: "COMPRA",
+          createdAt: { gte: resolved.from, lte: resolved.to },
+        };
+        if (params.produtoId) where.produtoId = BigInt(params.produtoId);
         if (search) {
           where.OR = [
-            { numeroDocumento: { contains: search, mode: "insensitive" } },
-            { fornecedor: { nome: { contains: search, mode: "insensitive" } } },
+            { produto: { nomeComercial: { contains: search, mode: "insensitive" } } },
+            { lote: { numeroLote: { contains: search, mode: "insensitive" } } },
+            { lote: { fornecedor: { nome: { contains: search, mode: "insensitive" } } } },
           ];
         }
         const [totalCount, rows] = await prisma.$transaction([
-          prisma.compra.count({ where }),
-          prisma.compra.findMany({
+          prisma.estoqueMovimento.count({ where }),
+          prisma.estoqueMovimento.findMany({
             where,
-            orderBy: { createdAt: "desc" },
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
             skip: (page - 1) * pageSize,
             take: pageSize + 1,
             select: {
               id: true,
-              numeroDocumento: true,
-              status: true,
-              total: true,
+              quantidade: true,
               createdAt: true,
-              fornecedor: { select: { nome: true } },
+              produto: { select: { nomeComercial: true } },
+              lote: {
+                select: {
+                  numeroLote: true,
+                  precoCompra: true,
+                  fornecedor: { select: { nome: true } },
+                },
+              },
             },
           }),
         ]);
@@ -486,10 +508,13 @@ export class StockDashboardUseCase {
           totalCount,
           rows: rows.map((row: any) => ({
             id: row.id.toString(),
-            numeroDocumento: row.numeroDocumento,
-            status: row.status,
-            fornecedorNome: row.fornecedor?.nome ?? "—",
-            total: round2(toNumber(row.total)),
+            produtoNomeComercial: row.produto?.nomeComercial ?? "—",
+            numeroLote: row.lote?.numeroLote ?? "—",
+            fornecedorNome: row.lote?.fornecedor?.nome ?? "—",
+            quantidade: round2(toNumber(row.quantidade)),
+            valorCompra: round2(
+              toNumber(row.quantidade) * toNumber(row.lote?.precoCompra),
+            ),
             createdAt: row.createdAt.toISOString(),
           })),
         });

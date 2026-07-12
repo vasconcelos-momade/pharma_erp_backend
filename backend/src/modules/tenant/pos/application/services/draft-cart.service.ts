@@ -13,7 +13,7 @@ import type {
 } from "./draft-cart.types";
 import { isDraftCartServicoItem } from "./draft-cart.types";
 import { mapPosProduto, produtoPosSelect } from "../../../products/domain/produto-presenter";
-import { getQuantidadeDisponivel } from "../../../stock/domain/produto-stock.service";
+import { getQuantidadeDisponivel, syncStockBalanceCache } from "../../../stock/domain/produto-stock.service";
 import { selectFefoLoteForSale } from "../../../stock/domain/fefo-lote.service";
 import {
   getPrimaryLoteIdForItem,
@@ -65,11 +65,100 @@ export class DraftCartService {
     return terminal?.id ?? null;
   }
 
+  async buildFreshCartKey(tx: any, userId: string): Promise<string> {
+    const sessao = await tx.caixaSessao.findFirst({
+      where: {
+        userId: BigInt(userId),
+        status: "ABERTA",
+        deletedAt: null,
+      },
+      orderBy: { openedAt: "desc" },
+      select: { id: true },
+    });
+    const scope = sessao?.id?.toString() ?? "0";
+    return `pdv-${userId}-${scope}-${Date.now()}`;
+  }
+
+  async isCartKeyConsumed(
+    tx: any,
+    cartKey: string,
+    terminalId: bigint,
+  ): Promise<boolean> {
+    const finalized = await tx.fatura.findFirst({
+      where: {
+        idempotencyKey: `TERM-${terminalId}:${cartKey}`,
+        estado: { not: "RASCUNHO" },
+      },
+      select: { id: true },
+    });
+    return finalized != null;
+  }
+
+  async migrateDraftCartKey(
+    tx: any,
+    draftFaturaId: bigint,
+    oldKey: string,
+    newKey: string,
+  ): Promise<void> {
+    await tx.fatura.update({
+      where: { id: draftFaturaId },
+      data: { idempotencyKey: newKey },
+    });
+
+    const reservas = await tx.estoqueReserva.findMany({
+      where: { faturaId: draftFaturaId },
+      select: { id: true, idempotencyKey: true },
+    });
+
+    const oldPrefix = `RES-${oldKey}-`;
+    for (const reserva of reservas) {
+      const currentKey = reserva.idempotencyKey as string | null;
+      if (!currentKey?.startsWith(oldPrefix)) {
+        continue;
+      }
+      const suffix = currentKey.slice(oldPrefix.length);
+      await tx.estoqueReserva.update({
+        where: { id: reserva.id },
+        data: { idempotencyKey: `RES-${newKey}-${suffix}` },
+      });
+    }
+  }
+
+  /** Roda chave de carrinho já consumida por venda anterior. */
+  async ensureActiveCartKey(
+    tx: any,
+    ctx: DraftCartMutationContext,
+  ): Promise<string> {
+    const terminalId = await this.resolveTerminalId(tx, ctx.terminalId);
+    if (!terminalId || !ctx.idempotencyKey) {
+      return ctx.idempotencyKey;
+    }
+
+    const consumed = await this.isCartKeyConsumed(tx, ctx.idempotencyKey, terminalId);
+    if (!consumed) {
+      return ctx.idempotencyKey;
+    }
+
+    const draft = await tx.fatura.findUnique({
+      where: { idempotencyKey: ctx.idempotencyKey },
+      select: { id: true, estado: true },
+    });
+
+    const newKey = await this.buildFreshCartKey(tx, ctx.userId);
+    if (draft?.estado === "RASCUNHO") {
+      await this.migrateDraftCartKey(tx, draft.id, ctx.idempotencyKey, newKey);
+    }
+
+    return newKey;
+  }
+
   async resolveOrCreateFatura(tx: any, ctx: DraftCartMutationContext) {
     await this.assertCaixaAberta(tx, ctx.userId);
 
+    const idempotencyKey = await this.ensureActiveCartKey(tx, ctx);
+
     const existing = await tx.fatura.findUnique({
-      where: { idempotencyKey: ctx.idempotencyKey },
+      where: { idempotencyKey },
       select: { id: true, estado: true },
     });
 
@@ -77,28 +166,29 @@ export class DraftCartService {
       if (existing.estado !== "RASCUNHO") {
         throw new Error("A fatura associada ao carrinho não está em rascunho.");
       }
-      return { id: existing.id };
+      return { id: existing.id, idempotencyKey };
     }
 
     const clienteId = await this.resolveClienteId(tx, ctx.clienteId);
     const terminalId = await this.resolveTerminalId(tx, ctx.terminalId);
     const now = Date.now();
 
-    return tx.fatura.create({
+    const created = await tx.fatura.create({
       data: {
         numero: `DRAFT-${now}`,
         serie: new Date().getFullYear().toString(),
         clienteId,
         terminalId,
         userId: BigInt(ctx.userId),
-        idempotencyKey: ctx.idempotencyKey,
+        idempotencyKey,
         subtotal: 0,
         ivaTotal: 0,
         total: 0,
         estado: "RASCUNHO",
       },
-      select: { id: true },
+      select: { id: true, idempotencyKey: true },
     });
+    return created;
   }
 
   reservaKey(idempotencyKey: string, produtoId: bigint | string, loteId: bigint | null) {
@@ -170,15 +260,51 @@ export class DraftCartService {
     };
   }
 
-  async resolveDraftFaturaOrThrow(tx: any, idempotencyKey: string) {
+  async resolveDraftFaturaOrThrow(tx: any, ctx: DraftCartMutationContext) {
+    const idempotencyKey = await this.ensureActiveCartKey(tx, ctx);
     const fatura = await tx.fatura.findUnique({
       where: { idempotencyKey },
-      select: { id: true, estado: true },
+      select: { id: true, estado: true, idempotencyKey: true },
     });
     if (!fatura || fatura.estado !== "RASCUNHO") {
       throw new Error("Carrinho rascunho não encontrado. Adicione um item primeiro.");
     }
     return fatura;
+  }
+
+  /** Resolve o rascunho activo do utilizador (chave pedida ou último com itens). */
+  async resolveActiveDraftFatura(
+    tx: any,
+    userId: string,
+    idempotencyKey?: string,
+  ): Promise<{ id: bigint; idempotencyKey: string | null } | null> {
+    if (idempotencyKey) {
+      const keyed = await tx.fatura.findUnique({
+        where: { idempotencyKey },
+        select: {
+          id: true,
+          estado: true,
+          idempotencyKey: true,
+          _count: { select: { items: true } },
+        },
+      });
+      if (keyed?.estado === "RASCUNHO" && keyed._count.items > 0) {
+        return { id: keyed.id, idempotencyKey: keyed.idempotencyKey };
+      }
+    }
+
+    const fallback = await tx.fatura.findFirst({
+      where: {
+        userId: BigInt(userId),
+        estado: "RASCUNHO",
+        deletedAt: null,
+        items: { some: {} },
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      select: { id: true, idempotencyKey: true },
+    });
+
+    return fallback ?? null;
   }
 
   async getDisponivel(tx: any, produto: { id: bigint }): Promise<number> {
@@ -236,6 +362,8 @@ export class DraftCartService {
         quantidadeDisponivel: disponivel - delta,
       },
     });
+
+    await syncStockBalanceCache(tx, produto.id);
   }
 
   async releaseStock(
@@ -273,6 +401,8 @@ export class DraftCartService {
         quantidadeDisponivel: { increment: quantidade },
       },
     });
+
+    await syncStockBalanceCache(tx, produtoId);
   }
 
   async addCartItemDelta(
