@@ -12,6 +12,7 @@ const optionalStringSchema = z
 
 const stockMovementTypeSchema = z.enum([
   "ENTRADA",
+  "COMPRA",
   "SAIDA",
   "AJUSTE",
   "DEVOLUCAO",

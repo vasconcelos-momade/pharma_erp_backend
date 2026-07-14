@@ -30,23 +30,12 @@ function patchDisponivelFromTotal(lote: LoteWithStock): void {
   }
 }
 
-/** Preenche stock a partir de EstoqueMovimento quando o cache LoteStockBalance está vazio. */
+/** Preenche stock a partir de EstoqueMovimento (fonte de verdade) para a listagem. */
 export async function enrichLotesStockFromMovements(
   tx: unknown,
   lotes: LoteWithStock[],
 ): Promise<void> {
   if (lotes.length === 0) {
-    return;
-  }
-
-  for (const lote of lotes) {
-    patchDisponivelFromTotal(lote);
-  }
-
-  const needsMovementLookup = lotes.filter(
-    (lote) => readLoteTotal(lote) <= 0 && readLoteDisponivel(lote) <= 0,
-  );
-  if (needsMovementLookup.length === 0) {
     return;
   }
 
@@ -65,11 +54,8 @@ export async function enrichLotesStockFromMovements(
   };
 
   if (!prisma.estoqueMovimento?.findMany) {
-    for (const lote of needsMovementLookup) {
+    for (const lote of lotes) {
       const total = await getLoteQuantidadeFromMovements(tx as never, lote.id);
-      if (total <= 0) {
-        continue;
-      }
       lote.stockBalance = {
         quantidadeTotal: total,
         quantidadeDisponivel: loteQuantidadeDisponivelFromTotal(
@@ -81,7 +67,7 @@ export async function enrichLotesStockFromMovements(
     return;
   }
 
-  const ids = needsMovementLookup.map((lote) => lote.id);
+  const ids = lotes.map((lote) => lote.id);
   const movements = await prisma.estoqueMovimento.findMany({
     where: { loteId: { in: ids }, deletedAt: null },
     select: {
@@ -94,25 +80,29 @@ export async function enrichLotesStockFromMovements(
   });
 
   const totalsByLote = new Map<string, number>();
+  const lotesWithMovements = new Set<string>();
   for (const movement of movements) {
     const key = movement.loteId.toString();
+    lotesWithMovements.add(key);
     totalsByLote.set(
       key,
       (totalsByLote.get(key) ?? 0) + signedMovementDelta(movement),
     );
   }
 
-  for (const lote of needsMovementLookup) {
-    const total = Math.max(0, totalsByLote.get(lote.id.toString()) ?? 0);
-    if (total <= 0) {
-      continue;
+  for (const lote of lotes) {
+    const key = lote.id.toString();
+    if (lotesWithMovements.has(key)) {
+      const total = Math.max(0, totalsByLote.get(key) ?? 0);
+      lote.stockBalance = {
+        quantidadeTotal: total,
+        quantidadeDisponivel: loteQuantidadeDisponivelFromTotal(
+          total,
+          lote.quantidadeQuarentena,
+        ),
+      };
+    } else {
+      patchDisponivelFromTotal(lote);
     }
-    lote.stockBalance = {
-      quantidadeTotal: total,
-      quantidadeDisponivel: loteQuantidadeDisponivelFromTotal(
-        total,
-        lote.quantidadeQuarentena,
-      ),
-    };
   }
 }

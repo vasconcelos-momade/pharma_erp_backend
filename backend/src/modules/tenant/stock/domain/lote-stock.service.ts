@@ -72,6 +72,7 @@ export function signedMovementDelta(movement: {
   const qty = toNumber(movement.quantidade);
   switch (movement.tipo) {
     case "ENTRADA":
+    case "COMPRA":
     case "DEVOLUCAO":
       return qty;
     case "SAIDA":
