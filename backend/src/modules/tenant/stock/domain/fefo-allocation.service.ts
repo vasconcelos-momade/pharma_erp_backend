@@ -9,6 +9,7 @@ import {
 } from "./produto-stock.service";
 import {
   allocateFefoLotes,
+  getLoteQuantidadeFromMovements,
   syncLoteStockBalanceCache,
   type FefoAllocation,
   type LoteStockTx,
@@ -33,7 +34,7 @@ type ConsumptionTx = StockTx & LoteStockTx;
 
 /**
  * Aplica FEFO, regista SAIDA por lote em EstoqueMovimento e sincroniza caches.
- * Não altera campos derivados em Lote — apenas movimentos.
+ * estoqueAnterior/Final no movimento reflectem o stock do **lote**.
  */
 export async function consumeStockFefo(
   tx: ConsumptionTx,
@@ -45,16 +46,17 @@ export async function consumeStockFefo(
     input.quantidade,
   );
 
+  let totalCusto = 0;
   let runningProductStock = await getQuantidadeTotalFromMovements(
     tx,
     input.produtoId,
   );
-  let totalCusto = 0;
 
   for (const { lote, quantidade } of allocations) {
     totalCusto += Number(lote.precoCompra) * quantidade;
-    const estoqueAnterior = runningProductStock;
-    runningProductStock -= quantidade;
+    const estoqueAnterior = await getLoteQuantidadeFromMovements(tx, lote.id);
+    const estoqueFinal = Math.max(0, estoqueAnterior - quantidade);
+    runningProductStock = Math.max(0, runningProductStock - quantidade);
 
     await (tx as { estoqueMovimento: { create: (args: unknown) => Promise<unknown> } })
       .estoqueMovimento.create({
@@ -65,7 +67,7 @@ export async function consumeStockFefo(
           tipo: "SAIDA",
           quantidade,
           estoqueAnterior,
-          estoqueFinal: runningProductStock,
+          estoqueFinal,
           origem: input.origem,
           idempotencyKey: `${input.idempotencyKeyPrefix}-LOTE-${lote.id}`,
           observacoes: input.observacoes,
@@ -107,7 +109,8 @@ export async function restoreStockFromAllocations(
   );
 
   for (const alloc of input.allocations) {
-    const estoqueAnterior = runningProductStock;
+    const estoqueAnterior = await getLoteQuantidadeFromMovements(tx, alloc.loteId);
+    const estoqueFinal = estoqueAnterior + alloc.quantidade;
     runningProductStock += alloc.quantidade;
 
     await (tx as { estoqueMovimento: { create: (args: unknown) => Promise<unknown> } })
@@ -119,7 +122,7 @@ export async function restoreStockFromAllocations(
           tipo: "DEVOLUCAO",
           quantidade: alloc.quantidade,
           estoqueAnterior,
-          estoqueFinal: runningProductStock,
+          estoqueFinal,
           origem: input.origem,
           idempotencyKey: `${input.idempotencyKeyPrefix}-LOTE-${alloc.loteId}`,
           observacoes: input.observacoes,

@@ -3,7 +3,10 @@ import {
   getQuantidadeTotalFromMovements,
   syncStockBalanceCache,
 } from "../../domain/produto-stock.service";
-import { syncLoteStockBalanceCache } from "../../domain/lote-stock.service";
+import {
+  getLoteQuantidadeFromMovements,
+  syncLoteStockBalanceCache,
+} from "../../domain/lote-stock.service";
 
 export interface AdjustStockDTO {
   produtoId: string;
@@ -26,21 +29,25 @@ export class AdjustStockUseCase {
         throw new Error("Produto não encontrado");
       }
 
-      const estoqueAnterior = await getQuantidadeTotalFromMovements(tx, produtoId);
+      const loteId = data.loteId ? BigInt(data.loteId) : null;
+      let estoqueAnterior: number;
+      let novoEstoque: number;
 
-      if (data.loteId) {
-        const loteId = BigInt(data.loteId);
+      if (loteId) {
         await tx.$executeRaw`SELECT id FROM lotes WHERE id = ${loteId} FOR UPDATE`;
         const lote = await tx.lote.findUnique({ where: { id: loteId } });
         if (!lote) throw new Error("Lote não encontrado");
+        estoqueAnterior = await getLoteQuantidadeFromMovements(tx, loteId);
+        novoEstoque = Math.max(0, estoqueAnterior + data.quantidade);
+      } else {
+        estoqueAnterior = await getQuantidadeTotalFromMovements(tx, produtoId);
+        novoEstoque = Math.max(0, estoqueAnterior + data.quantidade);
       }
-
-      const novoEstoque = estoqueAnterior + data.quantidade;
 
       await tx.estoqueMovimento.create({
         data: {
           produtoId,
-          loteId: data.loteId ? BigInt(data.loteId) : null,
+          loteId,
           userId: BigInt(data.userId),
           tipo: "AJUSTE",
           quantidade: Math.abs(data.quantidade),
@@ -51,9 +58,9 @@ export class AdjustStockUseCase {
         },
       });
 
-      if (data.loteId) {
+      if (loteId) {
         const lote = await tx.lote.findUnique({
-          where: { id: BigInt(data.loteId) },
+          where: { id: loteId },
           select: { id: true, quantidadeQuarentena: true },
         });
         if (lote) {

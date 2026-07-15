@@ -1,16 +1,39 @@
 import { GetCashflowContextUseCase } from "../../application/use-cases/get-cashflow-context.use-case";
+import { ListCashflowMovementsUseCase } from "../../application/use-cases/list-cashflow-movements.use-case";
 import { RegisterCashflowOperationUseCase } from "../../application/use-cases/register-cashflow-operation.use-case";
-import { cashflowOperationBodySchema } from "../../application/dto/cashflow.dto";
-import { parseJsonBody } from "../../../../../shared/http/request-validation";
+import {
+  cashflowMovementsQuerySchema,
+  cashflowOperationBodySchema,
+} from "../../application/dto/cashflow.dto";
+import {
+  parseJsonBody,
+  parseSearchParams,
+} from "../../../../../shared/http/request-validation";
 import { controllerErrorResponse } from "../../../../../shared/http/controller-error";
 
 export class FinanceController {
   private getCashflowContextUseCase = new GetCashflowContextUseCase();
+  private listCashflowMovementsUseCase = new ListCashflowMovementsUseCase();
   private registerCashflowOperationUseCase = new RegisterCashflowOperationUseCase();
 
   async cashflowContext(userId: string) {
     try {
       const result = await this.getCashflowContextUseCase.execute(userId);
+      return Response.json(this.serialize(result));
+    } catch (error: unknown) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  async listMovements(req: Request) {
+    try {
+      const url = new URL(req.url);
+      const query = parseSearchParams(url, cashflowMovementsQuerySchema);
+      const sortBy = query.sortBy === "data" ? "createdAt" : query.sortBy;
+      const result = await this.listCashflowMovementsUseCase.execute({
+        ...query,
+        sortBy,
+      });
       return Response.json(this.serialize(result));
     } catch (error: unknown) {
       return controllerErrorResponse(error);

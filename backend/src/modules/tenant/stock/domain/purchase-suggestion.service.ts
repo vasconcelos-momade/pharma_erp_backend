@@ -1,4 +1,5 @@
 import { round2, toNumber } from "../../dashboard/application/dashboard-date.util";
+import { resolvePrincipalSupplierId } from "./purchase-supplier.util";
 
 export const DEFAULT_COVERAGE_DAYS = 30;
 export const CONSUMPTION_PERIOD_DAYS = 30;
@@ -14,6 +15,10 @@ type PurchaseSuggestionTx = {
       ativo: boolean;
       deletedAt: Date | null;
       stockBalance?: { quantidadeDisponivel: unknown } | null;
+      fornecedores?: Array<{
+        fornecedorPrincipal: boolean;
+        fornecedorId: bigint;
+      }>;
     } | null>;
   };
   purchaseSuggestion?: {
@@ -126,6 +131,9 @@ export async function syncPurchaseSuggestionAfterStockChange(
       ativo: true,
       deletedAt: true,
       stockBalance: { select: { quantidadeDisponivel: true } },
+      fornecedores: {
+        select: { fornecedorPrincipal: true, fornecedorId: true },
+      },
     },
   });
 
@@ -133,6 +141,8 @@ export async function syncPurchaseSuggestionAfterStockChange(
     await db.purchaseSuggestion.deleteMany({ where: { produtoId } });
     return;
   }
+
+  const supplierId = resolvePrincipalSupplierId(produto.fornecedores);
 
   const estoqueAtual = resolveEstoqueAtual(produto, disponivelFromSync);
   const estoqueMinimo = round2(toNumber(produto.estoqueMinimo));
@@ -155,6 +165,7 @@ export async function syncPurchaseSuggestionAfterStockChange(
         where: { produtoId },
         create: {
           produtoId,
+          supplierId,
           quantidadeAtual: estoqueAtual,
           estoqueMinimo,
           consumoMedioDiario: 0,
@@ -163,6 +174,7 @@ export async function syncPurchaseSuggestionAfterStockChange(
           origem: "MANUAL",
         },
         update: {
+          supplierId,
           quantidadeAtual: estoqueAtual,
           estoqueMinimo,
         },
@@ -187,6 +199,7 @@ export async function syncPurchaseSuggestionAfterStockChange(
       where: { produtoId },
       create: {
         produtoId,
+        supplierId,
         quantidadeAtual: estoqueAtual,
         estoqueMinimo,
         consumoMedioDiario,
@@ -195,6 +208,7 @@ export async function syncPurchaseSuggestionAfterStockChange(
         origem: "MANUAL",
       },
       update: {
+        supplierId,
         quantidadeAtual: estoqueAtual,
         estoqueMinimo,
         consumoMedioDiario,
@@ -221,6 +235,7 @@ export async function syncPurchaseSuggestionAfterStockChange(
     where: { produtoId },
     create: {
       produtoId,
+      supplierId,
       quantidadeAtual: estoqueAtual,
       estoqueMinimo,
       consumoMedioDiario,
@@ -229,6 +244,7 @@ export async function syncPurchaseSuggestionAfterStockChange(
       origem: "AUTOMATICA",
     },
     update: {
+      supplierId,
       quantidadeAtual: estoqueAtual,
       estoqueMinimo,
       consumoMedioDiario,

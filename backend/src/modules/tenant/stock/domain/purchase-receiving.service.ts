@@ -1,9 +1,11 @@
 import {
-  getQuantidadeTotalFromMovements,
   syncStockBalanceCache,
   type StockTx,
 } from "./produto-stock.service";
-import { syncLoteStockBalanceCache } from "./lote-stock.service";
+import {
+  getLoteQuantidadeFromMovements,
+  syncLoteStockBalanceCache,
+} from "./lote-stock.service";
 
 type PurchaseLotRecord = {
   id: bigint;
@@ -141,8 +143,6 @@ export async function receivePurchaseItemStock(
   await (tx as { $executeRaw: (query: TemplateStringsArray, ...values: unknown[]) => Promise<unknown> })
     .$executeRaw`SELECT id FROM lotes WHERE produtoId = ${produto.id} AND deletedAt IS NULL FOR UPDATE`;
 
-  const estoqueAnterior = await getQuantidadeTotalFromMovements(tx, produto.id);
-
   const loteExistente = await tx.lote.findFirst({
     where: {
       produtoId: produto.id,
@@ -157,6 +157,9 @@ export async function receivePurchaseItemStock(
   });
 
   const precoAnteriorLote = loteExistente ? Number(loteExistente.precoVenda ?? 0) : 0;
+  const estoqueAnterior = loteExistente
+    ? await getLoteQuantidadeFromMovements(tx, loteExistente.id)
+    : 0;
 
   const lote = loteExistente
     ? await tx.lote.update({

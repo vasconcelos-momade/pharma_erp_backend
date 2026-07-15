@@ -91,6 +91,9 @@ export class EstoqueDashboardUseCase {
       produtosSemStock,
       lotesAExpirar,
       lotesExpirados,
+      lotesEmRecall,
+      lotesEmQuarentena,
+      lotesIncinerados,
       valorStockRows,
     ] = await prisma.$transaction([
       prisma.produto.count({
@@ -145,6 +148,30 @@ export class EstoqueDashboardUseCase {
           ...LOTE_COM_STOCK_TOTAL_WHERE,
         },
       }),
+      prisma.lote.count({
+        where: {
+          ...loteBaseWhere,
+          estadoSanitario: "RECALL",
+        },
+      }),
+      prisma.lote.count({
+        where: {
+          ...loteBaseWhere,
+          quantidadeQuarentena: { gt: 0 },
+          estadoSanitario: { not: "RECALL" },
+        },
+      }),
+      prisma.lote.count({
+        where: {
+          ...loteBaseWhere,
+          quantidadeIncinerada: { gt: 0 },
+          OR: [
+            { stockBalance: { is: null } },
+            { stockBalance: { quantidadeTotal: { lte: 0 } } },
+          ],
+          quantidadeQuarentena: { lte: 0 },
+        },
+      }),
       prisma.lote.findMany({
         where: {
           ...loteBaseWhere,
@@ -171,6 +198,9 @@ export class EstoqueDashboardUseCase {
       produtosSemStock,
       lotesAExpirar,
       lotesExpirados,
+      lotesEmRecall,
+      lotesEmQuarentena,
+      lotesIncinerados,
       valorTotalInventario: round2(valorTotalInventario),
     };
   }

@@ -1,4 +1,5 @@
 import { readLoteDisponivel, readLoteTotal } from "../../../domain/lote-stock-read.util";
+import { buildSanitarioUiMeta } from "../../../domain/lote-sanitario-policy";
 
 export function mapLoteListItem(lote: any, now = new Date()) {
   const total = readLoteTotal(lote);
@@ -17,6 +18,8 @@ export function mapLoteListItem(lote: any, now = new Date()) {
     indicadorValidade = "60_DIAS";
   }
 
+  const sanitario = buildSanitarioUiMeta(lote);
+
   return {
     id: lote.id.toString(),
     produtoId: lote.produtoId.toString(),
@@ -31,10 +34,14 @@ export function mapLoteListItem(lote: any, now = new Date()) {
     indicadorValidade,
     quantidadeTotal: total,
     quantidadeQuarentena: Number(lote.quantidadeQuarentena ?? 0),
+    quantidadeIncinerada: sanitario.quantidadeIncinerada,
     quantidadeDisponivel: disponivel,
     precoCompra: Number(lote.precoCompra),
     precoVenda: lote.precoVenda != null ? Number(lote.precoVenda) : null,
     estadoSanitario: lote.estadoSanitario,
+    estadoSanitarioEfetivo: sanitario.estadoSanitarioEfetivo,
+    acoesPermitidas: sanitario.acoesPermitidas,
+    acoesPermitidasOpcoes: sanitario.acoesPermitidasOpcoes,
     disponibilidade: lote.disponibilidade,
     ativo: lote.ativo,
     valorEmStock: disponivel * Number(lote.precoCompra ?? 0),

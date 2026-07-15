@@ -4,8 +4,12 @@ import {
   ValidationApiError,
 } from "../../../../../../shared/http/api-error";
 import { ComplianceAuditService } from "../../../../../../shared/services/compliance-audit.service";
-import { loteQuantidadeDisponivel } from "../../../domain/fefo-lote.service";
-import { readLoteTotal } from "../../../domain/lote-stock-read.util";
+import {
+  getLoteQuantidadeDisponivel,
+  getLoteQuantidadeFromMovements,
+  syncLoteStockBalanceCache,
+} from "../../../domain/lote-stock.service";
+import { assertMovimentacaoSanitariaPermitida } from "../../../domain/lote-sanitario-policy";
 import { syncStockBalanceCache } from "../../../domain/produto-stock.service";
 import { mapLoteListItem } from "./lote.mapper";
 
@@ -86,13 +90,16 @@ export class MoveLoteToQuarentenaUseCase {
       const loteId = BigInt(data.loteId);
       const lote = await loadLoteForUpdate(tx, loteId);
 
-      if (lote.estadoSanitario === "RECALL") {
+      try {
+        assertMovimentacaoSanitariaPermitida(lote, "QUARENTENA");
+      } catch (error) {
         throw new ValidationApiError(
-          "Lotes em recall não podem ser movidos para quarentena por esta operação",
+          error instanceof Error ? error.message : "Quarentena não permitida",
         );
       }
 
-      const disponivel = loteQuantidadeDisponivel(lote);
+      // Preferir movimentos + sync; cache pode estar desfasado.
+      const disponivel = await getLoteQuantidadeDisponivel(tx, lote);
       const reservado = await sumActiveReservas(tx, loteId);
       const disponivelOperacional = Math.max(0, disponivel - reservado);
 
@@ -106,7 +113,7 @@ export class MoveLoteToQuarentenaUseCase {
 
       const quantidadeQuarentena =
         Number(lote.quantidadeQuarentena ?? 0) + quantidade;
-      const quantidadeTotal = readLoteTotal(lote);
+      const quantidadeTotal = await getLoteQuantidadeFromMovements(tx, loteId);
       const disponibilidade = resolveDisponibilidadeAfterQuarentena(
         quantidadeTotal,
         quantidadeQuarentena,
@@ -123,6 +130,9 @@ export class MoveLoteToQuarentenaUseCase {
         include: {
           produto: { select: { id: true, nomeComercial: true, barcode: true } },
           fornecedor: { select: { id: true, nome: true } },
+          stockBalance: {
+            select: { quantidadeTotal: true, quantidadeDisponivel: true },
+          },
         },
       });
 
@@ -151,6 +161,10 @@ export class MoveLoteToQuarentenaUseCase {
         },
       });
 
+      const synced = await syncLoteStockBalanceCache(tx, {
+        id: loteId,
+        quantidadeQuarentena,
+      });
       await syncStockBalanceCache(tx, lote.produtoId);
 
       const complianceService = new ComplianceAuditService();
@@ -193,7 +207,14 @@ export class MoveLoteToQuarentenaUseCase {
 
       return {
         message: "Lote movido para quarentena com sucesso",
-        lote: mapLoteListItem(updated),
+        lote: mapLoteListItem({
+          ...updated,
+          quantidadeQuarentena,
+          stockBalance: {
+            quantidadeTotal: synced.total,
+            quantidadeDisponivel: synced.disponivel,
+          },
+        }),
       };
     });
   }
@@ -221,20 +242,16 @@ export class RevertLoteQuarentenaUseCase {
       const lote = await loadLoteForUpdate(tx, loteId);
       const emQuarentena = Number(lote.quantidadeQuarentena ?? 0);
 
+      try {
+        assertMovimentacaoSanitariaPermitida(lote, "LIBERACAO");
+      } catch (error) {
+        throw new ValidationApiError(
+          error instanceof Error ? error.message : "Liberação não permitida",
+        );
+      }
+
       if (emQuarentena <= 0) {
         throw new ValidationApiError("Este lote não possui quantidade em quarentena");
-      }
-
-      if (lote.estadoSanitario === "RECALL") {
-        throw new ValidationApiError(
-          "Lotes em recall não podem ser libertados por esta operação",
-        );
-      }
-
-      if (lote.estadoSanitario === "EXPIRADO") {
-        throw new ValidationApiError(
-          "Lotes expirados não podem ser libertados da quarentena",
-        );
       }
 
       const quantidade = quantidadeSolicitada ?? emQuarentena;
@@ -245,7 +262,7 @@ export class RevertLoteQuarentenaUseCase {
       }
 
       const quantidadeQuarentena = emQuarentena - quantidade;
-      const quantidadeTotal = readLoteTotal(lote);
+      const quantidadeTotal = await getLoteQuantidadeFromMovements(tx, loteId);
       const disponibilidade = resolveDisponibilidadeAfterQuarentena(
         quantidadeTotal,
         quantidadeQuarentena,
@@ -262,6 +279,9 @@ export class RevertLoteQuarentenaUseCase {
         include: {
           produto: { select: { id: true, nomeComercial: true, barcode: true } },
           fornecedor: { select: { id: true, nome: true } },
+          stockBalance: {
+            select: { quantidadeTotal: true, quantidadeDisponivel: true },
+          },
         },
       });
 
@@ -290,6 +310,10 @@ export class RevertLoteQuarentenaUseCase {
         },
       });
 
+      const synced = await syncLoteStockBalanceCache(tx, {
+        id: loteId,
+        quantidadeQuarentena,
+      });
       await syncStockBalanceCache(tx, lote.produtoId);
 
       const complianceService = new ComplianceAuditService();
@@ -332,7 +356,14 @@ export class RevertLoteQuarentenaUseCase {
 
       return {
         message: "Quarentena revertida com sucesso",
-        lote: mapLoteListItem(updated),
+        lote: mapLoteListItem({
+          ...updated,
+          quantidadeQuarentena,
+          stockBalance: {
+            quantidadeTotal: synced.total,
+            quantidadeDisponivel: synced.disponivel,
+          },
+        }),
       };
     });
   }

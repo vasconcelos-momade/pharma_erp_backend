@@ -4,9 +4,15 @@ import {
   ValidationApiError,
 } from "../../../../../../shared/http/api-error";
 import { ComplianceAuditService } from "../../../../../../shared/services/compliance-audit.service";
-import { loteQuantidadeDisponivel } from "../../../domain/fefo-lote.service";
-import { readLoteTotal } from "../../../domain/lote-stock-read.util";
-import { syncLoteStockBalanceCache } from "../../../domain/lote-stock.service";
+import {
+  assertMovimentacaoSanitariaPermitida,
+  type MovimentacaoSanitariaTipo,
+} from "../../../domain/lote-sanitario-policy";
+import {
+  getLoteQuantidadeDisponivel,
+  getLoteQuantidadeFromMovements,
+  syncLoteStockBalanceCache,
+} from "../../../domain/lote-stock.service";
 import { syncStockBalanceCache } from "../../../domain/produto-stock.service";
 import { mapLoteListItem } from "./lote.mapper";
 import {
@@ -14,12 +20,7 @@ import {
   RevertLoteQuarentenaUseCase,
 } from "./lote-quarentena.use-case";
 
-export type MovimentacaoSanitariaTipo =
-  | "QUARENTENA"
-  | "LIBERACAO"
-  | "INCINERACAO"
-  | "RECALL"
-  | "DEVOLUCAO_FORNECEDOR";
+export type { MovimentacaoSanitariaTipo };
 
 export interface LoteMovimentacaoSanitariaDTO {
   loteId: string;
@@ -63,6 +64,13 @@ async function sumActiveReservas(tx: any, loteId: bigint): Promise<number> {
   );
 }
 
+function toValidationError(error: unknown): never {
+  if (error instanceof Error) {
+    throw new ValidationApiError(error.message);
+  }
+  throw new ValidationApiError("Movimentação sanitária inválida");
+}
+
 export class LoteMovimentacaoSanitariaUseCase {
   private moveToQuarentenaUseCase = new MoveLoteToQuarentenaUseCase();
   private revertQuarentenaUseCase = new RevertLoteQuarentenaUseCase();
@@ -70,6 +78,24 @@ export class LoteMovimentacaoSanitariaUseCase {
   async execute(data: LoteMovimentacaoSanitariaDTO) {
     if (!data.motivo?.trim()) {
       throw new ValidationApiError("Motivo é obrigatório");
+    }
+
+    const prisma = getPrisma() as any;
+    const lotePreview = await prisma.lote.findFirst({
+      where: { id: BigInt(data.loteId), deletedAt: null, ativo: true },
+      include: {
+        stockBalance: {
+          select: { quantidadeTotal: true, quantidadeDisponivel: true },
+        },
+      },
+    });
+    if (!lotePreview) {
+      throw new NotFoundApiError(`Lote ${data.loteId} não encontrado`);
+    }
+    try {
+      assertMovimentacaoSanitariaPermitida(lotePreview, data.tipo);
+    } catch (error) {
+      toValidationError(error);
     }
 
     if (data.tipo === "QUARENTENA") {
@@ -95,12 +121,16 @@ export class LoteMovimentacaoSanitariaUseCase {
       });
     }
 
-    const prisma = getPrisma() as any;
-
     return prisma.$transaction(async (tx: any) => {
       const loteId = BigInt(data.loteId);
       const lote = await loadLoteForUpdate(tx, loteId);
-      const quantidadeTotal = readLoteTotal(lote);
+      try {
+        assertMovimentacaoSanitariaPermitida(lote, data.tipo);
+      } catch (error) {
+        toValidationError(error);
+      }
+
+      const quantidadeTotal = await getLoteQuantidadeFromMovements(tx, loteId);
 
       if (data.tipo === "RECALL") {
         if (lote.estadoSanitario === "RECALL") {
@@ -118,6 +148,9 @@ export class LoteMovimentacaoSanitariaUseCase {
           include: {
             produto: { select: { id: true, nomeComercial: true, barcode: true } },
             fornecedor: { select: { id: true, nome: true } },
+            stockBalance: {
+              select: { quantidadeTotal: true, quantidadeDisponivel: true },
+            },
           },
         });
 
@@ -149,11 +182,13 @@ export class LoteMovimentacaoSanitariaUseCase {
       }
 
       if (data.tipo === "INCINERACAO") {
-        const disponivel = loteQuantidadeDisponivel(lote);
+        const disponivel = await getLoteQuantidadeDisponivel(tx, lote);
+        const quarentena = Math.max(0, Number(lote.quantidadeQuarentena ?? 0));
         const reservado = await sumActiveReservas(tx, loteId);
         const disponivelOperacional = Math.max(0, disponivel - reservado);
+        const maxIncineravel = disponivelOperacional + quarentena;
 
-        if (quantidade > disponivelOperacional) {
+        if (quantidade > maxIncineravel) {
           throw new ValidationApiError(
             reservado > 0
               ? "Quantidade indisponível: existem reservas activas para este lote"
@@ -161,16 +196,23 @@ export class LoteMovimentacaoSanitariaUseCase {
           );
         }
 
+        const fromDisponivel = Math.min(quantidade, disponivelOperacional);
+        const fromQuarentena = Math.min(
+          quantidade - fromDisponivel,
+          quarentena,
+        );
+        const quantidadeQuarentena = Math.max(0, quarentena - fromQuarentena);
         const quantidadeIncinerada =
           Number(lote.quantidadeIncinerada ?? 0) + quantidade;
+        const estoqueFinal = Math.max(0, quantidadeTotal - quantidade);
 
         const updated = await tx.lote.update({
           where: { id: loteId },
           data: {
             quantidadeIncinerada,
+            quantidadeQuarentena,
             disponibilidade:
-              quantidadeTotal - quantidade <=
-              Number(lote.quantidadeQuarentena ?? 0)
+              estoqueFinal <= 0 || estoqueFinal <= quantidadeQuarentena
                 ? "INDISPONIVEL"
                 : lote.disponibilidade,
             version: { increment: 1 },
@@ -178,6 +220,9 @@ export class LoteMovimentacaoSanitariaUseCase {
           include: {
             produto: { select: { id: true, nomeComercial: true, barcode: true } },
             fornecedor: { select: { id: true, nome: true } },
+            stockBalance: {
+              select: { quantidadeTotal: true, quantidadeDisponivel: true },
+            },
           },
         });
 
@@ -189,7 +234,7 @@ export class LoteMovimentacaoSanitariaUseCase {
             tipo: "INCINERACAO",
             quantidade,
             estoqueAnterior: quantidadeTotal,
-            estoqueFinal: Math.max(0, quantidadeTotal - quantidade),
+            estoqueFinal,
             origem: "INCINERACAO_SANITARIA",
             observacoes: data.motivo.trim(),
           },
@@ -208,16 +253,30 @@ export class LoteMovimentacaoSanitariaUseCase {
 
         await syncLoteStockBalanceCache(tx, updated);
         await syncStockBalanceCache(tx, lote.produtoId);
-        await this.audit(tx, data, lote, updated, { quantidade, quantidadeIncinerada });
+        await this.audit(tx, data, lote, updated, {
+          quantidade,
+          quantidadeIncinerada,
+          fromDisponivel,
+          fromQuarentena,
+        });
 
         return {
           message: "Incineração registada com sucesso",
-          lote: mapLoteListItem(updated),
+          lote: mapLoteListItem({
+            ...updated,
+            stockBalance: {
+              quantidadeTotal: estoqueFinal,
+              quantidadeDisponivel: Math.max(
+                0,
+                estoqueFinal - quantidadeQuarentena,
+              ),
+            },
+          }),
         };
       }
 
       if (data.tipo === "DEVOLUCAO_FORNECEDOR") {
-        const disponivel = loteQuantidadeDisponivel(lote);
+        const disponivel = await getLoteQuantidadeDisponivel(tx, lote);
         const reservado = await sumActiveReservas(tx, loteId);
         const disponivelOperacional = Math.max(0, disponivel - reservado);
 
@@ -244,6 +303,9 @@ export class LoteMovimentacaoSanitariaUseCase {
           include: {
             produto: { select: { id: true, nomeComercial: true, barcode: true } },
             fornecedor: { select: { id: true, nome: true } },
+            stockBalance: {
+              select: { quantidadeTotal: true, quantidadeDisponivel: true },
+            },
           },
         });
 
@@ -304,11 +366,13 @@ export class LoteMovimentacaoSanitariaUseCase {
           estadoSanitario: before.estadoSanitario,
           disponibilidade: before.disponibilidade,
           quantidadeIncinerada: Number(before.quantidadeIncinerada ?? 0),
+          quantidadeQuarentena: Number(before.quantidadeQuarentena ?? 0),
         },
         after: {
           estadoSanitario: after.estadoSanitario,
           disponibilidade: after.disponibilidade,
           quantidadeIncinerada: Number(after.quantidadeIncinerada ?? 0),
+          quantidadeQuarentena: Number(after.quantidadeQuarentena ?? 0),
           tipo: data.tipo,
           motivo: data.motivo.trim(),
           documentoReferencia: data.documentoReferencia ?? null,

@@ -29,6 +29,7 @@ export const updateSupplierSchema = createSupplierSchema.partial().extend({
 export const purchaseSuggestionsQuerySchema = z.object({
   q: z.string().trim().optional(),
   origem: z.enum(["AUTOMATICA", "MANUAL", "TODAS"]).optional(),
+  supplierId: z.string().trim().optional(),
   sortBy: z
     .enum([
       "produtoNome",
@@ -37,6 +38,7 @@ export const purchaseSuggestionsQuerySchema = z.object({
       "consumoMedioDiario",
       "quantidadeSugerida",
       "origem",
+      "fornecedorNome",
     ])
     .optional(),
   sortOrder: z.enum(["asc", "desc"]).optional(),
@@ -46,6 +48,7 @@ export const purchaseSuggestionsQuerySchema = z.object({
 
 export const addManualPurchaseSuggestionSchema = z.object({
   produtoId: z.string().trim().min(1, "Produto é obrigatório"),
+  supplierId: z.string().trim().min(1, "Fornecedor é obrigatório"),
   quantidadeSugerida: z.coerce
     .number()
     .positive("Quantidade sugerida deve ser maior que zero"),

@@ -29,8 +29,23 @@ export type LoteStockTx = {
     }) => Promise<LoteRow[]>;
   };
   estoqueMovimento?: {
+    findFirst?: (args: {
+      where: Record<string, unknown>;
+      orderBy?:
+        | Array<Record<string, "asc" | "desc">>
+        | Record<string, "asc" | "desc">;
+      select?: Record<string, boolean>;
+    }) => Promise<{
+      tipo?: string;
+      quantidade?: unknown;
+      estoqueAnterior?: unknown;
+      estoqueFinal?: unknown;
+    } | null>;
     findMany: (args: {
       where: Record<string, unknown>;
+      orderBy?:
+        | Array<Record<string, "asc" | "desc">>
+        | Record<string, "asc" | "desc">;
       select?: Record<string, boolean>;
     }) => Promise<
       Array<{
@@ -38,6 +53,8 @@ export type LoteStockTx = {
         quantidade: unknown;
         estoqueAnterior?: unknown;
         estoqueFinal?: unknown;
+        createdAt?: Date;
+        id?: bigint;
       }>
     >;
   };
@@ -77,8 +94,10 @@ export function signedMovementDelta(movement: {
       return qty;
     case "SAIDA":
     case "INCINERACAO":
-    case "QUARENTENA":
       return -qty;
+    case "QUARENTENA":
+      // Quarentena não altera stock físico — só quantidadeQuarentena no lote.
+      return 0;
     case "AJUSTE":
       return (
         toNumber(movement.estoqueFinal) - toNumber(movement.estoqueAnterior)
@@ -88,7 +107,12 @@ export function signedMovementDelta(movement: {
   }
 }
 
-/** Total físico do lote a partir dos movimentos registados. */
+/**
+ * Total físico do lote a partir dos movimentos (fonte de verdade).
+ *
+ * Usa a soma de deltas por lote — não o último estoqueFinal, porque vários
+ * writers (POS/FEFO, quarentena) gravaram o saldo de produto nesse campo.
+ */
 export async function getLoteQuantidadeFromMovements(
   tx: LoteStockTx,
   loteId: bigint,
@@ -97,6 +121,7 @@ export async function getLoteQuantidadeFromMovements(
 
   const movements = await tx.estoqueMovimento.findMany({
     where: { loteId, deletedAt: null },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     select: {
       tipo: true,
       quantidade: true,
@@ -105,9 +130,11 @@ export async function getLoteQuantidadeFromMovements(
     },
   });
 
-  return movements.reduce<number>(
-    (sum, m) => sum + signedMovementDelta(m),
+  if (movements.length === 0) return 0;
+
+  return Math.max(
     0,
+    movements.reduce<number>((sum, m) => sum + signedMovementDelta(m), 0),
   );
 }
 
@@ -123,13 +150,6 @@ export async function getLoteQuantidadeDisponivel(
   tx: LoteStockTx,
   lote: { id: bigint; quantidadeQuarentena?: unknown },
 ): Promise<number> {
-  const cache = await tx.loteStockBalance?.findUnique?.({
-    where: { loteId: lote.id },
-  });
-  if (cache) {
-    return toNumber(cache.quantidadeDisponivel);
-  }
-
   const total = await getLoteQuantidadeFromMovements(tx, lote.id);
   return loteQuantidadeDisponivelFromTotal(total, lote.quantidadeQuarentena);
 }

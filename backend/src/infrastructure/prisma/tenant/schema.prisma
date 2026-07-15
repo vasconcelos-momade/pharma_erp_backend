@@ -295,6 +295,7 @@ model Fornecedor {
   lotes           Lote[]
   contasPagar     ContaPagar[]
   historicoPrecos HistoricoPreco[]
+  purchaseSuggestions PurchaseSuggestion[]
   @@map("fornecedores")
 }
 
@@ -317,6 +318,7 @@ model ProdutoFornecedor {
 model PurchaseSuggestion {
   id                 BigInt               @id @default(autoincrement()) @db.UnsignedBigInt
   produtoId          BigInt               @unique @db.UnsignedBigInt
+  supplierId         BigInt?              @db.UnsignedBigInt
   quantidadeAtual    Decimal              @db.Decimal(14, 2)
   estoqueMinimo      Decimal              @db.Decimal(14, 2)
   consumoMedioDiario Decimal              @db.Decimal(14, 4)
@@ -327,8 +329,10 @@ model PurchaseSuggestion {
   generatedAt        DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
   produto            Produto              @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  fornecedor         Fornecedor?          @relation(fields: [supplierId], references: [id])
 
   @@index([origem])
+  @@index([supplierId])
   @@map("purchase_suggestions")
 }
 

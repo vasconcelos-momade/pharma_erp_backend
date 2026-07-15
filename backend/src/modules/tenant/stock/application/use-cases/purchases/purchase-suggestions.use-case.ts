@@ -1,6 +1,10 @@
 import { getPrisma } from "../../../../../../infrastructure/prisma/tenant-prisma.factory";
 import { round2, toNumber } from "../../../../dashboard/application/dashboard-date.util";
 import { resolveUltimoPrecoCompra } from "../../../domain/purchase-price.util";
+import {
+  resolvePrincipalSupplierId,
+  resolvePrincipalSupplierName,
+} from "../../../domain/purchase-supplier.util";
 import { DEFAULT_COVERAGE_DAYS } from "../../../domain/purchase-suggestion.service";
 
 type SuggestionListItem = {
@@ -31,6 +35,7 @@ const SORTABLE_FIELDS = new Set([
   "consumoMedioDiario",
   "quantidadeSugerida",
   "origem",
+  "fornecedorNome",
 ]);
 
 export class PurchaseSuggestionsUseCase {
@@ -38,6 +43,7 @@ export class PurchaseSuggestionsUseCase {
     params: {
       q?: string;
       origem?: "AUTOMATICA" | "MANUAL" | "TODAS";
+      supplierId?: string;
       sortBy?: string;
       sortOrder?: "asc" | "desc";
       page?: number;
@@ -55,6 +61,9 @@ export class PurchaseSuggestionsUseCase {
       ? params.sortBy!
       : "produtoNome";
     const sortOrder = params.sortOrder === "desc" ? "desc" : "asc";
+    const supplierFilter = params.supplierId?.trim()
+      ? BigInt(params.supplierId)
+      : undefined;
 
     const where: Record<string, unknown> = {
       produto: {
@@ -71,38 +80,45 @@ export class PurchaseSuggestionsUseCase {
           : {}),
       },
       ...(origemFilter ? { origem: origemFilter } : {}),
+      ...(supplierFilter != null ? { supplierId: supplierFilter } : {}),
     };
 
     const orderBy = this.buildOrderBy(sortBy, sortOrder);
+
+    const produtoPriceSelect = {
+      fornecedores: {
+        select: {
+          fornecedorPrincipal: true,
+          precoCompra: true,
+          fornecedorId: true,
+          fornecedor: { select: { id: true, nome: true } },
+        },
+      },
+      historicoPrecos: {
+        select: { precoNovo: true, data: true },
+        orderBy: { data: "desc" },
+        take: 1,
+      },
+      lotes: {
+        select: { precoCompra: true, createdAt: true },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
+    };
 
     const [totalCount, suggestions, allForDashboard] = await Promise.all([
       prisma.purchaseSuggestion.count({ where }),
       prisma.purchaseSuggestion.findMany({
         where,
         include: {
+          fornecedor: { select: { id: true, nome: true } },
           produto: {
             select: {
               id: true,
               nomeComercial: true,
               apresentacao: true,
               categoria: { select: { nome: true } },
-              fornecedores: {
-                select: {
-                  fornecedorPrincipal: true,
-                  precoCompra: true,
-                  fornecedor: { select: { id: true, nome: true } },
-                },
-              },
-              historicoPrecos: {
-                select: { precoNovo: true, data: true },
-                orderBy: { data: "desc" },
-                take: 1,
-              },
-              lotes: {
-                select: { precoCompra: true, createdAt: true },
-                orderBy: { createdAt: "desc" },
-                take: 1,
-              },
+              ...produtoPriceSelect,
             },
           },
         },
@@ -115,66 +131,15 @@ export class PurchaseSuggestionsUseCase {
         select: {
           quantidadeAtual: true,
           quantidadeSugerida: true,
-          produto: {
-            select: {
-              fornecedores: {
-                select: {
-                  fornecedorPrincipal: true,
-                  precoCompra: true,
-                  fornecedorId: true,
-                  fornecedor: { select: { id: true } },
-                },
-              },
-              historicoPrecos: {
-                select: { precoNovo: true, data: true },
-                orderBy: { data: "desc" },
-                take: 1,
-              },
-              lotes: {
-                select: { precoCompra: true, createdAt: true },
-                orderBy: { createdAt: "desc" },
-                take: 1,
-              },
-            },
-          },
+          supplierId: true,
+          produto: { select: produtoPriceSelect },
         },
       }),
     ]);
 
-    const items: SuggestionListItem[] = suggestions.map((row: any) => {
-      const produto = row.produto;
-      const fornecedorPrincipal =
-        produto.fornecedores.find((f: any) => f.fornecedorPrincipal)?.fornecedor ??
-        produto.fornecedores[0]?.fornecedor ??
-        null;
-      const ultimoPreco = resolveUltimoPrecoCompra({
-        fornecedores: produto.fornecedores,
-        historicoPrecos: produto.historicoPrecos,
-        lotes: produto.lotes,
-      });
-      const quantidadeSugerida = round2(toNumber(row.quantidadeSugerida));
-
-      return {
-        id: row.id.toString(),
-        produtoId: row.produtoId.toString(),
-        produtoNome: produto.nomeComercial,
-        categoriaNome: produto.categoria?.nome ?? "—",
-        fornecedorId: fornecedorPrincipal?.id?.toString() ?? null,
-        fornecedorNome: fornecedorPrincipal?.nome ?? "Sem fornecedor",
-        estoqueAtual: round2(toNumber(row.quantidadeAtual)),
-        estoqueMinimo: round2(toNumber(row.estoqueMinimo)),
-        consumoMedioDiario: round2(toNumber(row.consumoMedioDiario)),
-        coberturaDias: row.coberturaDias ?? DEFAULT_COVERAGE_DAYS,
-        quantidadeSugerida,
-        ultimoPreco: round2(ultimoPreco),
-        valorEstimado: round2(quantidadeSugerida * ultimoPreco),
-        unidade: produto.apresentacao?.trim() || "un",
-        origem: row.origem,
-        observacao: row.observacao ?? null,
-        generatedAt: row.generatedAt?.toISOString?.() ?? new Date().toISOString(),
-        updatedAt: row.updatedAt?.toISOString?.() ?? new Date().toISOString(),
-      };
-    });
+    const items: SuggestionListItem[] = suggestions.map((row: any) =>
+      this.mapRow(row),
+    );
 
     let produtosSemStock = 0;
     let quantidadeTotalSugerida = 0;
@@ -195,11 +160,11 @@ export class PurchaseSuggestionsUseCase {
       });
       valorEstimadoCompra += quantidadeSugerida * ultimoPreco;
 
-      const principal =
-        row.produto.fornecedores.find((f: any) => f.fornecedorPrincipal) ??
-        row.produto.fornecedores[0];
-      if (principal?.fornecedorId) {
-        fornecedores.add(principal.fornecedorId.toString());
+      const supplierKey =
+        row.supplierId?.toString() ??
+        resolvePrincipalSupplierId(row.produto.fornecedores)?.toString();
+      if (supplierKey) {
+        fornecedores.add(supplierKey);
       }
     }
 
@@ -230,11 +195,53 @@ export class PurchaseSuggestionsUseCase {
       hasMore: offset + pageSize < totalCount,
       totalItens: totalCount,
       items,
-      groupedByFornecedor: Array.from(grouped.entries()).map(([fornecedorId, value]) => ({
-        fornecedorId: fornecedorId === "sem-fornecedor" ? null : fornecedorId,
-        fornecedorNome: value.fornecedorNome,
-        items: value.items,
-      })),
+      groupedByFornecedor: Array.from(grouped.entries())
+        .map(([fornecedorId, value]) => ({
+          fornecedorId: fornecedorId === "sem-fornecedor" ? null : fornecedorId,
+          fornecedorNome: value.fornecedorNome,
+          items: value.items,
+        }))
+        .sort((a, b) => a.fornecedorNome.localeCompare(b.fornecedorNome)),
+    };
+  }
+
+  private mapRow(row: any): SuggestionListItem {
+    const produto = row.produto;
+    const fornecedorId =
+      row.supplierId?.toString() ??
+      row.fornecedor?.id?.toString() ??
+      resolvePrincipalSupplierId(produto.fornecedores)?.toString() ??
+      null;
+    const fornecedorNome = resolvePrincipalSupplierName(
+      produto.fornecedores,
+      row.fornecedor,
+    );
+    const ultimoPreco = resolveUltimoPrecoCompra({
+      fornecedores: produto.fornecedores,
+      historicoPrecos: produto.historicoPrecos,
+      lotes: produto.lotes,
+    });
+    const quantidadeSugerida = round2(toNumber(row.quantidadeSugerida));
+
+    return {
+      id: row.id.toString(),
+      produtoId: row.produtoId.toString(),
+      produtoNome: produto.nomeComercial,
+      categoriaNome: produto.categoria?.nome ?? "—",
+      fornecedorId,
+      fornecedorNome,
+      estoqueAtual: round2(toNumber(row.quantidadeAtual)),
+      estoqueMinimo: round2(toNumber(row.estoqueMinimo)),
+      consumoMedioDiario: round2(toNumber(row.consumoMedioDiario)),
+      coberturaDias: row.coberturaDias ?? DEFAULT_COVERAGE_DAYS,
+      quantidadeSugerida,
+      ultimoPreco: round2(ultimoPreco),
+      valorEstimado: round2(quantidadeSugerida * ultimoPreco),
+      unidade: produto.apresentacao?.trim() || "un",
+      origem: row.origem,
+      observacao: row.observacao ?? null,
+      generatedAt: row.generatedAt?.toISOString?.() ?? new Date().toISOString(),
+      updatedAt: row.updatedAt?.toISOString?.() ?? new Date().toISOString(),
     };
   }
 
@@ -250,6 +257,8 @@ export class PurchaseSuggestionsUseCase {
         return { quantidadeSugerida: sortOrder };
       case "origem":
         return { origem: sortOrder };
+      case "fornecedorNome":
+        return { fornecedor: { nome: sortOrder } };
       case "produtoNome":
       default:
         return { produto: { nomeComercial: sortOrder } };

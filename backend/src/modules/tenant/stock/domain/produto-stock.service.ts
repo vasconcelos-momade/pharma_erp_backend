@@ -6,6 +6,7 @@
 import { syncPurchaseSuggestionAfterStockChange } from "./purchase-suggestion.service";
 import type { FefoLoteTx } from "./fefo-lote.service";
 import {
+  getLoteQuantidadeFromMovements,
   getSellableQuantityFromLoteMovements,
   syncLoteStockBalanceCache,
   type LoteStockTx,
@@ -72,22 +73,33 @@ function toNumber(value: unknown): number {
   return Number(value) || 0;
 }
 
-/** Total físico a partir do último movimento registado (fonte de verdade). */
+/** Total físico do produto = soma dos stock por lote (fonte de verdade). */
 export async function getQuantidadeTotalFromMovements(
   tx: StockTx,
   produtoId: bigint,
 ): Promise<number> {
-  if (!tx.estoqueMovimento?.findFirst) {
-    return 0;
+  if (!tx.lote?.findMany) {
+    if (!tx.estoqueMovimento?.findFirst) {
+      return 0;
+    }
+    const latest = await tx.estoqueMovimento.findFirst({
+      where: { produtoId, deletedAt: null },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      select: { estoqueFinal: true },
+    });
+    return toNumber(latest?.estoqueFinal);
   }
 
-  const latest = await tx.estoqueMovimento.findFirst({
+  const lotes = await tx.lote.findMany({
     where: { produtoId, deletedAt: null },
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-    select: { estoqueFinal: true },
+    select: { id: true },
   });
 
-  return toNumber(latest?.estoqueFinal);
+  let total = 0;
+  for (const lote of lotes) {
+    total += await getLoteQuantidadeFromMovements(tx, lote.id);
+  }
+  return total;
 }
 
 /** Quantidade vendável (FEFO) — projeção a partir dos movimentos por lote. */

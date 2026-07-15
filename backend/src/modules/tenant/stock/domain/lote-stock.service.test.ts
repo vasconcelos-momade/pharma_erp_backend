@@ -31,4 +31,10 @@ describe("signedMovementDelta", () => {
       }),
     ).toBe(7);
   });
+
+  test("QUARENTENA não altera stock físico", () => {
+    expect(
+      signedMovementDelta({ tipo: "QUARENTENA", quantidade: 50 }),
+    ).toBe(0);
+  });
 });
