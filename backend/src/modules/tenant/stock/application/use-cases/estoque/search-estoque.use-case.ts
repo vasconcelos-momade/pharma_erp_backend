@@ -254,12 +254,7 @@ export class SearchEstoqueUseCase {
     if (params.semStock === true) {
       const semStockFilter = {
         OR: [
-          {
-            AND: [
-              { stockBalance: { is: null } },
-              { quantidadeAtual: { lte: 0 } },
-            ],
-          },
+          { stockBalance: { is: null } },
           { stockBalance: { quantidadeDisponivel: { lte: 0 } } },
         ],
       };

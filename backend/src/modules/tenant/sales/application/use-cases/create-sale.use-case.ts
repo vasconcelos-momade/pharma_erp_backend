@@ -5,9 +5,10 @@ import {
 } from "../../../stock/domain/produto-stock.service";
 import { consumeStockFefo } from "../../../stock/domain/fefo-allocation.service";
 import { replaceItemLoteAllocations } from "../../../sales/domain/fatura-item-lote.service";
+import { resolveVendaClienteId } from "../../../clients/domain/default-cliente";
 
 export interface CreateSaleDTO {
-  clienteId: string;
+  clienteId?: string | null;
   userId: string;
   items: {
     produtoId: string;
@@ -25,6 +26,7 @@ export class CreateSaleUseCase {
     const prisma = getPrisma();
 
     return await prisma.$transaction(async (tx) => {
+      const clienteId = await resolveVendaClienteId(tx, data.clienteId);
       const results: Array<{
         produtoId: string;
         nome: string;
@@ -100,7 +102,7 @@ export class CreateSaleUseCase {
                 responsavelId: BigInt(data.userId),
                 tipoMovimento: "SAIDA",
                 numeroDocumento: item.receita?.numero || "RECEITA_INTERNA",
-                observacoes: `Venda para cliente ${data.clienteId}`,
+                observacoes: `Venda para cliente ${clienteId.toString()}`,
               },
             });
           }
@@ -121,7 +123,7 @@ export class CreateSaleUseCase {
         data: {
           numero: `FT-${Date.now()}`,
           serie: "2026",
-          clienteId: BigInt(data.clienteId),
+          clienteId,
           userId: BigInt(data.userId),
           subtotal: totalGeral,
           ivaTotal: totalGeral * 0.16,

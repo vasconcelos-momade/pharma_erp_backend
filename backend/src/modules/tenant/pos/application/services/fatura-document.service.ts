@@ -141,7 +141,7 @@ export class FaturaDocumentService {
       `Serie: ${invoice.serie ?? "-"}`,
       `Data: ${createdAt}`,
       `Estado: ${invoice.estado ?? "-"}`,
-      `Cliente: ${invoice.cliente?.nome ?? "Consumidor final"}`,
+      `Cliente: ${invoice.cliente?.nome ?? "Consumidor Final"}`,
       `Documento: ${invoice.cliente?.documento ?? "-"}`,
       `Terminal: ${invoice.terminal?.codigo ?? invoice.terminal?.nome ?? "-"}`,
       `Operador: ${invoice.user?.name ?? "-"}`,
@@ -189,7 +189,7 @@ export class FaturaDocumentService {
       "FATURA",
       `Numero: ${toAscii(invoice.numero)}`,
       `Serie: ${toAscii(invoice.serie ?? "-")}`,
-      `Cliente: ${toAscii(invoice.cliente?.nome ?? "Consumidor final")}`,
+      `Cliente: ${toAscii(invoice.cliente?.nome ?? "Consumidor Final")}`,
       `Estado: ${toAscii(invoice.estado ?? "-")}`,
       "--------------------------------",
       ...(invoice.items ?? []).map((item) =>

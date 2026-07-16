@@ -20,6 +20,7 @@ import {
   setDraftItemLoteAllocation,
   syncDraftItemLoteQuantity,
 } from "../../../sales/domain/fatura-item-lote.service";
+import { resolveVendaClienteId } from "../../../clients/domain/default-cliente";
 
 export class DraftCartService {
   async assertCaixaAberta(tx: any, userId: string) {
@@ -34,23 +35,8 @@ export class DraftCartService {
     return sessao;
   }
 
-  async resolveClienteId(tx: any, clienteId?: string): Promise<bigint> {
-    if (clienteId) {
-      return BigInt(clienteId);
-    }
-    const existing = await tx.cliente.findFirst({
-      where: { nome: "Cliente Final (Consumidor)", deletedAt: null },
-      select: { id: true },
-      orderBy: { id: "asc" },
-    });
-    if (existing) {
-      return existing.id;
-    }
-    const created = await tx.cliente.create({
-      data: { nome: "Cliente Final (Consumidor)", tipo: "PACIENTE" },
-      select: { id: true },
-    });
-    return created.id;
+  async resolveClienteId(tx: any, clienteId?: string | null): Promise<bigint> {
+    return resolveVendaClienteId(tx, clienteId);
   }
 
   async resolveTerminalId(tx: any, terminalId?: string): Promise<bigint | null> {

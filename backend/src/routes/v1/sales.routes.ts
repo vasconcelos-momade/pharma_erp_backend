@@ -12,7 +12,7 @@ import { parseJsonBody } from "../../shared/http/request-validation";
 import type { Router } from "../../shared/http/router";
 
 const createSaleSchema = z.object({
-  clienteId: z.string().trim().min(1),
+  clienteId: z.string().trim().min(1).optional().nullable(),
   items: z
     .array(
       z.object({

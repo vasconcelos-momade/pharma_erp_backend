@@ -92,15 +92,7 @@ export class LotesDashboardUseCase {
       prisma.lote.count({
         where: {
           ...loteBaseWhere,
-          OR: [
-            { stockBalance: { quantidadeDisponivel: { gt: 0 } } },
-            {
-              AND: [
-                { stockBalance: { is: null } },
-                { quantidadeAtual: { gt: 0 } },
-              ],
-            },
-          ],
+          stockBalance: { quantidadeDisponivel: { gt: 0 } },
           disponibilidade: "DISPONIVEL",
           estadoSanitario: "VALIDO",
           dataValidade: { gte: now },
@@ -109,15 +101,7 @@ export class LotesDashboardUseCase {
       prisma.lote.count({
         where: {
           ...loteBaseWhere,
-          OR: [
-            { stockBalance: { quantidadeTotal: { gt: 0 } } },
-            {
-              AND: [
-                { stockBalance: { is: null } },
-                { quantidadeAtual: { gt: 0 } },
-              ],
-            },
-          ],
+          stockBalance: { quantidadeTotal: { gt: 0 } },
           dataValidade: { lt: now },
         },
       }),

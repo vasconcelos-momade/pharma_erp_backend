@@ -43,9 +43,9 @@ const receitaSchema = z.object({
 });
 
 const pacienteSchema = z.object({
-  nome: z.string().trim().min(1),
-  idade: z.coerce.number().int().positive(),
-  nid: z.string().trim().min(1),
+  nome: z.string().trim().min(1).optional(),
+  idade: z.coerce.number().int().positive().optional(),
+  nid: z.string().trim().min(1).optional(),
 });
 
 const finalizarVendaSchema = z

@@ -25,15 +25,15 @@ export interface FinalizarVendaDTO {
   metodoPagamento: "DINHEIRO" | "CARTAO" | "TRANSFERENCIA" | "CARTEIRA_MOVEL" | "EMOLA" | "MPESA";
   valorRecebido?: number;
   paciente?: {
-    nome: string;
-    idade: number;
-    nid: string;
+    nome?: string | null;
+    idade?: number | null;
+    nid?: string | null;
   };
   receita?: {
-    numero?: string;
-    medicoNome?: string;
-    prescritor?: string;
-    unidadeSanitaria?: string;
+    numero?: string | null;
+    medicoNome?: string | null;
+    prescritor?: string | null;
+    unidadeSanitaria?: string | null;
   };
   items?: {
     tipo: "produto" | "servico";
@@ -204,54 +204,58 @@ export class FinalizarVendaUseCase {
                 categoria?: { id?: bigint; nome?: string; codigoFNM?: string | null } | null;
               }) =>
                 produto.regulacao?.requiresPrescription === true ||
-                resolveRegulacaoPolicyForProduto(produto).requiresPrescription,
+                resolveRegulacaoPolicyForProduto(produto as any).requiresPrescription,
             )
           : [];
 
         const requerPacienteReceita = produtosComReceitaObrigatoria.length > 0;
-        const clienteId = requerPacienteReceita
-          ? await this.resolvePrescriptionClienteId(tx, checkoutData)
-          : await draftCartService.resolveClienteId(tx, checkoutData.clienteId);
+        // Cliente seleccionado ou padrão "Consumidor Final" — nunca null em Fatura.
+        const clienteId = await draftCartService.resolveClienteId(
+          tx,
+          checkoutData.clienteId,
+        );
+        const clienteVenda = await tx.cliente.findFirst({
+          where: { id: clienteId },
+          select: { nome: true },
+        });
+        const nomeClienteVenda = clienteVenda?.nome?.trim() || "Consumidor Final";
 
         let totalGeral = 0;
         const faturaItems = [];
         const faturaNumero = `FR-${Date.now()}`;
 
-        // --- GESTÃO DE RECEITA ÚNICA POR VENDA ---
-        // Identificamos se há dados de receita no payload (assumimos uma receita por venda física no POS)
+        // --- GESTÃO DE RECEITA (apenas para medicamentos sujeitos a receita) ---
         const receitaVenda = this.resolveReceitaPayload(checkoutData);
-        const itemComReceita = checkoutItems.find(
-          (i: NonNullable<FinalizarVendaDTO["items"]>[number]) => i.receita,
-        );
         let receitaFisicaId: bigint | null = null;
         let receitaMetadata: any = null;
 
-        if (
-          requerPacienteReceita &&
-          (!receitaVenda?.numero || !receitaVenda?.medicoNome || !receitaVenda?.unidadeSanitaria)
-        ) {
-          throw new Error(
-            "Prescritor, NID da receita/doente e unidade sanitária são obrigatórios para itens com receita.",
+        if (requerPacienteReceita) {
+          const paciente = this.resolvePrescriptionPatientPayload(
+            checkoutData,
+            nomeClienteVenda,
           );
-        }
-
-        if (receitaVenda || itemComReceita?.receita) {
+          const observacoesReceita = [
+            `Receita física apresentada no POS. Fatura: #${faturaNumero}`,
+            `Paciente: ${paciente.nome}`,
+            ...(paciente.idade != null ? [`Idade: ${paciente.idade}`] : []),
+            ...(paciente.nid ? [`NID: ${paciente.nid}`] : []),
+          ].join(" | ");
           const receitaFisica = await tx.receita.create({
             data: {
               clienteId,
-              medicoNome: receitaVenda?.medicoNome || "N/A",
-              numeroReceita: receitaVenda?.numero || `POS-${Date.now()}`,
-              unidadeSanitaria: receitaVenda?.unidadeSanitaria || null,
+              medicoNome: receitaVenda?.medicoNome ?? null,
+              numeroReceita: receitaVenda?.numero ?? null,
+              unidadeSanitaria: receitaVenda?.unidadeSanitaria ?? null,
               dataReceita: new Date(),
-              observacoes: `Receita física apresentada no POS. Fatura: #${faturaNumero}`
-            }
+              observacoes: observacoesReceita,
+            },
           });
           receitaFisicaId = receitaFisica.id;
           receitaMetadata = {
             medicoNome: receitaFisica.medicoNome,
             numeroReceita: receitaFisica.numeroReceita,
             unidadeSanitaria: receitaFisica.unidadeSanitaria,
-            dataReceita: receitaFisica.dataReceita
+            dataReceita: receitaFisica.dataReceita,
           };
         }
 
@@ -333,7 +337,7 @@ export class FinalizarVendaUseCase {
             totalGeral += fiscalCalc.baseCalculo;
 
             const { allocations, totalCusto } = await consumeStockFefo(tx, {
-              produtoId: produto.id,
+              produtoId: produto.id as bigint,
               userId: BigInt(data.userId),
               quantidade: item.quantidade,
               origem: "POS_VENDA",
@@ -694,11 +698,12 @@ export class FinalizarVendaUseCase {
   }
 
   private resolveReceitaPayload(data: FinalizarVendaDTO) {
+    const pacienteNid = data.paciente?.nid?.trim();
     const itemComReceita = data.items?.find((item) => item.receita);
     const numero =
       data.receita?.numero?.trim() ||
       itemComReceita?.receita?.numero?.trim() ||
-      data.paciente?.nid.trim();
+      pacienteNid;
     const medicoNome =
       data.receita?.medicoNome?.trim() ||
       data.receita?.prescritor?.trim() ||
@@ -713,6 +718,30 @@ export class FinalizarVendaUseCase {
       numero,
       medicoNome,
       unidadeSanitaria,
+    };
+  }
+
+  private resolvePrescriptionPatientPayload(
+    data: FinalizarVendaDTO,
+    nomeClienteVenda: string,
+  ) {
+    const nome = data.paciente?.nome?.trim() || nomeClienteVenda;
+    const nid = data.paciente?.nid?.trim() || null;
+    const idadeRaw = data.paciente?.idade;
+    const idade =
+      idadeRaw == null || !Number.isFinite(Number(idadeRaw))
+        ? null
+        : Number(idadeRaw);
+
+    return {
+      nome,
+      idade:
+        idade != null &&
+        idade > 0 &&
+        idade <= FinalizarVendaUseCase.MAX_PATIENT_AGE
+          ? idade
+          : null,
+      nid,
     };
   }
 
@@ -804,108 +833,5 @@ export class FinalizarVendaUseCase {
     for (const produtoId of productIdsToSync) {
       await syncStockBalanceCache(tx, produtoId);
     }
-  }
-
-
-  private async resolvePrescriptionClienteId(tx: any, data: FinalizarVendaDTO) {
-    const paciente = data.paciente;
-    if (!paciente) {
-      throw new Error(
-        "Dados do paciente são obrigatórios para vendas com medicamentos que exigem receita.",
-      );
-    }
-
-    const nome = paciente.nome.trim();
-    const nid = paciente.nid.trim();
-    const idade = Number(paciente.idade);
-
-    if (!nome) {
-      throw new Error("Nome do paciente é obrigatório para itens com receita.");
-    }
-    if (
-      !Number.isFinite(idade) ||
-      idade <= 0 ||
-      idade > FinalizarVendaUseCase.MAX_PATIENT_AGE
-    ) {
-      throw new Error(
-        `Idade do paciente deve estar entre 1 e ${FinalizarVendaUseCase.MAX_PATIENT_AGE} anos.`,
-      );
-    }
-    if (!nid) {
-      throw new Error("NID da receita/doente é obrigatório para itens com receita.");
-    }
-
-    const dataNascimento = this.birthDateFromAge(idade);
-
-    if (data.clienteId) {
-      const clienteExistente = await tx.cliente.findUnique({
-        where: { id: BigInt(data.clienteId) },
-        select: { id: true },
-      });
-      if (!clienteExistente) {
-        throw new Error("Cliente informado para a venda não foi encontrado.");
-      }
-      await tx.cliente.update({
-        where: { id: clienteExistente.id },
-        data: {
-          nome,
-          documento: nid,
-          dataNascimento,
-          tipo: "PACIENTE",
-          temPrescricao: true,
-        },
-      });
-      return clienteExistente.id;
-    }
-
-    const clienteExistente = await tx.cliente.findFirst({
-      where: {
-        deletedAt: null,
-        OR: [{ documento: nid }, { nome }],
-      },
-      select: { id: true },
-      orderBy: { id: "desc" },
-    });
-
-    if (clienteExistente) {
-      await tx.cliente.update({
-        where: { id: clienteExistente.id },
-        data: {
-          nome,
-          documento: nid,
-          dataNascimento,
-          tipo: "PACIENTE",
-          temPrescricao: true,
-        },
-      });
-      return clienteExistente.id;
-    }
-
-    const clienteCriado = await tx.cliente.create({
-      data: {
-        nome,
-        documento: nid,
-        dataNascimento,
-        tipo: "PACIENTE",
-        temPrescricao: true,
-      },
-      select: { id: true },
-    });
-
-    return clienteCriado.id;
-  }
-
-  private birthDateFromAge(idade: number) {
-    const dataNascimento = new Date();
-    dataNascimento.setHours(0, 0, 0, 0);
-    dataNascimento.setFullYear(dataNascimento.getFullYear() - idade);
-
-    if (Number.isNaN(dataNascimento.getTime()) || dataNascimento.getFullYear() < 1900) {
-      throw new Error(
-        "Não foi possível calcular a data de nascimento do paciente a partir da idade informada.",
-      );
-    }
-
-    return dataNascimento;
   }
 }

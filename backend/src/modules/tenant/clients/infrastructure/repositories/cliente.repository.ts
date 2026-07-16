@@ -2,6 +2,9 @@ import { getPrisma } from "../../../../../infrastructure/prisma/tenant-prisma.fa
 import { ComplianceAuditService } from "../../../../../shared/services/compliance-audit.service";
 import { parseDateRange } from "../../../regulatory/application/use-cases/regulatory.helpers";
 import type { CreateClienteDTO, UpdateClienteDTO } from "../../application/dto/cliente.dto";
+import {
+  DEFAULT_CLIENTE_NAMES,
+} from "../../domain/default-cliente";
 
 type ClienteSearchFilters = {
   query?: string;
@@ -184,6 +187,10 @@ export class ClienteRepository {
 
     const where: any = {
       deletedAt: null,
+      // Cliente padrão de PDV não aparece nas listagens operacionais.
+      NOT: {
+        OR: DEFAULT_CLIENTE_NAMES.map((nome) => ({ nome })),
+      },
       ...(filters.tipo ? { tipo: filters.tipo } : {}),
       ...(filters.empresaId ? { empresaId: filters.empresaId } : {}),
       ...(filters.temPrescricao !== undefined ? { temPrescricao: filters.temPrescricao } : {}),
@@ -199,7 +206,7 @@ export class ClienteRepository {
       ...(query
         ? {
             OR: [
-              { nomeComercial: { contains: query } },
+              { nome: { contains: query } },
               { telefone: { contains: query } },
               { nuit: { contains: query } },
               { documento: { contains: query } },
