@@ -17,6 +17,7 @@ import { registerReportsRoutes } from "./reports.routes";
 import { registerProformaInvoiceRoutes } from "./proforma-invoices.routes";
 import { registerSettingsRoutes } from "./settings.routes";
 import { registerFinanceRoutes } from "./finance.routes";
+import { registerPrinterRoutes } from "./printers.routes";
 
 export const API_V1_PREFIX = "/api/v1";
 
@@ -41,6 +42,7 @@ export function buildV1Router(): Router {
   registerSyncRoutes(router, API_V1_PREFIX);
   registerSettingsRoutes(router, API_V1_PREFIX);
   registerFinanceRoutes(router, API_V1_PREFIX);
+  registerPrinterRoutes(router, API_V1_PREFIX);
 
   router.get(`${API_V1_PREFIX}/health`, async () => ({
     status: "ok",

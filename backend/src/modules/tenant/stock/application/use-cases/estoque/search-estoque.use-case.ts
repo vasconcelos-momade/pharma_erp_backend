@@ -1,10 +1,13 @@
 import { getPrisma } from "../../../../../../infrastructure/prisma/tenant-prisma.factory";
-import { round2, toNumber } from "../../../../dashboard/application/dashboard-date.util";
+import {
+  loadValorStockLotesFromMovements,
+  sumValorStockFromLotes,
+} from "../../../../dashboard/application/dashboard-valor-stock.util";
+import { round2 } from "../../../../dashboard/application/dashboard-date.util";
 import { enrichLotesStockFromMovements } from "../../../domain/enrich-lote-stock.util";
 import {
   LOTE_COM_STOCK_DISPONIVEL_WHERE,
   LOTE_COM_STOCK_TOTAL_WHERE,
-  readLoteDisponivel,
 } from "../../../domain/lote-stock-read.util";
 import { mapEstoqueListItem } from "./estoque.mapper";
 
@@ -94,7 +97,6 @@ export class EstoqueDashboardUseCase {
       lotesEmRecall,
       lotesEmQuarentena,
       lotesIncinerados,
-      valorStockRows,
     ] = await prisma.$transaction([
       prisma.produto.count({
         where: {
@@ -172,25 +174,10 @@ export class EstoqueDashboardUseCase {
           quantidadeQuarentena: { lte: 0 },
         },
       }),
-      prisma.lote.findMany({
-        where: {
-          ...loteBaseWhere,
-          ...LOTE_COM_STOCK_DISPONIVEL_WHERE,
-        },
-        select: {
-          precoCompra: true,
-          quantidadeQuarentena: true,
-          stockBalance: {
-            select: { quantidadeDisponivel: true, quantidadeTotal: true },
-          },
-        },
-      }),
     ]);
 
-    const valorTotalInventario = valorStockRows.reduce((sum: number, row: any) => {
-      const qty = Math.max(0, readLoteDisponivel(row));
-      return sum + qty * toNumber(row.precoCompra);
-    }, 0);
+    const valorStockRows = await loadValorStockLotesFromMovements(prisma, now);
+    const valorTotalInventario = sumValorStockFromLotes(valorStockRows);
 
     return {
       produtosEmStock,

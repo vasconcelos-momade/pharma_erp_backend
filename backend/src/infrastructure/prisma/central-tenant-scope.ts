@@ -14,6 +14,8 @@ export const TENANT_SCOPED_MODELS = new Set<string>([
   "TenantSetting",
   "Branch",
   "Device",
+  "Printer",
+  "PrintJob",
   "SyncLog",
   "SyncTombstone",
   "SyncSession",

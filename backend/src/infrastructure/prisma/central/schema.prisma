@@ -139,6 +139,8 @@ model Tenant {
   settings      TenantSetting[]
   userTenants   UserTenant[]
   devices       Device[]
+  printers      Printer[]
+  printJobs     PrintJob[]
   syncLogs      SyncLog[]
   syncSessions  SyncSession[]
   auditLogs     AuditLog[]
@@ -217,6 +219,8 @@ model Branch {
   updatedByUser User? @relation("BranchUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
 
   devices       Device[]
+  printers      Printer[]
+  printJobs     PrintJob[]
   syncLogs      SyncLog[]
   syncSessions  SyncSession[]
   auditLogs     AuditLog[]
@@ -256,6 +260,7 @@ model Device {
 
   tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   branch   Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  printers     Printer[]
   syncLogs     SyncLog[]
   syncSessions SyncSession[]
   userSessions UserSession[]
@@ -265,6 +270,87 @@ model Device {
   @@index([apiKeyHash])
   @@index([deletedAt])
   @@map("devices")
+}
+
+//
+// 4b. CORE — PRINTERS / PRINT JOBS (infraestrutura SaaS)
+//
+
+model Printer {
+  id   BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+  uuid String @unique @default(uuid())
+
+  tenantId BigInt  @db.UnsignedBigInt
+  branchId BigInt  @db.UnsignedBigInt
+  deviceId BigInt? @db.UnsignedBigInt
+
+  name String @map("nome") @db.VarChar(191)
+
+  type       PrinterType       @map("tipo")
+  connection PrinterConnection @map("conexao")
+
+  ip   String? @db.VarChar(45)
+  port Int?    @default(9100) @map("porta")
+
+  model        String? @map("modelo") @db.VarChar(128)
+  manufacturer String? @map("fabricante") @db.VarChar(128)
+
+  active Boolean @default(true) @map("ativo")
+
+  version Int @default(0)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch    Branch     @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  device    Device?    @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  printJobs PrintJob[]
+
+  @@unique([tenantId, branchId, name])
+  @@index([tenantId, branchId])
+  @@index([tenantId, branchId, active])
+  @@index([deviceId])
+  @@index([type, connection])
+  @@index([deletedAt])
+  @@map("printers")
+}
+
+model PrintJob {
+  id BigInt @id @default(autoincrement()) @db.UnsignedBigInt
+
+  tenantId  BigInt @db.UnsignedBigInt
+  branchId  BigInt @db.UnsignedBigInt
+  printerId BigInt @db.UnsignedBigInt
+
+  document String @map("documento") @db.VarChar(128)
+  payload  Json
+
+  status PrintStatus @default(PENDING)
+
+  attempts     Int     @default(0) @map("tentativas")
+  maxAttempts  Int     @default(3)
+  errorMessage String? @map("erro") @db.Text
+
+  printedAt DateTime?
+  lockedAt  DateTime?
+  lockedBy  String?   @db.VarChar(64)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch  Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  printer Printer @relation(fields: [printerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, branchId, status])
+  @@index([printerId, status])
+  @@index([status, createdAt])
+  @@index([status, lockedAt])
+  @@index([deletedAt])
+  @@map("print_jobs")
 }
 
 //
@@ -860,4 +946,25 @@ enum PaymentStatus {
   confirmado
   falhado
   cancelado
+}
+
+enum PrinterType {
+  ESC_POS
+  A4
+  LABEL
+}
+
+enum PrinterConnection {
+  NETWORK
+  USB
+  BLUETOOTH
+  PDF
+}
+
+enum PrintStatus {
+  PENDING
+  PROCESSING
+  PRINTED
+  FAILED
+  CANCELLED
 }

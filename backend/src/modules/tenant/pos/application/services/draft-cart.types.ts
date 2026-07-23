@@ -65,6 +65,9 @@ export type DraftCartItemView = {
   estoqueAtual: number | null;
   estoqueDisponivel: number | null;
   tipoServicoClinico: string | null;
+  dosagem: string | null;
+  forma: string | null;
+  nomeGenerico: string | null;
 };
 
 export type DraftCartView = {

@@ -836,6 +836,9 @@ export class DraftCartService {
           estoqueAtual: null,
           estoqueDisponivel: null,
           tipoServicoClinico: servico?.tipoServicoClinico ?? null,
+          dosagem: null,
+          forma: null,
+          nomeGenerico: null,
         });
         continue;
       }
@@ -883,6 +886,13 @@ export class DraftCartService {
         estoqueAtual: disponivel,
         estoqueDisponivel: disponivel,
         tipoServicoClinico: null,
+        dosagem:
+          typeof produto?.dosagem === "string" ? produto.dosagem : null,
+        forma: typeof produto?.forma === "string" ? produto.forma : null,
+        nomeGenerico:
+          typeof produto?.nomeGenerico === "string"
+            ? produto.nomeGenerico
+            : null,
       });
     }
 

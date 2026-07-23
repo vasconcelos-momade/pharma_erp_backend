@@ -13,6 +13,10 @@ import {
   buildPagedTableResult,
   normalizeTablePagination,
 } from "./dashboard-pagination.util";
+import {
+  loadValorStockLotesFromMovements,
+  sumValorStockFromLotes,
+} from "./dashboard-valor-stock.util";
 
 type PeriodParams = {
   days?: number;
@@ -54,7 +58,6 @@ export class PharmacyDashboardUseCase {
       validades,
       fefo,
       lotes,
-      valorStockRows,
       produtosRegulacao,
       alertasAbertos,
       ultimasDispensacoes,
@@ -68,18 +71,6 @@ export class PharmacyDashboardUseCase {
       this.validadesDashboard.execute(),
       this.fefoDashboard.execute(),
       this.lotesDashboard.execute(),
-      prisma.lote.findMany({
-        where: {
-          deletedAt: null,
-          ativo: true,
-          stockBalance: { quantidadeDisponivel: { gt: 0 } },
-        },
-        select: {
-          quantidadeQuarentena: true,
-          stockBalance: { select: { quantidadeDisponivel: true } },
-          precoCompra: true,
-        },
-      }),
       prisma.produtoRegulacao.groupBy({
         by: ["tipoDispensacao"],
         _count: { _all: true },
@@ -138,13 +129,8 @@ export class PharmacyDashboardUseCase {
       }),
     ]);
 
-    const valorTotalStock = valorStockRows.reduce((sum: number, row: any) => {
-      const qty = Math.max(
-        0,
-        toNumber(row.stockBalance?.quantidadeDisponivel),
-      );
-      return sum + qty * toNumber(row.precoCompra);
-    }, 0);
+    const valorStockRows = await loadValorStockLotesFromMovements(prisma, now);
+    const valorTotalStock = sumValorStockFromLotes(valorStockRows);
 
     const antimicrobianos = produtosRegulacao
       .filter((row: any) => row.tipoDispensacao === "RECEITA_NORMAL")
@@ -430,10 +416,25 @@ export class PharmacyDashboardUseCase {
   }
 
   private async listProdutosCriticos(prisma: any) {
+    const now = new Date();
     const rows = await prisma.produto.findMany({
       where: { deletedAt: null, ativo: true },
-      select: { id: true, nomeComercial: true, estoqueMinimo: true,
+      select: {
+        id: true,
+        nomeComercial: true,
+        estoqueMinimo: true,
         stockBalance: { select: { quantidadeDisponivel: true } },
+        lotes: {
+          where: {
+            deletedAt: null,
+            ativo: true,
+            stockBalance: { quantidadeDisponivel: { gt: 0 } },
+            dataValidade: { gte: now },
+          },
+          orderBy: { dataValidade: "asc" },
+          take: 1,
+          select: { dataValidade: true },
+        },
       },
       take: 200,
     });
@@ -441,14 +442,17 @@ export class PharmacyDashboardUseCase {
       .map((row: any) => {
         const disponivel = toNumber(row.stockBalance?.quantidadeDisponivel);
         const minimo = toNumber(row.estoqueMinimo);
-        return { id: row.id.toString(), nome: row.nomeComercial,
+        return {
+          id: row.id.toString(),
+          nome: row.nomeComercial,
           disponivel: round2(disponivel),
           minimo: round2(minimo),
+          validade: row.lotes?.[0]?.dataValidade?.toISOString?.() ?? null,
           critico: disponivel <= 0 || (disponivel > 0 && disponivel <= minimo),
         };
       })
       .filter((row: any) => row.critico)
-      .slice(0, 10);
+      .slice(0, 5);
   }
 
   private async listUltimasEntradas(prisma: any) {

@@ -9,6 +9,11 @@ import {
   buildPagedTableResult,
   normalizeTablePagination,
 } from "./dashboard-pagination.util";
+import {
+  groupValorStockPorCategoria,
+  loadValorStockLotesFromMovements,
+  sumValorStockFromLotes,
+} from "./dashboard-valor-stock.util";
 
 type PeriodParams = {
   days?: number;
@@ -30,7 +35,6 @@ export class StockDashboardUseCase {
     const [
       lotes,
       stockAgg,
-      valorStockRows,
       produtosSemStock,
       produtosCriticosRows,
       inventariosAbertos,
@@ -52,23 +56,6 @@ export class StockDashboardUseCase {
           quantidadeDisponivel: true,
           quantidadeReservada: true,
           quantidadeTotal: true,
-        },
-      }),
-      prisma.lote.findMany({
-        where: {
-          deletedAt: null,
-          ativo: true,
-          stockBalance: { quantidadeDisponivel: { gt: 0 } },
-        },
-        select: {
-          quantidadeQuarentena: true,
-          stockBalance: { select: { quantidadeDisponivel: true } },
-          precoCompra: true,
-          produto: {
-            select: {
-              categoria: { select: { nome: true } },
-            },
-          },
         },
       }),
       prisma.produto.count({
@@ -195,23 +182,11 @@ export class StockDashboardUseCase {
       }),
     ]);
 
-    const valorTotalStock = valorStockRows.reduce((sum: number, row: any) => {
-      const qty = Math.max(
-        0,
-        toNumber(row.stockBalance?.quantidadeDisponivel),
-      );
-      return sum + qty * toNumber(row.precoCompra);
-    }, 0);
-    const categoriaValorStock = new Map<string, number>();
-    for (const row of valorStockRows) {
-      const qty = Math.max(
-        0,
-        toNumber(row.stockBalance?.quantidadeDisponivel),
-      );
-      const categoria = row.produto?.categoria?.nome ?? "Sem categoria";
-      const valor = qty * toNumber(row.precoCompra);
-      categoriaValorStock.set(categoria, (categoriaValorStock.get(categoria) ?? 0) + valor);
-    }
+    const valorStockRows = await loadValorStockLotesFromMovements(prisma, now, {
+      includeCategoria: true,
+    });
+    const valorTotalStock = sumValorStockFromLotes(valorStockRows);
+    const categoriaValorStock = groupValorStockPorCategoria(valorStockRows);
 
     const produtosCriticos = produtosCriticosRows
       .map((row: any) => {
@@ -296,12 +271,7 @@ export class StockDashboardUseCase {
             movimentos: row._count._all ?? 0,
           };
         }),
-        valorStockPorCategoria: [...categoriaValorStock.entries()].map(
-          ([categoria, valor]) => ({
-            categoria,
-            valor: round2(valor),
-          }),
-        ),
+        valorStockPorCategoria: categoriaValorStock,
         composicaoLotes: {
           totalLotes: lotes.totalLotes,
           lotesDisponiveis: lotes.lotesDisponiveis,

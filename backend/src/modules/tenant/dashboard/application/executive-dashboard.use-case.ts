@@ -18,6 +18,10 @@ import {
   buildPagedTableResult,
   normalizeTablePagination,
 } from "./dashboard-pagination.util";
+import {
+  loadValorStockLotesFromMovements,
+  sumValorStockFromLotes,
+} from "./dashboard-valor-stock.util";
 
 type PeriodParams = {
   days?: number;
@@ -61,7 +65,6 @@ export class ExecutiveDashboardUseCase {
       contasReceberAgg,
       contasPagarAgg,
       stockAgg,
-      valorInventarioRows,
       produtosCriticos,
       lotesExpirados,
       produtosProximosValidade,
@@ -129,18 +132,6 @@ export class ExecutiveDashboardUseCase {
         _sum: {
           quantidadeDisponivel: true,
           quantidadeReservada: true,
-        },
-      }),
-      prisma.lote.findMany({
-        where: {
-          deletedAt: null,
-          ativo: true,
-          stockBalance: { quantidadeDisponivel: { gt: 0 } },
-        },
-        select: {
-          quantidadeQuarentena: true,
-          stockBalance: { select: { quantidadeDisponivel: true } },
-          precoCompra: true,
         },
       }),
       prisma.produto.findMany({
@@ -307,13 +298,8 @@ export class ExecutiveDashboardUseCase {
     const lucroBruto = round2(receitaMes - custoMes);
     const lucroLiquido = round2(receitaMes - custoMes - despesasMes);
 
-    const valorInventario = valorInventarioRows.reduce((sum: number, row: any) => {
-      const qty = Math.max(
-        0,
-        toNumber(row.stockBalance?.quantidadeDisponivel),
-      );
-      return sum + qty * toNumber(row.precoCompra);
-    }, 0);
+    const valorInventarioRows = await loadValorStockLotesFromMovements(prisma, now);
+    const valorInventario = sumValorStockFromLotes(valorInventarioRows);
 
     const produtosCriticosCount = produtosCriticos.filter((row: any) => {
       const disponivel = toNumber(row.stockBalance?.quantidadeDisponivel);

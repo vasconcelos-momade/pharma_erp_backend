@@ -58,9 +58,16 @@ export class FinanceDashboardUseCase {
     const chartFrom = resolved.from;
     const todayEnd = resolved.to;
 
+    const caixaMovimentoPeriod = {
+      deletedAt: null,
+      createdAt: { gte: monthStart, lte: monthEnd },
+    };
+
     const [
       receitasMes,
-      despesasMes,
+      saidasMes,
+      suprimentosMes,
+      sangriasMes,
       contasReceberAgg,
       contasPagarAgg,
       recebimentosPendentes,
@@ -82,13 +89,17 @@ export class FinanceDashboardUseCase {
         },
         _sum: { amount: true },
       }),
-      prisma.financialMovement.aggregate({
-        where: {
-          deletedAt: null,
-          type: { in: ["EXPENSE", "PURCHASE", "REFUND"] },
-          createdAt: { gte: monthStart, lte: monthEnd },
-        },
-        _sum: { amount: true },
+      prisma.caixaMovimento.aggregate({
+        where: { ...caixaMovimentoPeriod, tipo: "SAIDA" },
+        _sum: { valor: true },
+      }),
+      prisma.caixaMovimento.aggregate({
+        where: { ...caixaMovimentoPeriod, tipo: "SUPRIMENTO" },
+        _sum: { valor: true },
+      }),
+      prisma.caixaMovimento.aggregate({
+        where: { ...caixaMovimentoPeriod, tipo: "SANGRIA" },
+        _sum: { valor: true },
       }),
       prisma.contaReceber.aggregate({
         where: { status: { in: ["ABERTA", "PARCIAL"] } },
@@ -192,14 +203,20 @@ export class FinanceDashboardUseCase {
     ]);
 
     const receita = round2(toNumber(receitasMes._sum.amount));
-    const despesas = round2(toNumber(despesasMes._sum.amount));
-    const lucro = round2(receita - despesas);
+    const saidas = round2(toNumber(saidasMes._sum.valor));
+    const suprimentos = round2(toNumber(suprimentosMes._sum.valor));
+    const sangrias = round2(toNumber(sangriasMes._sum.valor));
+    const despesas = saidas;
+    const lucro = round2(receita - saidas - sangrias);
     const saldoAtual = round2(toNumber(saldoCaixaAgg._sum.saldoTotal));
 
     return {
       kpis: {
         receita,
         despesas,
+        saidas,
+        suprimentos,
+        sangrias,
         lucro,
         fluxoCaixa: lucro,
         saldoAtual,

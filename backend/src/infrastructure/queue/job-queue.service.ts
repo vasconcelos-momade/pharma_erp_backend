@@ -24,7 +24,13 @@ export interface MonthlyBillingJobPayload {
 export type JobPayloadMap = {
   "tenant.register": TenantRegisterJobPayload;
   "billing.generate-monthly": MonthlyBillingJobPayload;
+  "print.process": PrintProcessJobPayload;
 };
+
+export interface PrintProcessJobPayload {
+  printJobId: string;
+  tenantId: string;
+}
 
 export interface QueueJob<TType extends keyof JobPayloadMap = keyof JobPayloadMap> {
   id: string;
