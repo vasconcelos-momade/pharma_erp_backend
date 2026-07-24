@@ -82,6 +82,8 @@ export class ReportService {
             select: {
               companyName: true,
               nuit: true,
+              email: true,
+              endereco: true,
             },
           },
         },
@@ -92,12 +94,18 @@ export class ReportService {
       }),
     ]);
 
+    const tenant = branch?.tenant;
+    const contacts = [tenant?.email]
+      .map((value: unknown) => String(value ?? "").trim())
+      .filter((value: string) => value.length > 0)
+      .join(" | ");
+
     return {
-      pharmacyName: toText(branch?.tenant?.companyName, "Farmacia"),
+      pharmacyName: toText(tenant?.companyName, "Farmacia"),
       branchName: toText(branch?.name),
-      address: "-",
-      nuit: toText(branch?.tenant?.nuit),
-      contacts: "-",
+      address: toText(tenant?.endereco),
+      nuit: toText(tenant?.nuit),
+      contacts: toText(contacts),
       generatedBy: toText(user?.name, "Sistema"),
     };
   }

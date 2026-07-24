@@ -395,10 +395,15 @@ export class FinalizarVendaUseCase {
             }
 
             // Item com todos os campos fiscais de snapshot
+            const descricaoItem = [produto.nomeComercial, produto.dosagem, produto.forma]
+              .map((part) => String(part ?? "").trim())
+              .filter((part) => part.length > 0)
+              .join(" ") || String(produto.nomeComercial ?? "");
+
             faturaItems.push({
               produtoId: produto.id,
               lotesUtilizados,
-              descricao: produto.nomeComercial,
+              descricao: descricaoItem,
               quantidade: item.quantidade,
               precoUnit: precoFinal,
               custoUnitario: custoUnitarioFinal,
@@ -677,6 +682,8 @@ export class FinalizarVendaUseCase {
           success: true,
           faturaId: fatura.id.toString(),
           numero: fatura.numero,
+          tipo: fatura.tipo,
+          documentMode: fatura.tipo === "FR" ? "thermal_80mm" : "pdf_a4",
           estado: fatura.estado,
           subtotal: Number(fatura.subtotal),
           ivaTotal: Number(fatura.ivaTotal),

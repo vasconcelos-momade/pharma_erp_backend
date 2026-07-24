@@ -2,7 +2,7 @@ import { z } from "zod";
 /// <reference lib="dom" />
 import { ListFaturasUseCase } from "../../modules/tenant/pos/application/use-cases/list-faturas.use-case";
 import { GetFaturaDetalheUseCase } from "../../modules/tenant/pos/application/use-cases/get-fatura-detalhe.use-case";
-import { FaturaDocumentService } from "../../modules/tenant/pos/application/services/fatura-document.service";
+import { FaturaDocumentService, isThermalReceiptTipo } from "../../modules/tenant/pos/application/services/fatura-document.service";
 import { ReportsController } from "../../modules/tenant/reports";
 import { REPORT_KEYS } from "../../modules/tenant/reports/application/constants/report-keys";
 import { getPrisma } from "../../infrastructure/prisma/tenant-prisma.factory";
@@ -230,13 +230,28 @@ function registerFaturaResource(router: Router, basePath: string): void {
     async (context) => {
       try {
         const { faturaId } = parseRouteParams(context.params, faturaIdParamSchema);
+        const fatura = await getFaturaDetalhe.execute(faturaId);
+
+        if (isThermalReceiptTipo((fatura as any).tipo)) {
+          const { bytes, fileName, contentType } =
+            FaturaDocumentService.buildThermal80mmPdf(fatura as any);
+          const body = new Blob([bytes as BlobPart], { type: contentType });
+          return new Response(body, {
+            headers: {
+              "Content-Type": contentType,
+              "Content-Disposition": `inline; filename="${fileName}"`,
+              "X-Document-Mode": "thermal_80mm",
+            },
+          });
+        }
+
         const artifact = await reportsController.generateArtifact({
           reportKey: REPORT_KEYS.INVOICE,
           userId: getTenantAuth(context).userId,
           routeParams: { faturaId },
           url: new URL(context.req.url),
           format: "pdf",
-          disposition: "attachment",
+          disposition: "inline",
         });
         const body = new Blob([artifact.bytes as BlobPart], {
           type: artifact.contentType,
@@ -244,7 +259,8 @@ function registerFaturaResource(router: Router, basePath: string): void {
         return new Response(body, {
           headers: {
             "Content-Type": artifact.contentType,
-            "Content-Disposition": `attachment; filename="${artifact.fileName}"`,
+            "Content-Disposition": `inline; filename="${artifact.fileName}"`,
+            "X-Document-Mode": "pdf_a4",
           },
         });
       } catch (error: any) {
@@ -262,8 +278,36 @@ function registerFaturaResource(router: Router, basePath: string): void {
       try {
         const { faturaId } = parseRouteParams(context.params, faturaIdParamSchema);
         const fatura = await getFaturaDetalhe.execute(faturaId);
+        const userId = getTenantAuth(context).userId;
+
+        if (!isThermalReceiptTipo((fatura as any).tipo)) {
+          const artifact = await reportsController.generateArtifact({
+            reportKey: REPORT_KEYS.INVOICE,
+            userId,
+            routeParams: { faturaId },
+            url: new URL(context.req.url),
+            format: "pdf",
+            disposition: "inline",
+          });
+          return success(
+            serialize({
+              mode: "pdf_a4",
+              tipo: (fatura as any).tipo ?? "FT",
+              payloadBase64: Buffer.from(artifact.bytes).toString("base64"),
+              fileName: artifact.fileName,
+              contentType: artifact.contentType,
+            }),
+          );
+        }
+
         const result = FaturaDocumentService.buildPrintArtifact(fatura as any);
-        return success(serialize(result));
+        return success(
+          serialize({
+            mode: "thermal_80mm",
+            tipo: "FR",
+            ...result,
+          }),
+        );
       } catch (error: any) {
         return controllerErrorResponse(error, 404);
       }

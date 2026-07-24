@@ -1,6 +1,11 @@
 import { buildSimplePdfFromLines } from "../../../../tenant/reports/application/templates/pdf-html.converter";
 import { GetInvoiceUseCase } from "../use-cases/get-invoice.use-case";
 
+function toLine(label: string, value: unknown): string {
+  const normalized = String(value ?? "").trim();
+  return `${label}: ${normalized || "—"}`;
+}
+
 export async function generateCentralInvoicePdf(
   tenantId: string,
   invoiceId: string,
@@ -10,6 +15,11 @@ export async function generateCentralInvoicePdf(
 
   const lines = [
     "Pharma ERP SaaS - Fatura",
+    toLine("Empresa", invoice.tenant?.companyName),
+    toLine("NUIT", invoice.tenant?.nuit),
+    toLine("Contacto", invoice.tenant?.contact),
+    toLine("Endereco", invoice.tenant?.address),
+    "",
     `Numero: ${invoice.number}`,
     `Estado: ${invoice.status}`,
     `Valor total: ${invoice.amount} ${invoice.currency}`,

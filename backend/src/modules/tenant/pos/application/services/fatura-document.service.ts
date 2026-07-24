@@ -1,3 +1,10 @@
+import {
+  gerarFaturaReciboEscpos,
+  type FaturaReciboEscposInput,
+} from "./fatura-recibo-escpos.template";
+import { gerarFaturaReciboPdf80mm } from "./fatura-recibo-pdf-80mm";
+import { formatProdutoItemLabel } from "./fatura-recibo-colunas";
+
 function toAscii(value: unknown): string {
   return String(value ?? "")
     .normalize("NFD")
@@ -13,6 +20,12 @@ function formatMoney(value: unknown): string {
     return "0.00";
   }
   return numeric.toFixed(2);
+}
+
+function toNumber(value: unknown): number {
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  const parsed = Number(String(value ?? "0").replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function escapePdfText(value: string): string {
@@ -62,17 +75,6 @@ function buildSimplePdf(lines: string[]): Uint8Array {
   return encoder.encode(pdf);
 }
 
-function concatUint8Arrays(arrays: Uint8Array[]): Uint8Array {
-  const totalLength = arrays.reduce((acc, arr) => acc + arr.length, 0);
-  const result = new Uint8Array(totalLength);
-  let offset = 0;
-  for (const arr of arrays) {
-    result.set(arr, offset);
-    offset += arr.length;
-  }
-  return result;
-}
-
 function toBase64(bytes: Uint8Array): string {
   let binary = "";
   const len = bytes.byteLength;
@@ -82,11 +84,51 @@ function toBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+function resolveTaxaIva(invoice: InvoiceDocumentPayload): number {
+  if (invoice.taxaIvaAplicada != null) {
+    return toNumber(invoice.taxaIvaAplicada);
+  }
+  const rates = (invoice.items ?? [])
+    .map((item) => toNumber(item.taxaAplicada))
+    .filter((rate) => rate > 0);
+  if (rates.length === 0) return 0;
+  return Math.max(...rates);
+}
+
+function resolveEmpresaNome(value: unknown): string {
+  const normalized = String(value ?? "").trim();
+  return normalized || "Empresa nao configurada";
+}
+
+/** FR = recibo térmico 80mm; FT (e restantes) = PDF A4. */
+export type InvoiceDocumentMode = "thermal_80mm" | "pdf_a4";
+
+export function resolveInvoiceDocumentMode(
+  tipo: string | null | undefined,
+): InvoiceDocumentMode {
+  return String(tipo ?? "").toUpperCase() === "FR" ? "thermal_80mm" : "pdf_a4";
+}
+
+export function isThermalReceiptTipo(tipo: string | null | undefined): boolean {
+  return resolveInvoiceDocumentMode(tipo) === "thermal_80mm";
+}
+
 export type InvoiceDocumentPayload = {
   id: string;
   numero: string;
   serie?: string | null;
+  tipo?: string | null;
   createdAt?: string | Date;
+  qrCode?: string | null;
+  moeda?: string | null;
+  taxaIvaAplicada?: string | number | null;
+  empresa?: {
+    nome?: string | null;
+    nuit?: string | null;
+    endereco?: string | null;
+    email?: string | null;
+    telefone?: string | null;
+  } | null;
   cliente?: {
     nome?: string | null;
     documento?: string | null;
@@ -100,9 +142,13 @@ export type InvoiceDocumentPayload = {
   } | null;
   items?: Array<{
     descricao?: string | null;
+    nomeComercial?: string | null;
+    dosagem?: string | null;
+    forma?: string | null;
     quantidade?: string | number | null;
     precoUnit?: string | number | null;
     total?: string | number | null;
+    taxaAplicada?: string | number | null;
   }>;
   payments?: Array<{
     metodo?: string | null;
@@ -135,8 +181,12 @@ export class FaturaDocumentService {
         ? [`Troco: ${formatMoney(invoice.troco)}`]
         : []),
     ];
+    const empresaNome = resolveEmpresaNome(invoice.empresa?.nome);
     const lines = [
-      "Skalway Pharm - Fatura",
+      `${toAscii(empresaNome)} - Fatura`,
+      `NUIT: ${invoice.empresa?.nuit ?? "-"}`,
+      `Endereco: ${invoice.empresa?.endereco ?? "-"}`,
+      `Contacto: ${invoice.empresa?.email ?? invoice.empresa?.telefone ?? "-"}`,
       `Numero: ${invoice.numero}`,
       `Serie: ${invoice.serie ?? "-"}`,
       `Data: ${createdAt}`,
@@ -148,7 +198,12 @@ export class FaturaDocumentService {
       "",
       "Itens:",
       ...(invoice.items ?? []).map((item, index) =>
-        `${index + 1}. ${item.descricao ?? "Linha"} x${item.quantidade ?? 0} @ ${formatMoney(item.precoUnit)} = ${formatMoney(item.total)}`,
+        `${index + 1}. ${formatProdutoItemLabel({
+          nomeComercial: item.nomeComercial,
+          dosagem: item.dosagem,
+          forma: item.forma,
+          fallback: item.descricao,
+        })} x${item.quantidade ?? 0} @ ${formatMoney(item.precoUnit)} = ${formatMoney(item.total)}`,
       ),
       "",
       "Pagamentos:",
@@ -170,58 +225,79 @@ export class FaturaDocumentService {
     };
   }
 
+  /** Mapeia fatura POS → DTO do template ESC/POS 80mm (scalway-gastro). */
+  static toEscposInput(invoice: InvoiceDocumentPayload): FaturaReciboEscposInput {
+    return {
+      empresa: {
+        nome: resolveEmpresaNome(invoice.empresa?.nome),
+        nuit: invoice.empresa?.nuit ?? null,
+        endereco: invoice.empresa?.endereco ?? null,
+        email: invoice.empresa?.email ?? null,
+        telefone: invoice.empresa?.telefone ?? null,
+      },
+      numero: invoice.numero || invoice.id,
+      serie: invoice.serie ?? null,
+      data: invoice.createdAt ? new Date(invoice.createdAt) : new Date(),
+      cliente: invoice.cliente?.nome ?? "Consumidor Final",
+      clienteDocumento: invoice.cliente?.documento ?? null,
+      terminalCodigo: invoice.terminal?.codigo ?? invoice.terminal?.nome ?? null,
+      operador: invoice.user?.name ?? null,
+      subtotal: toNumber(invoice.subtotal),
+      desconto: toNumber(invoice.desconto),
+      taxaIvaAplicada: resolveTaxaIva(invoice),
+      ivaTotal: toNumber(invoice.ivaTotal),
+      total: toNumber(invoice.total),
+      moeda: invoice.moeda ?? "MZN",
+      valorRecebido: toNumber(invoice.valorRecebido),
+      troco: toNumber(invoice.troco),
+      itens: (invoice.items ?? []).map((item) => ({
+        nome: formatProdutoItemLabel({
+          nomeComercial: item.nomeComercial,
+          dosagem: item.dosagem,
+          forma: item.forma,
+          fallback: item.descricao,
+        }),
+        quantidade: toNumber(item.quantidade),
+        precoUnitario: toNumber(item.precoUnit),
+        total: toNumber(item.total),
+      })),
+      pagamentos: (invoice.payments ?? []).map((payment) => ({
+        metodo: String(payment.metodo ?? ""),
+        valor: toNumber(payment.valor),
+      })),
+      qrPayload: invoice.qrCode ?? null,
+    };
+  }
+
   static buildPrintArtifact(invoice: InvoiceDocumentPayload): {
     payloadBase64: string;
     fileName: string;
     contentType: string;
   } {
-    const encoder = new TextEncoder();
-    const paymentLines = [
-      ...(invoice.valorRecebido != null
-        ? [`Valor recebido: ${formatMoney(invoice.valorRecebido)}`]
-        : []),
-      ...(invoice.troco != null && Number(invoice.troco) > 0
-        ? [`Troco: ${formatMoney(invoice.troco)}`]
-        : []),
-    ];
-    const lines = [
-      "SKALWAY PHARM",
-      "FATURA",
-      `Numero: ${toAscii(invoice.numero)}`,
-      `Serie: ${toAscii(invoice.serie ?? "-")}`,
-      `Cliente: ${toAscii(invoice.cliente?.nome ?? "Consumidor Final")}`,
-      `Estado: ${toAscii(invoice.estado ?? "-")}`,
-      "--------------------------------",
-      ...(invoice.items ?? []).map((item) =>
-        `${toAscii(item.descricao ?? "Linha")} | ${item.quantidade ?? 0} x ${formatMoney(item.precoUnit)} = ${formatMoney(item.total)}`,
-      ),
-      "--------------------------------",
-      `Subtotal: ${formatMoney(invoice.subtotal)}`,
-      `Desconto: ${formatMoney(invoice.desconto)}`,
-      `IVA: ${formatMoney(invoice.ivaTotal)}`,
-      `Total: ${formatMoney(invoice.total)}`,
-      ...paymentLines,
-      "",
-      "Pagamentos:",
-      ...(invoice.payments ?? []).map((payment) =>
-        `${toAscii(payment.metodo ?? "-")} ${formatMoney(payment.valor)}${payment.referencia ? ` ref ${toAscii(payment.referencia)}` : ""}`,
-      ),
-      "",
-      "Emitido por Skalway Pharm",
-      "\n\n\n",
-    ];
-
-    const textPayload = `${lines.join("\n")}\n`;
-    const escposBytes = concatUint8Arrays([
-      new Uint8Array([0x1b, 0x40]), // Init
-      encoder.encode(textPayload),
-      new Uint8Array([0x1d, 0x56, 0x41, 0x10]), // Cut
-    ]);
+    const escposBytes = gerarFaturaReciboEscpos(
+      FaturaDocumentService.toEscposInput(invoice),
+    );
 
     return {
       payloadBase64: toBase64(escposBytes),
       fileName: `fatura-${toAscii(invoice.numero || invoice.id || "documento")}.escpos`,
       contentType: "application/octet-stream",
+    };
+  }
+
+  /** PDF de visualização com largura de papel térmico 80mm. */
+  static buildThermal80mmPdf(invoice: InvoiceDocumentPayload): {
+    bytes: Uint8Array;
+    fileName: string;
+    contentType: string;
+  } {
+    const bytes = gerarFaturaReciboPdf80mm(
+      FaturaDocumentService.toEscposInput(invoice),
+    );
+    return {
+      bytes,
+      fileName: `recibo-80mm-${toAscii(invoice.numero || invoice.id || "documento")}.pdf`,
+      contentType: "application/pdf",
     };
   }
 }

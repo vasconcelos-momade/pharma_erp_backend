@@ -1,4 +1,5 @@
 import { getPrisma } from "../../../../../infrastructure/prisma/tenant-prisma.factory";
+import { resolveTenantEmpresaProfile } from "../services/tenant-empresa-profile.service";
 
 type ListFaturasParams = {
   page?: number;
@@ -61,13 +62,14 @@ export class ListFaturasUseCase {
         : {}),
     };
 
-    const [items, summary] = await Promise.all([
+    const [items, summary, empresa] = await Promise.all([
       prisma.fatura.findMany({
       where,
       select: {
         id: true,
         numero: true,
         serie: true,
+        tipo: true,
         subtotal: true,
         ivaTotal: true,
         total: true,
@@ -117,6 +119,7 @@ export class ListFaturasUseCase {
         }),
         prisma.fatura.count({ where: { ...where, estado: "ANULADA" } }),
       ]),
+      resolveTenantEmpresaProfile(),
     ]);
 
     const [totalInvoices, paid, pending, cancelled] = summary;
@@ -126,6 +129,8 @@ export class ListFaturasUseCase {
         id: item.id,
         numero: item.numero,
         serie: item.serie,
+        tipo: item.tipo,
+        documentMode: item.tipo === "FR" ? "thermal_80mm" : "pdf_a4",
         subtotal: item.subtotal,
         ivaTotal: item.ivaTotal,
         total: item.total,
@@ -133,6 +138,7 @@ export class ListFaturasUseCase {
         troco: item.troco,
         estado: item.estado,
         tipoPagamento: item.tipoPagamento,
+        empresa,
         createdAt: item.createdAt,
         cancelledAt: item.cancelledAt,
         cliente: item.cliente,

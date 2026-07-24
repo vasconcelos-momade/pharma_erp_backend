@@ -57,14 +57,18 @@ export function registerPosRoutes(router: Router, prefix: string): void {
       parseRouteParams(context.params, saleIdParamSchema).saleId,
     ),
   );
-  withTenantPos(router, "get", `${prefix}/tenant/pos/faturas/:saleId/pdf`, [["POS", "EXPORT"]], async (_userId, context) =>
+  withTenantPos(router, "get", `${prefix}/tenant/pos/faturas/:saleId/pdf`, [["POS", "EXPORT"]], async (userId, context) =>
     posController.downloadFaturaPdf(
       parseRouteParams(context.params, saleIdParamSchema).saleId,
+      userId,
+      context.req,
     ),
   );
-  withTenantPos(router, "get", `${prefix}/tenant/pos/faturas/:saleId/print`, [["POS", "VIEW"]], async (_userId, context) =>
+  withTenantPos(router, "get", `${prefix}/tenant/pos/faturas/:saleId/print`, [["POS", "VIEW"]], async (userId, context) =>
     posController.getFaturaPrintArtifact(
       parseRouteParams(context.params, saleIdParamSchema).saleId,
+      userId,
+      context.req,
     ),
   );
 

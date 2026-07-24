@@ -19,7 +19,7 @@ import { GetCurrentCaixaSessaoUseCase } from "../../application/use-cases/get-cu
 import { ListAvailableCaixasUseCase } from "../../application/use-cases/list-available-caixas.use-case";
 import { ListFaturasUseCase } from "../../application/use-cases/list-faturas.use-case";
 import { GetFaturaDetalheUseCase } from "../../application/use-cases/get-fatura-detalhe.use-case";
-import { FaturaDocumentService } from "../../application/services/fatura-document.service";
+import { FaturaDocumentService, isThermalReceiptTipo } from "../../application/services/fatura-document.service";
 import { z } from "zod";
 import { searchProdutosQuerySchema } from "../../../products/application/dto/produto.dto";
 import { POS_DEFAULT_PAGE_SIZE } from "../../domain/pos-catalog.constants";
@@ -29,6 +29,9 @@ import {
 } from "../../../../../shared/http/request-validation";
 import { success } from "../../../../../shared/http/api-response";
 import { controllerErrorResponse } from "../../../../../shared/http/controller-error";
+import { ReportsController } from "../../../reports";
+import { REPORT_KEYS } from "../../../reports/application/constants/report-keys";
+import { resolveTenantEmpresaProfile } from "../../application/services/tenant-empresa-profile.service";
 
 const validarDispensacaoSchema = z.object({
   produtoId: z.string().trim().min(1),
@@ -185,6 +188,7 @@ export class POSController {
   private listAvailableCaixasUseCase = new ListAvailableCaixasUseCase();
   private listFaturasUseCase = new ListFaturasUseCase();
   private getFaturaDetalheUseCase = new GetFaturaDetalheUseCase();
+  private reportsController = new ReportsController();
 
   async searchProdutos(req: Request) {
     const url = new URL(req.url);
@@ -442,24 +446,124 @@ export class POSController {
     return success(this.serialize(result));
   }
 
-  async downloadFaturaPdf(faturaId: string) {
-    const fatura = await this.getFaturaDetalheUseCase.execute(faturaId);
-    const { bytes, fileName, contentType } = FaturaDocumentService.buildPdf(fatura as any);
-    const body = new Blob([bytes as any], { type: contentType });
+  async downloadFaturaPdf(faturaId: string, userId: string, req: Request) {
+    try {
+      const fatura = await this.getFaturaDetalheUseCase.execute(faturaId);
+      const empresa = (fatura as any).empresa ?? await this.resolveEmpresaHeader();
 
-    return new Response(body, {
-      headers: {
-        "Content-Type": contentType,
-        "Content-Disposition": `attachment; filename="${fileName}"`,
-      },
-    });
+      // FR → PDF preview com largura de papel térmico 80mm
+      if (isThermalReceiptTipo((fatura as any).tipo)) {
+        const { bytes, fileName, contentType } =
+          FaturaDocumentService.buildThermal80mmPdf({
+            ...(fatura as any),
+            empresa,
+          });
+        const body = new Blob([bytes as BlobPart], { type: contentType });
+        return new Response(body, {
+          headers: {
+            "Content-Type": contentType,
+            "Content-Disposition": `inline; filename="${fileName}"`,
+            "X-Document-Mode": "thermal_80mm",
+          },
+        });
+      }
+
+      const artifact = await this.reportsController.generateArtifact({
+        reportKey: REPORT_KEYS.INVOICE,
+        userId,
+        routeParams: { faturaId },
+        url: new URL(req.url),
+        format: "pdf",
+        disposition: "inline",
+      });
+      const body = new Blob([artifact.bytes as BlobPart], {
+        type: artifact.contentType,
+      });
+      return new Response(body, {
+        headers: {
+          "Content-Type": artifact.contentType,
+          "Content-Disposition": `inline; filename="${artifact.fileName}"`,
+          "X-Document-Mode": "pdf_a4",
+        },
+      });
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
   }
 
-  async getFaturaPrintArtifact(faturaId: string) {
-    const fatura = await this.getFaturaDetalheUseCase.execute(faturaId);
-    const result = FaturaDocumentService.buildPrintArtifact(fatura as any);
+  async getFaturaPrintArtifact(faturaId: string, userId: string, req: Request) {
+    try {
+      const fatura = await this.getFaturaDetalheUseCase.execute(faturaId);
+      const empresa = (fatura as any).empresa ?? await this.resolveEmpresaHeader();
 
-    return Response.json(this.serialize(result));
+      // FT → A4 PDF (abrir/imprimir no sistema)
+      if (!isThermalReceiptTipo((fatura as any).tipo)) {
+        const artifact = await this.reportsController.generateArtifact({
+          reportKey: REPORT_KEYS.INVOICE,
+          userId,
+          routeParams: { faturaId },
+          url: new URL(req.url),
+          format: "pdf",
+          disposition: "inline",
+        });
+        return Response.json(
+          this.serialize({
+            mode: "pdf_a4",
+            tipo: (fatura as any).tipo ?? "FT",
+            payloadBase64: Buffer.from(artifact.bytes).toString("base64"),
+            fileName: artifact.fileName,
+            contentType: artifact.contentType,
+          }),
+        );
+      }
+
+      // FR → ESC/POS 80mm
+      const result = FaturaDocumentService.buildPrintArtifact({
+        ...(fatura as any),
+        empresa,
+      });
+
+      return Response.json(
+        this.serialize({
+          mode: "thermal_80mm",
+          tipo: "FR",
+          ...result,
+        }),
+      );
+    } catch (error: any) {
+      return controllerErrorResponse(error);
+    }
+  }
+
+  /** Dados da farmácia (central Tenant) para cabeçalho do recibo 80mm. */
+  private async resolveEmpresaHeader(): Promise<{
+    nome: string;
+    nuit: string | null;
+    endereco: string | null;
+    email: string | null;
+    telefone: string | null;
+  }> {
+    try {
+      const tenant = await resolveTenantEmpresaProfile();
+      if (tenant.nome || tenant.nuit || tenant.endereco || tenant.email) {
+        return {
+          nome: tenant.nome ?? "Empresa nao configurada",
+          nuit: tenant.nuit,
+          endereco: tenant.endereco,
+          email: tenant.email,
+          telefone: tenant.telefone,
+        };
+      }
+    } catch {
+      // fallback abaixo
+    }
+    return {
+      nome: "Empresa nao configurada",
+      nuit: null,
+      endereco: null,
+      email: null,
+      telefone: null,
+    };
   }
 
   private serialize(data: any) {

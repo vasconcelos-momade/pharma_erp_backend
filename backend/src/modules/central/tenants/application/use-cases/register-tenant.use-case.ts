@@ -13,6 +13,9 @@ export interface RegisterTenantDTO {
   adminEmail: string;
   adminPassword: string;
   userId: string; // The owner user ID in Central
+  email?: string | null;
+  endereco?: string | null;
+  nuit?: string | null;
 }
 
 const runtimeGlobals = globalThis as typeof globalThis & {
@@ -46,6 +49,9 @@ export class RegisterTenantUseCase {
         name: data.nomeTenant,
         ownerId: BigInt(data.userId),
         status: "trial",
+        email: data.email?.trim() || null,
+        endereco: data.endereco?.trim() || null,
+        nuit: data.nuit?.trim() || null,
       }
     });
 

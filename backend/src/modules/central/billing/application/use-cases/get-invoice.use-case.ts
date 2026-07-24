@@ -21,6 +21,14 @@ export class GetInvoiceUseCase {
           deletedAt: null,
         },
         include: {
+          tenant: {
+            select: {
+              companyName: true,
+              nuit: true,
+              email: true,
+              endereco: true,
+            },
+          },
           payments: {
             where: { deletedAt: null },
             select: {
@@ -59,6 +67,14 @@ export class GetInvoiceUseCase {
         extraBranches: invoice.extraBranches,
         description: invoice.description,
         createdAt: invoice.createdAt,
+        tenant: invoice.tenant
+          ? {
+              companyName: invoice.tenant.companyName,
+              nuit: invoice.tenant.nuit,
+              contact: invoice.tenant.email,
+              address: invoice.tenant.endereco,
+            }
+          : null,
         payments: invoice.payments.map((payment: any) => ({
           id: payment.id.toString(),
           amount: payment.amount,

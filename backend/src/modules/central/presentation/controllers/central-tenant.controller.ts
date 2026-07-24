@@ -24,6 +24,9 @@ const registerTenantSchema = z
     adminPassword: z.string().min(1).optional(),
     userId: z.string().trim().min(1).optional(),
     ownerUser: ownerUserSchema.optional(),
+    email: z.string().trim().pipe(z.email()).optional().nullable(),
+    endereco: z.string().trim().min(1).optional().nullable(),
+    nuit: z.string().trim().min(1).optional().nullable(),
   })
   .superRefine((value, ctx) => {
     if (!value.userId && !value.ownerUser) {
@@ -64,6 +67,9 @@ const tenantListSelect = {
   ownerId: true,
   companyName: true,
   name: true,
+  nuit: true,
+  email: true,
+  endereco: true,
   status: true,
   createdAt: true,
   branches: {
@@ -164,6 +170,9 @@ export class CentralTenantController {
       adminEmail: body.adminEmail,
       adminPassword: body.adminPassword ?? "",
       userId: ownerUserId,
+      email: body.email ?? null,
+      endereco: body.endereco ?? null,
+      nuit: body.nuit ?? null,
     };
 
     const { async: runAsync = false } = parseSearchParams(url, registerTenantQuerySchema);

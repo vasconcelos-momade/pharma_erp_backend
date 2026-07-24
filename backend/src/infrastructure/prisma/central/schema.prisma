@@ -111,6 +111,8 @@ model Tenant {
   name        String @unique @map("nomeTenant")
   companyName String @map("nomeEmpresa")
   nuit        String?
+  email       String? @db.VarChar(191)
+  endereco    String? @db.Text
 
   status TenantStatus @default(ativo)
   country String @default("MZ") @db.VarChar(2)

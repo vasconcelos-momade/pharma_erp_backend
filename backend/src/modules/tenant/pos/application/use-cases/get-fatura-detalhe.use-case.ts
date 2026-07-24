@@ -1,6 +1,7 @@
 import { NotFoundApiError } from "../../../../../shared/http/api-error";
 import { getPrisma } from "../../../../../infrastructure/prisma/tenant-prisma.factory";
 import { mapAllocationsToApiLotes } from "../../../sales/domain/fatura-item-lote.service";
+import { resolveTenantEmpresaProfile } from "../services/tenant-empresa-profile.service";
 
 export class GetFaturaDetalheUseCase {
   async execute(faturaId: string) {
@@ -88,6 +89,13 @@ export class GetFaturaDetalheUseCase {
             codigoRegraFiscal: true,
             motivoIsencao: true,
             total: true,
+            produto: {
+              select: {
+                nomeComercial: true,
+                dosagem: true,
+                forma: true,
+              },
+            },
             lotesAlocacao: {
               orderBy: { ordemFefo: "asc" },
               select: {
@@ -127,6 +135,8 @@ export class GetFaturaDetalheUseCase {
       throw new NotFoundApiError("Fatura não encontrada");
     }
 
+    const empresa = await resolveTenantEmpresaProfile();
+
     return {
       id: fatura.id,
       numero: fatura.numero,
@@ -146,6 +156,7 @@ export class GetFaturaDetalheUseCase {
       tipoPagamento: fatura.tipoPagamento,
       tipoOperacao: fatura.tipoOperacao,
       qrCode: fatura.qrCode,
+      empresa,
       cliente: fatura.cliente,
       terminal: fatura.terminal,
       user: fatura.user,
@@ -157,6 +168,9 @@ export class GetFaturaDetalheUseCase {
         produtoId: item.produtoId,
         servicoId: item.servicoId,
         descricao: item.descricao,
+        nomeComercial: item.produto?.nomeComercial ?? null,
+        dosagem: item.produto?.dosagem ?? null,
+        forma: item.produto?.forma ?? null,
         quantidade: item.quantidade,
         precoUnit: item.precoUnit,
         baseCalculo: item.baseCalculo,
@@ -176,9 +190,11 @@ export class GetFaturaDetalheUseCase {
       permissions: {
         canCancel: fatura.estado !== "ANULADA",
         canPrint: true,
+        // FR: PDF 80mm de preview; FT: PDF A4
         canExportPdf: true,
       },
       documents: {
+        mode: fatura.tipo === "FR" ? "thermal_80mm" : "pdf_a4",
         pdfUrl: `/api/v1/tenant/pos/faturas/${fatura.id.toString()}/pdf`,
         printUrl: `/api/v1/tenant/pos/faturas/${fatura.id.toString()}/print`,
       },
